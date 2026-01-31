@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { createClient } from '@/utils/supabase/client'
-import { LucideLoader2, LucideBuilding2, LucideCalendarClock } from 'lucide-react'
+import { LucideLoader2, LucideBuilding2, LucideCalendarClock, LucidePlus } from 'lucide-react'
 import ClientModal from '@/components/ClientModal'
+import CreateClientModal from '@/components/CreateClientModal' // <--- IMPORTAR
 
+// ... (Tipos Client y BoardData igual que antes)
 type Client = {
     id: string
     company_name: string
@@ -31,6 +33,8 @@ export default function KanbanPage() {
     const [board, setBoard] = useState<BoardData | null>(null)
     const [loading, setLoading] = useState(true)
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false) // <--- ESTADO NUEVO
+
     const supabase = createClient()
 
     useEffect(() => {
@@ -38,6 +42,7 @@ export default function KanbanPage() {
     }, [])
 
     const fetchBoard = async () => {
+        // ... (Lógica igual que antes)
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) return
 
@@ -57,6 +62,7 @@ export default function KanbanPage() {
     }
 
     const onDragEnd = async (result: DropResult) => {
+        // ... (Lógica igual que antes, cópiala tal cual o usa la del archivo anterior)
         const { source, destination, draggableId } = result
 
         if (!destination || (source.droppableId === destination.droppableId && source.index === destination.index)) {
@@ -99,16 +105,26 @@ export default function KanbanPage() {
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-white p-6">
             <div className="mb-6 flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-800">Flujo de Oportunidades</h1>
-                <div className="text-sm text-gray-500">Arrastra las tarjetas para avanzar en el proceso</div>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800">Flujo de Oportunidades</h1>
+                    <div className="text-sm text-gray-500">Gestiona tus clientes en tiempo real</div>
+                </div>
+
+                {/* BOTÓN NUEVO */}
+                <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 shadow-sm transition-colors"
+                >
+                    <LucidePlus size={18} />
+                    Nuevo Prospecto
+                </button>
             </div>
 
             <DragDropContext onDragEnd={onDragEnd}>
                 <div className="flex h-full gap-4 overflow-x-auto pb-4">
                     {COLUMNS.map((col) => (
                         <div key={col.id} className={`flex h-full w-80 min-w-[320px] flex-col rounded-lg border-t-4 bg-gray-50 p-3 shadow-sm ${col.color}`}>
-
-                            {/* Encabezado Columna */}
+                            {/* ... (Renderizado de columnas igual que antes) */}
                             <div className="mb-3 flex items-center justify-between px-2">
                                 <h3 className="font-semibold text-gray-700">{col.title}</h3>
                                 <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-gray-500 shadow-sm">
@@ -116,7 +132,6 @@ export default function KanbanPage() {
                                 </span>
                             </div>
 
-                            {/* Área Droppable */}
                             <Droppable droppableId={col.id}>
                                 {(provided) => (
                                     <div
@@ -132,24 +147,21 @@ export default function KanbanPage() {
                                                         {...provided.draggableProps}
                                                         {...provided.dragHandleProps}
                                                         onClick={() => setSelectedClientId(client.id)}
-                                                        className={`mb-3 cursor-pointer select-none rounded-lg bg-white p-4 shadow transition-shadow hover:shadow-md ${snapshot.isDragging ? 'shadow-xl ring-2 ring-blue-500' : ''
-                                                            }`}
+                                                        className={`mb-3 cursor-pointer select-none rounded-lg bg-white p-4 shadow transition-shadow hover:shadow-md ${snapshot.isDragging ? 'shadow-xl ring-2 ring-blue-500' : ''}`}
                                                     >
                                                         <div className="flex items-start justify-between">
                                                             <div className="flex items-center gap-2">
                                                                 <div className="rounded bg-blue-100 p-1.5 text-blue-600">
                                                                     <LucideBuilding2 size={16} />
                                                                 </div>
-                                                                <span className="text-xs font-semibold text-blue-800">
+                                                                <span className="text-xs font-semibold text-blue-800 line-clamp-1">
                                                                     {client.company_name}
                                                                 </span>
                                                             </div>
                                                         </div>
-
-                                                        <h4 className="mt-2 text-sm font-medium text-gray-900">
+                                                        <h4 className="mt-2 text-sm font-medium text-gray-900 line-clamp-1">
                                                             {client.contact_name || 'Sin Contacto'}
                                                         </h4>
-
                                                         <div className="mt-3 flex items-center gap-1 text-xs text-gray-400">
                                                             <LucideCalendarClock size={12} />
                                                             <span>Caduca: {client.assignment_expires_at ? new Date(client.assignment_expires_at).toLocaleDateString() : 'N/A'}</span>
@@ -167,10 +179,21 @@ export default function KanbanPage() {
                 </div>
             </DragDropContext>
 
+            {/* MODAL DETALLE (Existente) */}
             {selectedClientId && (
                 <ClientModal
                     clientId={selectedClientId}
                     onClose={() => setSelectedClientId(null)}
+                />
+            )}
+
+            {/* MODAL CREACIÓN (Nuevo) */}
+            {isCreateModalOpen && (
+                <CreateClientModal
+                    onClose={() => setIsCreateModalOpen(false)}
+                    onSuccess={() => {
+                        fetchBoard()
+                    }}
                 />
             )}
         </div>
