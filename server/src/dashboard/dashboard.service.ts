@@ -1,26 +1,31 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 @Injectable()
 export class DashboardService {
     private supabase: SupabaseClient;
 
-    constructor() {
-        this.supabase = createClient(
+    constructor() { }
+
+    private getClient(token: string) {
+        if (!token) throw new Error('Authorization token is required');
+        return createClient(
             process.env.SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
+            process.env.SUPABASE_KEY!,
+            { global: { headers: { Authorization: `Bearer ${token}` } } }
         );
     }
 
     // ==================== APPOINTMENTS ====================
 
-    async getAppointments(userId: string, filters?: { from?: string; to?: string; status?: string }) {
-        let query = this.supabase
+    async getAppointments(token: string, userId: string, filters?: { from?: string; to?: string; status?: string }) {
+        const supabase = this.getClient(token);
+        let query = supabase
             .from('appointments')
             .select(`
                 *,
                 client:clients(id, company_name, contact_name, phone, email),
-                agent:users(id, email)
+                agent:profiles(id, email)
             `)
             .eq('agent_id', userId)
             .order('appointment_date', { ascending: true })
@@ -43,28 +48,35 @@ export class DashboardService {
         return data;
     }
 
-    async getUpcomingAppointments(userId: string, limit: number = 5) {
-        const today = new Date().toISOString().split('T')[0];
+    async getUpcomingAppointments(token: string, userId: string, limit: number = 5) {
+        try {
+            const supabase = this.getClient(token);
+            const today = new Date().toISOString().split('T')[0];
 
-        const { data, error } = await this.supabase
-            .from('appointments')
-            .select(`
-                *,
-                client:clients(id, company_name, contact_name, phone, email)
-            `)
-            .eq('agent_id', userId)
-            .in('status', ['pendiente', 'confirmada'])
-            .gte('appointment_date', today)
-            .order('appointment_date', { ascending: true })
-            .order('appointment_time', { ascending: true })
-            .limit(limit);
+            const { data, error } = await supabase
+                .from('appointments')
+                .select(`
+                    *,
+                    client:clients(id, company_name, contact_name, phone, email)
+                `)
+                .eq('agent_id', userId)
+                .in('status', ['pendiente', 'confirmada'])
+                .gte('appointment_date', today)
+                .order('appointment_date', { ascending: true })
+                .order('appointment_time', { ascending: true })
+                .limit(limit);
 
-        if (error) throw new Error(error.message);
-        return data;
+            if (error) throw new Error(error.message);
+            return data;
+        } catch (error) {
+            console.error('Error in getUpcomingAppointments:', error);
+            throw error;
+        }
     }
 
-    async createAppointment(userId: string, payload: any) {
-        const { data, error } = await this.supabase
+    async createAppointment(token: string, userId: string, payload: any) {
+        const supabase = this.getClient(token);
+        const { data, error } = await supabase
             .from('appointments')
             .insert({
                 agent_id: userId,
@@ -89,8 +101,9 @@ export class DashboardService {
         return data;
     }
 
-    async updateAppointment(id: string, payload: any) {
+    async updateAppointment(token: string, id: string, payload: any) {
         const updateData: any = {};
+        const supabase = this.getClient(token);
 
         if (payload.title !== undefined) updateData.title = payload.title;
         if (payload.description !== undefined) updateData.description = payload.description;
@@ -101,7 +114,7 @@ export class DashboardService {
         if (payload.location !== undefined) updateData.location = payload.location;
         if (payload.notes !== undefined) updateData.notes = payload.notes;
 
-        const { data, error } = await this.supabase
+        const { data, error } = await supabase
             .from('appointments')
             .update(updateData)
             .eq('id', id)
@@ -112,8 +125,9 @@ export class DashboardService {
         return data;
     }
 
-    async updateAppointmentStatus(id: string, status: string) {
+    async updateAppointmentStatus(token: string, id: string, status: string) {
         const updateData: any = { status };
+        const supabase = this.getClient(token);
 
         if (status === 'completada') {
             updateData.completed_at = new Date();
@@ -121,7 +135,7 @@ export class DashboardService {
             updateData.cancelled_at = new Date();
         }
 
-        const { data, error } = await this.supabase
+        const { data, error } = await supabase
             .from('appointments')
             .update(updateData)
             .eq('id', id)
@@ -132,8 +146,9 @@ export class DashboardService {
         return data;
     }
 
-    async deleteAppointment(id: string) {
-        const { error } = await this.supabase
+    async deleteAppointment(token: string, id: string) {
+        const supabase = this.getClient(token);
+        const { error } = await supabase
             .from('appointments')
             .delete()
             .eq('id', id);
@@ -145,11 +160,11 @@ export class DashboardService {
     // ==================== REPORTES ====================
 
     // --- REPORTES ---
-    async getUserStats(userId: string) {
-        const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    async getUserStats(token: string, userId: string) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const supabase = this.getClient(token);
 
-        // 1. Obtener métricas de Actividades (Desde la Vista)
-        const { data: kpis, error } = await this.supabase
+        const { data, error } = await supabase
             .from('view_daily_kpis')
             .select('*')
             .eq('agent_id', userId)
@@ -158,38 +173,48 @@ export class DashboardService {
 
         if (error && error.code !== 'PGRST116') throw new Error(error.message);
 
-        // 2. NUEVO: Contar Clientes Reales creados HOY (Desde la Tabla)
-        // Definimos el rango de tiempo de hoy (00:00 a 23:59)
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date();
-        endOfDay.setHours(23, 59, 59, 999);
-
-        const { count: newProspectsCount, error: countError } = await this.supabase
-            .from('clients')
-            .select('*', { count: 'exact', head: true }) // count: 'exact' solo nos devuelve el número
-            .eq('assigned_agent_id', userId)
-            .gte('created_at', startOfDay.toISOString())
-            .lte('created_at', endOfDay.toISOString());
-
-        if (countError) throw new Error(countError.message);
-
-        // 3. Combinamos ambos resultados
         return {
-            new_prospects: newProspectsCount || 0, // <--- Dato Real de Registros
-            total_interactions: kpis?.total_contacts || 0, // Cambiamos nombre para ser claros
-            virtual_meetings: kpis?.virtual_meetings || 0,
-            commercial_visits: kpis?.commercial_visits || 0,
-            quotes_sent: kpis?.quotes_sent || 0,
-            deals_won: kpis?.deals_won || 0,
-            total_sales_usd: kpis?.total_sales_usd || 0
+            new_prospects: data?.new_prospects || 0,
+            total_interactions: data?.total_contacts || 0,
+            virtual_meetings: data?.virtual_meetings || 0,
+            commercial_visits: data?.commercial_visits || 0,
+            quotes_sent: data?.quotes_sent || 0,
+            deals_won: data?.deals_won || 0,
+            total_sales_usd: data?.total_sales_usd || 0,
+            total_volume_m3: data?.total_volume_m3 || 0
         };
     }
 
+    async getHistory(token: string | null) {
+        if (!token) throw new Error('Token is required for history');
+
+        // Create a scoped client for this request to respect RLS
+        const scopedSupabase = createClient(
+            process.env.SUPABASE_URL!,
+            process.env.SUPABASE_KEY!, // Public/Anon Key
+            {
+                global: {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            }
+        );
+
+        const { data, error } = await scopedSupabase
+            .from('view_daily_kpis')
+            .select('*')
+            .order('report_date', { ascending: false });
+
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
     // --- CLIENTES ---
-    async getKanbanBoard(userId: string) {
+    async getKanbanBoard(token: string, userId: string) {
         const today = new Date().toISOString();
-        const { data: clients, error } = await this.supabase
+        const supabase = this.getClient(token);
+        const { data: clients, error } = await supabase
             .from('clients')
             .select('*')
             .or(`assigned_agent_id.eq.${userId},assigned_agent_id.is.null,assignment_expires_at.lt.${today}`)
@@ -206,18 +231,36 @@ export class DashboardService {
         };
     }
 
-    async createClient(userId: string, payload: any) {
+    async getClients(token: string, query: string) {
+        const supabase = this.getClient(token);
+        let builder = supabase
+            .from('clients')
+            .select('id, company_name, contact_name, email')
+            .order('company_name', { ascending: true })
+            .limit(20);
+
+        if (query) {
+            builder = builder.or(`company_name.ilike.%${query}%,contact_name.ilike.%${query}%`);
+        }
+
+        const { data, error } = await builder;
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
+    async createClient(token: string, userId: string, payload: any) {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 30);
+        const supabase = this.getClient(token);
 
-        const { data, error } = await this.supabase
+        const { data, error } = await supabase
             .from('clients')
             .insert({
                 company_name: payload.company_name,
                 contact_name: payload.contact_name,
                 phone: payload.phone,
                 email: payload.email,
-                status: 'PENDING',
+                status: payload.status || 'PENDING',
                 assigned_agent_id: userId,
                 assignment_expires_at: expiresAt,
             })
@@ -228,8 +271,9 @@ export class DashboardService {
         return data;
     }
 
-    async updateClient(id: string, payload: any) {
-        const { data, error } = await this.supabase
+    async updateClient(token: string, id: string, payload: any) {
+        const supabase = this.getClient(token);
+        const { data, error } = await supabase
             .from('clients')
             .update(payload)
             .eq('id', id)
@@ -240,10 +284,11 @@ export class DashboardService {
         return data;
     }
 
-    async moveCard(userId: string, clientId: string, newStatus: string) {
+    async moveCard(token: string, userId: string, clientId: string, newStatus: string) {
         const updatePayload: any = { status: newStatus };
+        const supabase = this.getClient(token);
 
-        const { data: current } = await this.supabase
+        const { data: current } = await supabase
             .from('clients')
             .select('assigned_agent_id')
             .eq('id', clientId)
@@ -253,7 +298,7 @@ export class DashboardService {
             updatePayload.assigned_agent_id = userId;
         }
 
-        const { data, error } = await this.supabase
+        const { data, error } = await supabase
             .from('clients')
             .update(updatePayload)
             .eq('id', clientId)
@@ -264,25 +309,33 @@ export class DashboardService {
         return data;
     }
 
-    async deleteClient(id: string) {
-        const { error } = await this.supabase
+    async deleteClient(token: string, id: string) {
+        const supabase = this.getClient(token);
+        const { error } = await supabase
             .from('clients')
             .delete()
             .eq('id', id);
 
-        if (error) throw new Error(error.message);
+        if (error) {
+            // Foreign key violation
+            if (error.code === '23503') {
+                throw new BadRequestException('No se puede eliminar el cliente porque tiene registros relacionados (citas, interacciones, etc).');
+            }
+            throw new InternalServerErrorException(error.message);
+        }
         return { success: true };
     }
 
-    async getClientDetails(clientId: string) {
-        const { data: client, error: clientError } = await this.supabase
+    async getClientDetails(token: string, clientId: string) {
+        const supabase = this.getClient(token);
+        const { data: client, error: clientError } = await supabase
             .from('clients')
             .select('*')
             .eq('id', clientId)
             .single();
         if (clientError) throw new Error(clientError.message);
 
-        const { data: interactions, error: interactionsError } = await this.supabase
+        const { data: interactions, error: interactionsError } = await supabase
             .from('interactions')
             .select('*')
             .eq('client_id', clientId)
@@ -292,8 +345,9 @@ export class DashboardService {
         return { client, interactions };
     }
 
-    async addInteraction(userId: string, payload: any) {
-        const { data, error } = await this.supabase
+    async addInteraction(token: string, userId: string, payload: any) {
+        const supabase = this.getClient(token);
+        const { data, error } = await supabase
             .from('interactions')
             .insert({
                 agent_id: userId,
@@ -310,7 +364,7 @@ export class DashboardService {
 
         if (error) throw new Error(error.message);
 
-        await this.supabase
+        await supabase
             .from('clients')
             .update({ last_interaction_at: new Date() })
             .eq('id', payload.clientId);
@@ -318,8 +372,9 @@ export class DashboardService {
         return data;
     }
 
-    async deleteInteraction(id: string) {
-        const { error } = await this.supabase
+    async deleteInteraction(token: string, id: string) {
+        const supabase = this.getClient(token);
+        const { error } = await supabase
             .from('interactions')
             .delete()
             .eq('id', id);

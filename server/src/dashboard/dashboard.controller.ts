@@ -8,101 +8,126 @@ import { DashboardService } from './dashboard.service';
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) { }
 
+  private extractToken(req: any): string {
+    const rawHeader = req.headers.authorization;
+    return rawHeader ? rawHeader.split(' ')[1] : '';
+  }
+
   // ==================== APPOINTMENTS ====================
 
   @Get('appointments')
   async getAppointments(
     @Req() req,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-    @Query('status') status?: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Query('status') status: string,
   ) {
-    const userId = req.user.id;
-    return this.dashboardService.getAppointments(userId, { from, to, status });
+    const token = this.extractToken(req);
+    return this.dashboardService.getAppointments(token, req.user.userId, { from, to, status });
   }
 
   @Get('appointments/upcoming')
-  async getUpcomingAppointments(@Req() req, @Query('limit') limit?: string) {
-    const userId = req.user.id;
-    return this.dashboardService.getUpcomingAppointments(userId, limit ? parseInt(limit) : 5);
+  async getUpcomingAppointments(@Req() req, @Query('limit') limit: number) {
+    const token = this.extractToken(req);
+    return this.dashboardService.getUpcomingAppointments(token, req.user.userId, limit);
   }
 
   @Post('appointments')
   async createAppointment(@Req() req, @Body() payload: any) {
-    const userId = req.user.id;
-    return this.dashboardService.createAppointment(userId, payload);
+    const token = this.extractToken(req);
+    return this.dashboardService.createAppointment(token, req.user.userId, payload);
   }
 
   @Patch('appointments/:id')
-  async updateAppointment(@Param('id') id: string, @Body() payload: any) {
-    return this.dashboardService.updateAppointment(id, payload);
+  async updateAppointment(@Req() req, @Param('id') id: string, @Body() payload: any) {
+    const token = this.extractToken(req);
+    return this.dashboardService.updateAppointment(token, id, payload);
   }
 
   @Patch('appointments/:id/status')
-  async updateAppointmentStatus(@Param('id') id: string, @Body() payload: { status: string }) {
-    return this.dashboardService.updateAppointmentStatus(id, payload.status);
+  async updateAppointmentStatus(@Req() req, @Param('id') id: string, @Body('status') status: string) {
+    const token = this.extractToken(req);
+    return this.dashboardService.updateAppointmentStatus(token, id, status);
   }
 
   @Delete('appointments/:id')
-  async deleteAppointment(@Param('id') id: string) {
-    return this.dashboardService.deleteAppointment(id);
+  async deleteAppointment(@Req() req, @Param('id') id: string) {
+    const token = this.extractToken(req);
+    return this.dashboardService.deleteAppointment(token, id);
   }
 
   // ==================== STATS & REPORTS ====================
 
   @Get('stats')
   async getUserStats(@Req() req) {
-    const userId = req.user.id;
-    return this.dashboardService.getUserStats(userId);
+    const token = this.extractToken(req);
+    const userId = req.user.userId;
+    return this.dashboardService.getUserStats(token, userId);
+  }
+
+  @Get('history')
+  async getHistory(@Req() req) {
+    const token = this.extractToken(req);
+    return this.dashboardService.getHistory(token);
   }
 
   // ==================== KANBAN ====================
 
   @Get('kanban')
   async getKanbanBoard(@Req() req) {
-    const userId = req.user.id;
-    return this.dashboardService.getKanbanBoard(userId);
+    const token = this.extractToken(req);
+    return this.dashboardService.getKanbanBoard(token, req.user.userId);
   }
 
   @Patch('clients/:id/move')
-  async moveCard(@Req() req, @Param('id') id: string, @Body() payload: { status: string }) {
-    const userId = req.user.id;
-    return this.dashboardService.moveCard(userId, id, payload.status);
+  async moveCard(@Req() req, @Param('id') clientId: string, @Body('status') newStatus: string) {
+    const token = this.extractToken(req);
+    return this.dashboardService.moveCard(token, req.user.userId, clientId, newStatus);
   }
 
   // ==================== CLIENTS ====================
 
+  @Get('clients')
+  async getClients(@Req() req, @Query('query') query: string) {
+    const token = this.extractToken(req);
+    return this.dashboardService.getClients(token, query);
+  }
+
   @Post('clients')
   async createClient(@Req() req, @Body() payload: any) {
-    const userId = req.user.id;
-    return this.dashboardService.createClient(userId, payload);
+    const token = this.extractToken(req);
+    return this.dashboardService.createClient(token, req.user.userId, payload);
   }
 
   @Patch('clients/:id')
-  async updateClient(@Param('id') id: string, @Body() payload: any) {
-    return this.dashboardService.updateClient(id, payload);
+  async updateClient(@Req() req, @Param('id') id: string, @Body() payload: any) {
+    const token = this.extractToken(req);
+    return this.dashboardService.updateClient(token, id, payload);
   }
 
   @Delete('clients/:id')
-  async deleteClient(@Param('id') id: string) {
-    return this.dashboardService.deleteClient(id);
+  async deleteClient(@Req() req, @Param('id') id: string) {
+    const token = this.extractToken(req);
+    return this.dashboardService.deleteClient(token, id);
   }
 
   @Get('clients/:id')
-  async getClientDetails(@Param('id') id: string) {
-    return this.dashboardService.getClientDetails(id);
+  async getClientDetails(@Req() req, @Param('id') id: string) {
+    const token = this.extractToken(req);
+    return this.dashboardService.getClientDetails(token, id);
   }
 
   // ==================== INTERACTIONS ====================
 
   @Post('interactions')
   async addInteraction(@Req() req, @Body() payload: any) {
-    const userId = req.user.id;
-    return this.dashboardService.addInteraction(userId, payload);
+    const token = this.extractToken(req);
+    return this.dashboardService.addInteraction(token, req.user.userId, payload);
   }
 
   @Delete('interactions/:id')
-  async deleteInteraction(@Param('id') id: string) {
-    return this.dashboardService.deleteInteraction(id);
+  async deleteInteraction(@Req() req, @Param('id') id: string) {
+    const token = this.extractToken(req);
+    return this.dashboardService.deleteInteraction(token, id);
   }
 }

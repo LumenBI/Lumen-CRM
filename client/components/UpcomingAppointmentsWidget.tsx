@@ -12,6 +12,7 @@ interface UpcomingAppointment {
     appointment_time: string
     appointment_type: 'virtual' | 'presencial' | 'llamada'
     status: 'pendiente' | 'confirmada'
+    meeting_link?: string
     client: {
         company_name: string
         contact_name: string
@@ -59,10 +60,11 @@ export default function UpcomingAppointmentsWidget() {
     }
 
     const formatDate = (dateStr: string) => {
-        const date = new Date(dateStr + 'T00:00:00')
-        const day = date.getDate() + 1 // Offset issue fix
-        const month = date.toLocaleString('es-ES', { month: 'short' })
-        return { day, month }
+        // Safe parsing of YYYY-MM-DD to avoid timezone issues
+        const [year, month, day] = dateStr.split('-').map(Number)
+        const date = new Date(year, month - 1, day)
+        const monthName = date.toLocaleString('es-ES', { month: 'short' })
+        return { day, month: monthName }
     }
 
     if (loading) {
@@ -115,28 +117,43 @@ export default function UpcomingAppointmentsWidget() {
                 <div className="space-y-3">
                     {appointments.map((appointment) => {
                         const { day, month } = formatDate(appointment.appointment_date)
+                        // Use meeting link if available, otherwise fallback to appointments page
+                        const linkHref = appointment.meeting_link || '/dashboard/citas'
+                        const isExternal = !!appointment.meeting_link
+
                         return (
-                            <div key={appointment.id} className="flex items-center p-3 hover:bg-slate-50 rounded-lg transition border-b border-slate-100 last:border-0">
-                                <div className="bg-blue-100 text-[#000d42] font-bold rounded-lg p-3 text-center min-w-[60px]">
-                                    <span className="block text-xs uppercase">{month}</span>
-                                    <span className="block text-lg leading-none">{day}</span>
-                                </div>
-                                <div className="ml-4 flex-1">
-                                    <h4 className="font-bold text-slate-700">{appointment.client.company_name}</h4>
-                                    <p className="text-xs text-slate-500 flex items-center gap-1">
-                                        {getTypeIcon(appointment.appointment_type)}
-                                        <span>{appointment.appointment_time}</span>
-                                        <span className="mx-1">•</span>
-                                        <span className="capitalize">{appointment.appointment_type}</span>
-                                    </p>
-                                </div>
-                                <div className={`px-2 py-1 rounded-full text-xs font-semibold ${appointment.status === 'confirmada'
+                            <Link
+                                key={appointment.id}
+                                href={linkHref}
+                                target={isExternal ? '_blank' : undefined}
+                                rel={isExternal ? 'noopener noreferrer' : undefined}
+                                className="block group"
+                            >
+                                <div className="flex items-center p-3 hover:bg-slate-50 rounded-lg transition border-b border-slate-100 last:border-0 group-hover:scale-[1.02] group-hover:shadow-sm">
+                                    <div className="bg-blue-100 text-[#000d42] font-bold rounded-lg p-3 text-center min-w-[60px] group-hover:bg-[#0056fc] group-hover:text-white transition-colors">
+                                        <span className="block text-xs uppercase">{month}</span>
+                                        <span className="block text-lg leading-none">{day}</span>
+                                    </div>
+                                    <div className="ml-4 flex-1">
+                                        <h4 className="font-bold text-slate-700 group-hover:text-[#0056fc] transition-colors">{appointment.client.company_name}</h4>
+                                        <div className="flex items-center gap-1 text-sm text-slate-600 mb-0.5">
+                                            <span className="font-medium">con: {appointment.client.contact_name}</span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                                            {getTypeIcon(appointment.appointment_type)}
+                                            <span>{appointment.appointment_time}</span>
+                                            <span className="mx-1">•</span>
+                                            <span className="capitalize">{appointment.appointment_type}</span>
+                                        </p>
+                                    </div>
+                                    <div className={`px-2 py-1 rounded-full text-xs font-semibold ${appointment.status === 'confirmada'
                                         ? 'bg-green-100 text-green-700'
                                         : 'bg-orange-100 text-orange-700'
-                                    }`}>
-                                    {appointment.status === 'confirmada' ? '✓' : '⏱'}
+                                        }`}>
+                                        {appointment.status === 'confirmada' ? '✓' : '⏱'}
+                                    </div>
                                 </div>
-                            </div>
+                            </Link>
                         )
                     })}
                 </div>

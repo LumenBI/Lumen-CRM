@@ -3,9 +3,27 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import {
-    LucideX, LucidePhone, LucideMail, LucideCalendar,
-    LucideMessageSquare, LucideCheckCircle2, LucideDollarSign
+    X as LucideX,
+    Phone,
+    Mail,
+    Calendar,
+    MessageSquare,
+    CheckCircle2,
+    DollarSign as LucideDollarSign
 } from 'lucide-react'
+import { INTERACTION_TYPES } from '@/constants/interactions'
+
+// Create aliases for icons
+const DollarSign = LucideDollarSign
+
+// Icon map for dynamic icon rendering
+const ICON_MAP: { [key: string]: React.ComponentType<{ size?: number; className?: string }> } = {
+    Phone,
+    Mail,
+    Calendar,
+    MessageSquare,
+    CheckCircle2,
+}
 
 type Interaction = {
     id: string
@@ -76,7 +94,7 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
                 },
                 body: JSON.stringify({
                     clientId,
-                    category: type === 'SALE' ? 'QUOTE_DECISION' : type, // Mapeo simple
+                    category: INTERACTION_TYPES.find(t => t.value === type)?.backendValue || type,
                     modality: 'N_A', // Simplificado para velocidad
                     summary: newNote,
                     amount_usd: type === 'SALE' ? 1000 : 0 // Ejemplo: Si es venta, asignamos valor dummy o podrías pedirlo
@@ -98,87 +116,155 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
     if (!clientId) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-2xl">
-
-                {/* Header */}
-                <div className="flex items-center justify-between border-b bg-gray-50 px-6 py-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="relative max-h-[95vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+                {/* Header - MEJORADO con gradiente Star Cargo */}
+                <div className="flex items-center justify-between bg-gradient-to-r from-[#000D42] to-[#0066FF] px-8 py-6 shadow-lg">
                     <div>
-                        {loading ? <div className="h-6 w-32 animate-pulse bg-gray-200 rounded"></div> : (
-                            <>
-                                <h2 className="text-xl font-bold text-gray-800">{client?.company_name}</h2>
-                                <p className="text-sm text-gray-500">{client?.contact_name}</p>
-                            </>
+                        <h2 className="text-3xl font-bold text-white">
+                            {loading ? 'Cargando...' : client?.company_name}
+                        </h2>
+                        {!loading && client && (
+                            <p className="text-blue-100 mt-1">Detalles del cliente</p>
                         )}
                     </div>
-                    <button onClick={onClose} className="rounded-full p-1 hover:bg-gray-200">
-                        <LucideX className="text-gray-500" />
+                    <button
+                        onClick={onClose}
+                        className="rounded-xl p-3 bg-white/20 hover:bg-white/30 transition-all hover:scale-110"
+                    >
+                        <LucideX size={24} className="text-white" />
                     </button>
                 </div>
+                {/* Body */}
+                <div className="flex max-h-[calc(95vh-120px)] overflow-hidden">
+                    {/* Sidebar: Info del Cliente - MEJORADO */}
+                    <div className="w-96 border-r bg-gradient-to-b from-gray-50 to-white p-8">
+                        <h3 className="mb-6 text-sm font-bold uppercase text-[#000D42] tracking-wider">Información de Contacto</h3>
+                        {loading ? (
+                            <p className="text-gray-500">Cargando...</p>
+                        ) : (
+                            <div className="space-y-5">
+                                <div className="group">
+                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-white shadow-sm hover:shadow-md transition-all border border-gray-100">
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-md">
+                                            <Phone className="text-white" size={20} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Teléfono</p>
+                                            <p className="font-bold text-gray-900 mt-1">{client?.phone || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="group">
+                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-white shadow-sm hover:shadow-md transition-all border border-gray-100">
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-md">
+                                            <Mail className="text-white" size={20} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</p>
+                                            <p className="font-bold text-gray-900 mt-1 text-sm break-all">{client?.email}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-                <div className="flex h-[500px]">
-                    {/* Columna Izquierda: Acciones y Datos */}
-                    <div className="w-1/3 border-r bg-gray-50 p-5">
+                        <hr className="my-8 border-gray-200" />
+
+                        <h3 className="mb-6 text-sm font-bold uppercase text-[#000D42] tracking-wider">Registrar Nueva Actividad</h3>
                         <div className="space-y-4">
-                            <div className="rounded-lg bg-white p-3 shadow-sm">
-                                <div className="mb-2 flex items-center gap-2 text-sm text-gray-500">
-                                    <LucideMail size={16} /> {client?.email || 'No email'}
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-gray-500">
-                                    <LucidePhone size={16} /> {client?.phone || 'No phone'}
+                            {/* Custom Select with Icons */}
+                            <div className="relative">
+                                <div className="grid grid-cols-3 gap-2">
+                                    {INTERACTION_TYPES.map(t => {
+                                        const IconComponent = ICON_MAP[t.icon]
+                                        return (
+                                            <button
+                                                key={t.value}
+                                                type="button"
+                                                onClick={() => setType(t.value)}
+                                                className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${type === t.value
+                                                    ? 'border-[#0066FF] bg-blue-50 shadow-md'
+                                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                {IconComponent && (
+                                                    <IconComponent
+                                                        size={20}
+                                                        className={type === t.value ? 'text-[#0066FF]' : 'text-gray-500'}
+                                                    />
+                                                )}
+                                                <span className={`text-xs font-medium text-center ${type === t.value ? 'text-[#0066FF]' : 'text-gray-700'
+                                                    }`}>
+                                                    {t.label}
+                                                </span>
+                                            </button>
+                                        )
+                                    })}
                                 </div>
                             </div>
-
-                            <hr />
-
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Nueva Actividad</h3>
-                            <div className="space-y-2">
-                                <select
-                                    className="w-full rounded border p-2 text-sm"
-                                    value={type}
-                                    onChange={(e) => setType(e.target.value)}
-                                >
-                                    <option value="CALL">📞 Llamada</option>
-                                    <option value="MEETING">📅 Reunión</option>
-                                    <option value="EMAIL">✉️ Correo</option>
-                                    <option value="SALE">💰 Venta Cerrada</option>
-                                </select>
-                                <textarea
-                                    className="h-24 w-full resize-none rounded border p-2 text-sm"
-                                    placeholder="¿Qué se acordó?"
-                                    value={newNote}
-                                    onChange={(e) => setNewNote(e.target.value)}
-                                />
-                                <button
-                                    onClick={handleSaveInteraction}
-                                    disabled={isSubmitting || loading}
-                                    className="w-full rounded bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                                >
-                                    {isSubmitting ? 'Guardando...' : 'Registrar'}
-                                </button>
-                            </div>
+                            <textarea
+                                className="h-32 w-full resize-none rounded-xl border border-gray-300 p-3 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                placeholder="Describe la interacción (ej: 'Se envió propuesta de 3 servicios, seguimiento en 2 días.')"
+                                value={newNote}
+                                onChange={(e) => setNewNote(e.target.value)}
+                            />
+                            <button
+                                onClick={handleSaveInteraction}
+                                disabled={isSubmitting || !newNote.trim()}
+                                className="group relative w-full rounded-xl bg-gradient-to-r from-[#0066FF] to-[#0052CC] px-6 py-4 font-bold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-lg"
+                            >
+                                <span className="flex items-center justify-center gap-2">
+                                    <CheckCircle2 size={20} />
+                                    {isSubmitting ? 'Guardando...' : 'Guardar Interacción'}
+                                </span>
+                            </button>
                         </div>
                     </div>
 
-                    {/* Columna Derecha: Historial (Timeline) */}
-                    <div className="flex-1 overflow-y-auto p-6">
-                        <h3 className="mb-4 font-bold text-gray-700">Historial de Interacciones</h3>
-                        {loading ? <p>Cargando historia...</p> : (
-                            <div className="relative space-y-6 border-l-2 border-gray-100 ml-3 pl-6">
+                    {/* Columna Derecha: Historial (Timeline) - MEJORADO */}
+                    <div className="flex-1 overflow-y-auto p-8">
+                        <h3 className="mb-4 text-lg font-bold text-[#000D42] flex items-center gap-2">
+                            <Calendar size={20} className="text-[#0066FF]" />
+                            Historial de Interacciones
+                        </h3>
+                        {loading ? <p className="text-gray-500">Cargando historial...</p> : (
+                            <div className="relative space-y-8 border-l-2 border-gray-100 pl-6">
+                                {history.length === 0 && <p className="text-sm text-gray-400">Sin interacciones registradas aún.</p>}
                                 {history.map((item) => (
-                                    <div key={item.id} className="relative">
-                                        <span className={`absolute -left-[31px] flex h-8 w-8 items-center justify-center rounded-full border-2 border-white shadow-sm ${item.category === 'QUOTE_DECISION' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
+                                    <div key={item.id} className="relative group">
+                                        <span className={`absolute -left-[31px] flex h-10 w-10 items-center justify-center rounded-xl shadow-lg border-2 border-white group-hover:scale-110 transition-transform ${item.category === 'QUOTE_DECISION' ? 'bg-gradient-to-br from-green-400 to-green-600 text-white' :
+                                            item.category === 'CALL' ? 'bg-gradient-to-br from-blue-400 to-blue-600 text-white' :
+                                                'bg-gradient-to-br from-purple-400 to-purple-600 text-white'
                                             }`}>
-                                            {item.category === 'QUOTE_DECISION' ? <LucideDollarSign size={14} /> : <LucideMessageSquare size={14} />}
+                                            {item.category === 'QUOTE_DECISION' ? <DollarSign size={18} /> : <MessageSquare size={18} />}
                                         </span>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-bold text-gray-900">{item.category}</span>
-                                                <span className="text-xs text-gray-400">{new Date(item.created_at).toLocaleDateString()}</span>
+                                        <div className="bg-white rounded-xl p-5 shadow-sm hover:shadow-lg transition-all border border-gray-100">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${item.category === 'QUOTE_DECISION' ? 'bg-green-100 text-green-700' :
+                                                    item.category === 'CALL' ? 'bg-blue-100 text-blue-700' :
+                                                        'bg-purple-100 text-purple-700'
+                                                    }`}>
+                                                    {item.category}
+                                                </span>
+                                                <span className="text-xs text-gray-400 font-medium">
+                                                    {new Date(item.created_at).toLocaleDateString('es-ES', {
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                        year: 'numeric'
+                                                    })}
+                                                </span>
                                             </div>
-                                            <p className="mt-1 text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                                            <p className="text-sm text-gray-700 leading-relaxed">
                                                 {item.summary}
                                             </p>
+                                            {(item.amount_usd ?? 0) > 0 && (
+                                                <div className="mt-3 pt-3 border-t border-gray-100">
+                                                    <span className="text-lg font-bold text-green-600">
+                                                        ${(item.amount_usd ?? 0).toLocaleString()} USD
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
