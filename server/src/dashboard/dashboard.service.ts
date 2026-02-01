@@ -51,7 +51,13 @@ export class DashboardService {
     async getUpcomingAppointments(token: string, userId: string, limit: number = 5) {
         try {
             const supabase = this.getClient(token);
-            const today = new Date().toISOString().split('T')[0];
+            // Get today's date in Central America timezone
+            const today = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Guatemala',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(new Date());
 
             const { data, error } = await supabase
                 .from('appointments')
@@ -161,27 +167,105 @@ export class DashboardService {
 
     // --- REPORTES ---
     async getUserStats(token: string, userId: string) {
-        const todayStr = new Date().toISOString().split('T')[0];
         const supabase = this.getClient(token);
 
+        // Calculate dates in Central America timezone
+        const getCADate = (date: Date) => {
+            return new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Guatemala',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(date);
+        };
+
+        const now = new Date();
+        const currentYear = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Guatemala', year: 'numeric' }).format(now));
+        const currentMonth = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Guatemala', month: 'numeric' }).format(now));
+
+        // Start of current month
+        const startOfCurrentMonth = new Date(currentYear, currentMonth - 1, 1);
+        const startOfCurrentMonthStr = getCADate(startOfCurrentMonth);
+
+        // Start of previous month
+        const startOfPrevMonth = new Date(currentYear, currentMonth - 2, 1);
+        const startOfPrevMonthStr = getCADate(startOfPrevMonth);
+
+        // Fetch data from start of previous month
         const { data, error } = await supabase
             .from('view_daily_kpis')
             .select('*')
             .eq('agent_id', userId)
-            .eq('report_date', todayStr)
-            .maybeSingle();
+            .gte('report_date', startOfPrevMonthStr);
 
-        if (error && error.code !== 'PGRST116') throw new Error(error.message);
+        if (error) throw new Error(error.message);
+
+        // Aggregate data
+        const currentMonthStats = {
+            new_prospects: 0,
+            total_contacts: 0, // Interactions
+            commercial_visits: 0,
+            deals_won: 0,
+        };
+
+        const prevMonthStats = {
+            new_prospects: 0,
+            total_contacts: 0,
+            commercial_visits: 0,
+            deals_won: 0,
+        };
+
+        data?.forEach(record => {
+            const isCurrentMonth = record.report_date >= startOfCurrentMonthStr;
+            const target = isCurrentMonth ? currentMonthStats : prevMonthStats;
+
+            target.new_prospects += (record.new_prospects || 0);
+            target.total_contacts += (record.total_contacts || 0);
+            target.commercial_visits += (record.commercial_visits || 0);
+            target.deals_won += (record.deals_won || 0);
+        });
+
+        // Helper to calculate change
+        const calculateChange = (current: number, prev: number) => {
+            if (prev === 0) return current > 0 ? 100 : 0;
+            return ((current - prev) / prev) * 100;
+        };
+
+        const formatChange = (pct: number) => {
+            const sign = pct >= 0 ? '+' : '';
+            return `${sign}${pct.toFixed(1)}%`;
+        };
+
+        const getTrend = (pct: number) => pct >= 0 ? 'up' : 'down';
+
+        const newProspectsChange = calculateChange(currentMonthStats.new_prospects, prevMonthStats.new_prospects);
+        const interactionsChange = calculateChange(currentMonthStats.total_contacts, prevMonthStats.total_contacts);
+        const visitsChange = calculateChange(currentMonthStats.commercial_visits, prevMonthStats.commercial_visits);
+        const salesChange = calculateChange(currentMonthStats.deals_won, prevMonthStats.deals_won);
 
         return {
-            new_prospects: data?.new_prospects || 0,
-            total_interactions: data?.total_contacts || 0,
-            virtual_meetings: data?.virtual_meetings || 0,
-            commercial_visits: data?.commercial_visits || 0,
-            quotes_sent: data?.quotes_sent || 0,
-            deals_won: data?.deals_won || 0,
-            total_sales_usd: data?.total_sales_usd || 0,
-            total_volume_m3: data?.total_volume_m3 || 0
+            new_prospects: currentMonthStats.new_prospects,
+            new_prospects_change: formatChange(newProspectsChange),
+            new_prospects_trend: getTrend(newProspectsChange),
+
+            total_interactions: currentMonthStats.total_contacts,
+            total_interactions_change: formatChange(interactionsChange),
+            total_interactions_trend: getTrend(interactionsChange),
+
+            // Using keys compatible with frontend expectations (mapping commercial_visits to appointments_count intention)
+            appointments_count: currentMonthStats.commercial_visits,
+            appointments_count_change: formatChange(visitsChange),
+            appointments_count_trend: getTrend(visitsChange),
+
+            won_count: currentMonthStats.deals_won,
+            won_count_change: formatChange(salesChange),
+            won_count_trend: getTrend(salesChange),
+
+            // Retain other fields just in case
+            virtual_meetings: 0,
+            quotes_sent: 0,
+            total_sales_usd: 0,
+            total_volume_m3: 0
         };
     }
 
