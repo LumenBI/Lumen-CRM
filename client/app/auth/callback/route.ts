@@ -22,8 +22,7 @@ export async function GET(request: NextRequest) {
         await supabase.auth.exchangeCodeForSession(code)
     }
 
-    // Redirect to root instead of dashboard to let the client-side logic verify the user status first
-    // This prevents the "flash" of dashboard -> 401 -> login loop
-    const nextUrl = new URL('/', origin)
+    // Redirect to dashboard after successful login
+    const nextUrl = new URL('/dashboard', origin)
     return NextResponse.redirect(nextUrl)
 }

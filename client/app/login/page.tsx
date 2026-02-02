@@ -1,230 +1,140 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { Loader2, Sparkles, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 
-export default function LoginPage() {
+// Componente del formulario aislado
+function LoginForm() {
     const [loading, setLoading] = useState(false)
-    const [checking, setChecking] = useState(true)
-    const router = useRouter()
     const supabase = createClient()
-
-    useEffect(() => {
-        const checkUser = async () => {
-            // Check for error param indicating account disabled
-            const params = new URLSearchParams(window.location.search);
-            const errorParam = params.get('error');
-
-            if (errorParam === 'account_disabled') {
-                await supabase.auth.signOut();
-                setChecking(false);
-                return;
-            }
-
-            const { data: { session } } = await supabase.auth.getSession()
-            if (session) {
-                // PRE-VALIDATION: Check if user is active
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('is_active')
-                    .eq('id', session.user.id)
-                    .single()
-
-                if (profile && profile.is_active === false) {
-                    console.log('⛔ User account is disabled. preventing login.')
-                    await supabase.auth.signOut()
-                    setChecking(false)
-                    window.location.href = '/login?error=account_disabled'
-                    return
-                }
-
-                router.push('/dashboard')
-            } else {
-                setChecking(false)
-            }
-        }
-        checkUser()
-    }, [router, supabase])
 
     const handleGoogleLogin = async () => {
         setLoading(true)
-        try {
-            const currentOrigin = window.location.origin
-            const redirectUrl = `${currentOrigin}/auth/callback`
-
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: redirectUrl,
-                    queryParams: {
-                        access_type: 'offline',
-                        prompt: 'consent',
-                    },
-                },
-            })
-
-            if (error) {
-                console.error('❌ Error logging in:', error.message)
-                setLoading(false)
-            }
-        } catch (error) {
-            console.error('❌ Unexpected error:', error)
-            setLoading(false)
-        }
-    }
-
-    if (checking) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-[#000D42]">
-                <div className="text-center">
-                    <div className="relative w-16 h-16 mx-auto mb-4">
-                        <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-20"></div>
-                        <div className="relative bg-gradient-to-tr from-blue-600 to-blue-400 rounded-full w-full h-full flex items-center justify-center border border-white/10 shadow-xl">
-                            <Loader2 className="w-8 h-8 animate-spin text-white" />
-                        </div>
-                    </div>
-                    <p className="text-blue-200/80 text-sm font-medium animate-pulse">Verificando sesión...</p>
-                </div>
-            </div>
-        )
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+                queryParams: { access_type: 'offline', prompt: 'consent' },
+            },
+        })
+        if (error) setLoading(false)
     }
 
     return (
-        <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-[#000D42] selection:bg-blue-500/30">
-            {/* Noise Texture */}
-            <div className="fixed inset-0 z-50 pointer-events-none opacity-[0.04] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+            className="w-full max-w-[420px] bg-white p-10 md:p-12 rounded-3xl shadow-soft border border-gray-100 relative overflow-hidden"
+        >
+            {/* Decoración sutil superior animated */}
+            <motion.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.8, delay: 0.6, ease: "circOut" }}
+                className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-base-900 via-blue-600 to-base-900 origin-left"
+            ></motion.div>
 
-            {/* Dynamic Background */}
-            <div className="absolute inset-0 z-0 overflow-hidden">
-                {/* Main Gradient Mesh */}
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/30 rounded-full blur-[120px] animate-blob mix-blend-screen pointer-events-none"></div>
-                <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] bg-purple-600/30 rounded-full blur-[120px] animate-blob animation-delay-2000 mix-blend-screen pointer-events-none"></div>
-                <div className="absolute bottom-[-10%] left-[20%] w-[60%] h-[40%] bg-cyan-600/20 rounded-full blur-[120px] animate-blob animation-delay-4000 mix-blend-screen pointer-events-none"></div>
-
-                {/* Subtle Grid */}
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-50"></div>
-            </div>
-
-            <div className="relative z-10 w-full max-w-md px-4">
-                {/* Back Link */}
-                <Link
-                    href="/"
-                    className="absolute -top-16 left-4 flex items-center gap-2 text-blue-200/50 hover:text-white transition-all duration-300 group text-sm font-medium"
+            <div className="flex flex-col items-center text-center mb-8">
+                <motion.div
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.3 }}
+                    className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 text-blue-600 shadow-sm"
                 >
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    <span className="relative">
-                        Volver al inicio
-                        <span className="absolute -bottom-0.5 left-0 w-0 h-[1px] bg-white group-hover:w-full transition-all duration-300"></span>
-                    </span>
-                </Link>
-
-                {/* Login Card */}
-                <div className="relative group">
-                    {/* Animated Border Gradient */}
-                    <div className="absolute -inset-[1px] bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 rounded-3xl opacity-30 group-hover:opacity-100 blur transition duration-1000 animate-gradient-xy"></div>
-
-                    <div className="relative bg-[#0A192F]/60 backdrop-blur-3xl border border-white/10 rounded-3xl p-8 sm:p-12 shadow-2xl ring-1 ring-white/5">
-                        {/* Header */}
-                        <div className="text-center mb-10">
-                            <div className="inline-flex items-center justify-center mb-8 relative group/logo">
-                                <div className="absolute inset-0 bg-blue-500/30 blur-2xl rounded-full opacity-0 group-hover/logo:opacity-100 transition-opacity duration-500"></div>
-                                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border border-white/20 shadow-lg shadow-blue-500/20 group-hover/logo:scale-105 transition-transform duration-500">
-                                    <Image
-                                        src="/logos/star-logo.jpg"
-                                        alt="Star CRM"
-                                        fill
-                                        className="object-cover"
-                                    />
-                                </div>
-                            </div>
-                            <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
-                                Bienvenido
-                            </h1>
-                            <p className="text-blue-200/60 text-sm font-light tracking-wide">
-                                Ingresa a tu espacio de trabajo digital
-                            </p>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="space-y-8">
-                            <button
-                                onClick={handleGoogleLogin}
-                                disabled={loading}
-                                className="w-full relative group/btn overflow-hidden rounded-xl p-[1px] focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-[#000D42] disabled:opacity-70 disabled:cursor-not-allowed"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 opacity-50 group-hover/btn:opacity-100 transition-opacity duration-500"></div>
-                                <div className="relative bg-[#000D42] hover:bg-[#000D42]/90 rounded-xl px-4 py-5 transition-all flex items-center justify-center gap-3">
-                                    {loading ? (
-                                        <Loader2 className="w-5 h-5 animate-spin text-white" />
-                                    ) : (
-                                        <>
-                                            <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                                            </svg>
-                                            <span className="text-white font-medium text-base tracking-wide">Continuar con Google</span>
-                                        </>
-                                    )}
-                                </div>
-                            </button>
-
-                            {/* Security Notice */}
-                            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-sm">
-                                <div className="p-2 bg-blue-500/10 rounded-xl mt-0.5">
-                                    <Sparkles className="w-4 h-4 text-blue-400" />
-                                </div>
-                                <div>
-                                    <h4 className="text-xs font-semibold text-white/90 mb-1">Acceso Seguro</h4>
-                                    <p className="text-[11px] text-blue-200/50 leading-relaxed font-light">
-                                        Plataforma exclusiva para personal de Star Cargo. <br />
-                                        Tu dirección IP está siendo monitoreada.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Error Message */}
-                        {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('error') === 'account_disabled' && (
-                            <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                                <p className="text-red-200 text-xs font-medium">Tu cuenta se encuentra deshabilitada.</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="mt-8 text-center space-y-2">
-                        <p className="text-blue-200/30 text-[10px] tracking-widest uppercase">
-                            Legacy System v2.0
-                        </p>
-                    </div>
-                </div>
+                    {/* Icono de llave o logo simplificado */}
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                </motion.div>
+                <h1 className="text-2xl font-bold text-base-900 tracking-tight">Bienvenido</h1>
+                <p className="text-gray-400 mt-2 text-sm font-medium">Inicie sesión para gestionar sus envíos</p>
             </div>
 
-            <style jsx>{`
-        .animate-gradient-xy {
-            background-size: 200% 200%;
-            animation: gradient-xy 6s ease infinite;
-        }
-        @keyframes gradient-xy {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        @keyframes pulse-slow {
-            0%, 100% { opacity: 0.4; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.05); }
-        }
-        .animate-pulse-slow {
-            animation: pulse-slow 6s infinite ease-in-out;
-        }
-      `}</style>
+            <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full relative group flex items-center justify-center gap-3 bg-white border-2 border-gray-100 hover:border-blue-100 hover:bg-blue-50/50 text-base-900 font-bold py-4 px-4 rounded-xl transition-all duration-300 disabled:opacity-50 overflow-hidden"
+            >
+                {/* Shine effect on hover */}
+                <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                    initial={{ x: '-100%' }}
+                    whileHover={{ x: '200%' }}
+                    transition={{ duration: 0.8, ease: "easeInOut" }}
+                />
+
+                {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                ) : (
+                    <>
+                        <Image
+                            src="https://authjs.dev/img/providers/google.svg"
+                            width={20}
+                            height={20}
+                            alt="Google"
+                        />
+                        <span className="relative z-10">Continuar con Google</span>
+                    </>
+                )}
+            </motion.button>
+
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                className="mt-8 pt-6 border-t border-gray-50 text-center"
+            >
+                <p className="text-xs text-gray-300">
+                    Acceso restringido a personal autorizado de Star Cargo.
+                </p>
+            </motion.div>
+        </motion.div>
+    )
+}
+
+import ParticleBackground from '@/components/ui/ParticleBackground'
+
+export default function LoginPage() {
+    return (
+        <div className="min-h-screen w-full flex relative bg-[#F8FAFC] overflow-hidden">
+            {/* Fondo Animado de Partículas (Red Logística) */}
+            <ParticleBackground />
+
+            <div className="container mx-auto px-6 relative z-10 flex flex-col h-screen">
+                {/* Header Login */}
+                <motion.div
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.6 }}
+                    className="h-20 flex items-center justify-between"
+                >
+                    <Link href="/" className="flex items-center gap-2 text-sm font-bold text-base-900/60 hover:text-base-900 transition-colors">
+                        <ArrowLeft className="w-4 h-4" /> Volver al Inicio
+                    </Link>
+                </motion.div>
+
+                {/* Contenido Centrado */}
+                <div className="flex-1 flex items-center justify-center pb-20">
+                    <Suspense fallback={<div>Cargando...</div>}>
+                        <LoginForm />
+                    </Suspense>
+                </div>
+
+                {/* Footer Login */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1 }}
+                    className="h-16 flex items-center justify-center text-xs text-gray-400"
+                >
+                    © {new Date().getFullYear()} Star Cargo Service S.A.
+                </motion.div>
+            </div>
         </div>
     )
 }

@@ -2,155 +2,218 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { motion } from 'framer-motion'
-import { ArrowRight, BarChart3, Globe, Shield, Truck, Zap } from 'lucide-react'
+import { motion, useScroll, useTransform, useSpring, useMotionValue, useMotionTemplate } from 'framer-motion'
+import { ArrowRight, Globe, ShieldCheck } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+
+// Animation Variants
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+}
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
+  }
+}
+
+const navVariants = {
+  hidden: { y: -100, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { duration: 0.8, ease: "easeOut" }
+  }
+}
+
+const clipReveal = {
+  hidden: { clipPath: "polygon(0 0, 100% 0, 100% 0, 0 0)" },
+  visible: {
+    clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
+    transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.4 }
+  }
+}
 
 export default function LandingPage() {
+  // Mouse move effect for floating card
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  function handleMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
+    const { left, top, width, height } = currentTarget.getBoundingClientRect();
+    const xPoint = (clientX - left) / width;
+    const yPoint = (clientY - top) / height;
+
+    mouseX.set(xPoint);
+    mouseY.set(yPoint);
+  }
+
+  // Parallax effect based on mouse
+  const rotateX = useTransform(mouseY, [0, 1], [5, -5]);
+  const rotateY = useTransform(mouseX, [0, 1], [-5, 5]);
+
   return (
-    <div className="min-h-screen bg-[#000D42] text-white selection:bg-blue-500/30 relative overflow-hidden">
-      {/* Noise Texture */}
-      <div className="fixed inset-0 z-50 pointer-events-none opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+    <div
+      className="min-h-screen bg-white overflow-x-hidden"
+      onMouseMove={handleMouseMove}
+    >
 
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-40 border-b border-white/5 bg-[#000D42]/60 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative w-9 h-9 overflow-hidden rounded-xl border border-white/10 shadow-lg shadow-blue-500/20">
-              <Image src="/logos/star-logo.jpg" alt="Star CRM" fill className="object-cover" />
+      {/* --- NAVBAR --- */}
+      <motion.nav
+        variants={navVariants}
+        initial="hidden"
+        animate="visible"
+        className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 transition-all"
+      >
+        <div className="max-w-[1440px] mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="relative w-32 h-8">
+              <Image src="/logos/star-logo.jpg" alt="Star Cargo" fill className="object-contain object-left" priority />
             </div>
-            <span className="font-bold text-lg tracking-tight text-white/90">Star CRM</span>
           </div>
+
           <div className="flex items-center gap-8">
-            <Link href="/login" className="text-sm font-medium text-blue-200/80 hover:text-white transition-colors">
-              Soporte
+            <Link href="https://starcargoservice.com" target="_blank" className="hidden md:block text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors">
+              Sitio Corporativo
             </Link>
-            <Link
-              href="/login"
-              className="relative px-5 py-2 overflow-hidden rounded-full group"
-            >
-              <div className="absolute inset-0 w-full h-full transition-all duration-300 pointer-events-none bg-gradient-to-r from-blue-600 to-blue-500 opacity-20 group-hover:opacity-100 blur"></div>
-              <div className="absolute inset-0 w-full h-full bg-blue-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative border border-blue-500/50 rounded-full px-5 py-2 backdrop-blur-sm group-hover:border-transparent transition-colors">
-                <span className="text-sm font-semibold text-blue-100 group-hover:text-white relative z-10 transition-colors">Iniciar Sesión</span>
-              </div>
-            </Link>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                href="/login"
+                className="px-6 py-2.5 rounded-full bg-base-900 text-white text-sm font-bold hover:bg-blue-600 transition-all shadow-glow"
+              >
+                Acceso Clientes
+              </Link>
+            </motion.div>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
-      {/* Hero Section */}
-      <div className="relative pt-32 pb-24 lg:pt-48 lg:pb-40 overflow-hidden">
-        {/* Background Effects */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/20 rounded-full blur-[100px] -z-10 mix-blend-screen pointer-events-none animate-pulse-slow"></div>
-        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px] -z-10 mix-blend-screen pointer-events-none"></div>
-        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-10 -z-20"></div>
+      {/* --- HERO SECTION --- */}
+      <main className="pt-20 lg:pt-0 min-h-screen flex items-center relative">
+        <div className="w-full max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0 h-full">
 
-        <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-semibold tracking-wide uppercase mb-8 shadow-[0_0_20px_rgba(59,130,246,0.2)]"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            Logistics Management System v2.0
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-5xl md:text-7xl font-bold tracking-tight mb-8 text-white max-w-5xl mx-auto leading-[1.05]"
-          >
-            El Futuro de la <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-200 to-blue-400 inline-block relative py-1">
-              Logística Inteligente
-              <div className="absolute -bottom-1 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-50"></div>
-            </span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg md:text-xl text-blue-100/60 max-w-2xl mx-auto mb-10 leading-relaxed font-light"
-          >
-            Optimiza operaciones, gestiona clientes y trackea envíos en tiempo real con una plataforma diseñada para la excelencia.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-5"
-          >
-            <Link
-              href="/login"
-              className="group relative min-w-[180px] h-12 flex items-center justify-center rounded-full bg-white text-[#000D42] font-bold text-base transition-all hover:scale-105 overflow-hidden"
+          {/* LEFT SIDE: Text Content */}
+          <div className="lg:col-span-5 flex flex-col justify-center px-6 lg:pl-20 lg:pr-12 py-20 z-10 bg-white">
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-100 via-white to-blue-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <span className="relative z-10">Comenzar Ahora</span>
-            </Link>
-            <Link
-              href="/login"
-              className="min-w-[180px] h-12 flex items-center justify-center rounded-full border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white font-semibold text-base transition-all"
-            >
-              Solicitar Demo
-            </Link>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Features Grid */}
-      <div className="py-24 relative z-10 bg-[#00092e]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { icon: Truck, title: "Gestión de Flotas", desc: "Control total sobre tus unidades. Asignación inteligente y monitoreo en tiempo real.", color: "blue" },
-              { icon: BarChart3, title: "Analítica Avanzada", desc: "Dashboards interactivos con KPIs cruciales para la toma de decisiones.", color: "purple" },
-              { icon: Shield, title: "Seguridad Total", desc: "Protección de datos nivel empresarial con encriptación de punta a punta.", color: "emerald" }
-            ].map((feature, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                className="group relative p-8 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-white/10 hover:bg-white/[0.04] transition-all duration-300"
+              <motion.span
+                variants={fadeInUp}
+                className="inline-block py-1 px-3 rounded-full bg-blue-50 text-blue-600 text-xs font-bold tracking-wider mb-6 uppercase"
               >
-                <div className={`absolute inset-0 bg-gradient-to-br from-${feature.color}-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl`}></div>
-                <div className="relative z-10">
-                  <div className={`w-12 h-12 bg-${feature.color}-500/10 rounded-2xl flex items-center justify-center mb-6 text-${feature.color}-400 group-hover:scale-110 transition-transform duration-300 border border-${feature.color}-500/20`}>
-                    <feature.icon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-3 text-white group-hover:text-blue-200 transition-colors">{feature.title}</h3>
-                  <p className="text-blue-200/50 leading-relaxed text-sm">
-                    {feature.desc}
-                  </p>
+                Sistema de Gestión Logística v2.0
+              </motion.span>
+
+              <motion.h1
+                variants={fadeInUp}
+                className="text-5xl lg:text-[64px] leading-[1.1] font-black text-base-900 mb-6 tracking-tight"
+              >
+                Logística <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400 relative inline-block">
+                  Inteligente.
+                  {/* Shimmer Effect overlay */}
+                  <motion.span
+                    className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ repeat: Infinity, duration: 2.5, ease: "linear", repeatDelay: 1 }}
+                  />
+                </span>
+              </motion.h1>
+
+              <motion.p
+                variants={fadeInUp}
+                className="text-lg text-gray-500 leading-relaxed mb-10 max-w-md font-medium"
+              >
+                Gestione sus operaciones de importación y exportación con la precisión que su negocio merece.
+              </motion.p>
+
+              <motion.div variants={fadeInUp} className="flex items-center gap-4">
+                <Link
+                  href="/login"
+                  className="group flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-lg font-bold hover:bg-base-900 transition-all shadow-soft"
+                >
+                  Ingresar al Portal
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <div className="flex items-center gap-2 px-4 text-sm font-semibold text-gray-400">
+                  <ShieldCheck className="w-4 h-4" />
+                  Plataforma Segura
                 </div>
               </motion.div>
-            ))}
+            </motion.div>
           </div>
-        </div>
-      </div>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 py-12 bg-[#00051a]">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity">
-            <div className="w-5 h-5 bg-white/10 rounded-full"></div>
-            <span className="text-xs font-medium">Star CRM © 2026</span>
+          {/* RIGHT SIDE: Visuals */}
+          <div className="lg:col-span-7 relative min-h-[50vh] lg:h-auto lg:min-h-screen">
+            <div className="absolute inset-0 bg-base-900 lg:bg-transparent"></div>
+
+            {/* Main Image with Diagonal Clip Reveal */}
+            <motion.div
+              className="absolute inset-0 w-full h-full clip-diagonal overflow-hidden"
+              variants={clipReveal}
+              initial="hidden"
+              animate="visible"
+            >
+              <div className="absolute inset-0 bg-base-900/30 z-10 mix-blend-multiply"></div>
+              <motion.div
+                className="relative w-full h-full"
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 1.5 }}
+              >
+                <Image
+                  src="https://images.unsplash.com/photo-1494412574643-35d324698428?q=80&w=2000&auto=format&fit=crop"
+                  alt="Logística Global"
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </motion.div>
+            </motion.div>
+
+            {/* Floating Card with Parallax */}
+            <motion.div
+              style={{ rotateX, rotateY, perspective: 1000 }}
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.8, duration: 1, type: "spring" }}
+              className="hidden lg:block absolute bottom-20 right-20 z-20"
+            >
+              <div className="bg-white/95 backdrop-blur shadow-2xl p-6 rounded-2xl border border-white/40 max-w-xs transform hover:scale-[1.02] transition-transform duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
+                    <Globe className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wide">Cobertura Global</p>
+                    <p className="text-base-900 font-bold text-lg">Rastreo en Tiempo Real</p>
+                    <div className="w-full h-1 bg-gray-100 mt-3 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-blue-500 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: "66%" }}
+                        transition={{ delay: 1.5, duration: 1.5, ease: "circOut" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
-          <div className="flex gap-8 text-xs font-medium text-blue-200/40">
-            <Link href="#" className="hover:text-white transition-colors">Privacidad</Link>
-            <Link href="#" className="hover:text-white transition-colors">Términos</Link>
-            <Link href="#" className="hover:text-white transition-colors">Contacto</Link>
-          </div>
+
         </div>
-      </footer>
+      </main>
     </div>
   )
 }

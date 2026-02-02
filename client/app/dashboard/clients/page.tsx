@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Search, Plus, Building2, User, Phone, Mail, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Search, Plus, Building2, User, Phone, Mail, MoreHorizontal, Trash2, Pencil } from 'lucide-react';
 import NewTrackingModal from '@/components/kanban/NewTrackingModal';
 import ClientModal from '@/components/ClientModal';
+import EditClientModal from '@/components/clients/EditClientModal';
 import AlertModal, { AlertType } from '@/components/ui/AlertModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 
@@ -23,7 +24,10 @@ export default function ClientsPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    // State for viewing/editing
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+    const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
 
     // Alert Modal State
     const [alertState, setAlertState] = useState<{
@@ -89,6 +93,11 @@ export default function ClientsPage() {
     const handleDeleteClick = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         setConfirmState({ isOpen: true, clientId: id });
+    }
+
+    const handleEditClick = (e: React.MouseEvent, client: Client) => {
+        e.stopPropagation();
+        setClientToEdit(client);
     }
 
     const executeDelete = async () => {
@@ -224,12 +233,22 @@ export default function ClientsPage() {
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-right">
-                                        <button
-                                            onClick={(e) => handleDeleteClick(e, client.id)}
-                                            className="inline-flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white hover:bg-red-500 rounded-xl transition-all hover:scale-110 shadow-sm hover:shadow-md"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={(e) => handleEditClick(e, client)}
+                                                className="inline-flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white hover:bg-blue-500 rounded-xl transition-all hover:scale-110 shadow-sm hover:shadow-md"
+                                                title="Editar Cliente"
+                                            >
+                                                <Pencil size={18} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDeleteClick(e, client.id)}
+                                                className="inline-flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white hover:bg-red-500 rounded-xl transition-all hover:scale-110 shadow-sm hover:shadow-md"
+                                                title="Eliminar Cliente"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -269,6 +288,22 @@ export default function ClientsPage() {
                 <ClientModal
                     clientId={selectedClientId}
                     onClose={() => setSelectedClientId(null)}
+                />
+            )}
+
+            {clientToEdit && (
+                <EditClientModal
+                    client={clientToEdit}
+                    onClose={() => setClientToEdit(null)}
+                    onSuccess={() => {
+                        fetchClients(searchTerm); // Refresh list
+                        setAlertState({
+                            isOpen: true,
+                            title: '¡Actualización Exitosa!',
+                            message: 'Los datos del cliente han sido actualizados correctamente.',
+                            type: 'success'
+                        });
+                    }}
                 />
             )}
         </div>

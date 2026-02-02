@@ -1,137 +1,32 @@
 @import "tailwindcss";
 
-/* ============================================
-   STAR CARGO - CRM Design System
-   ============================================ */
-
-html,
-body {
-  padding: 0;
-  margin: 0;
-  font-family: 'Mulish', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-}
-
-:root {
-  /* Star Cargo Brand Colors */
-  --star-primary: 220 100% 50%;
-  /* #0066FF - Bright Blue */
-  --star-primary-hover: 220 100% 55%;
-  /* Lighter blue for hover */
-  --star-navy: 228 100% 13%;
-  /* #000D42 - Deep Navy */
-  --star-light-blue: 225 100% 82%;
-  /* #9FAEFF - Light Blue */
-  --star-bg-light: 220 14% 96%;
-  /* #F5F6F8 - Light Background */
-
-  /* Extended Palette */
-  --success: 142 76% 36%;
-  --warning: 38 92% 50%;
-  --error: 0 84% 60%;
-  --info: 199 89% 48%;
-}
-
-/* Base Styles */
-body {
-  background-color: #f5f6f8;
-  color: rgb(31 41 55);
-  font-feature-settings: 'liga', 'kern';
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* Shimmer Animation */
-@keyframes shimmer {
-  from {
-    background-position: 200% 0;
+@layer base {
+  html {
+    font-family: 'Mulish', sans-serif;
+    scroll-behavior: smooth;
   }
 
-  to {
-    background-position: -200% 0;
+  body {
+    @apply bg-surface-50 text-base-900 antialiased;
   }
 }
 
-.animate-shimmer {
-  background: linear-gradient(90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.4) 50%,
-      rgba(255, 255, 255, 0) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite linear;
-}
+@layer utilities {
 
-/* Spin Animation (Slow) */
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
+  /* EL CORTE DIAGONAL ORIGINAL DE STAR CARGO */
+  .clip-diagonal {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
   }
 
-  to {
-    transform: rotate(360deg);
+  @media (min-width: 1024px) {
+    .clip-diagonal {
+      /* Corte inclinado solo en desktop, como el original */
+      clip-path: polygon(150px 0%, 100% 0%, 100% 100%, 0% 100%);
+    }
   }
-}
 
-.animate-spin-slow {
-  animation: spin-slow 3s linear infinite;
-}
-
-/* Autofill Override */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px white inset !important;
-  -webkit-text-fill-color: #000D42 !important;
-}
-
-/* Section Spacing */
-section {
-  padding-top: 60px;
-  padding-bottom: 60px;
-}
-
-@media (min-width: 768px) {
-  section {
-    padding-top: 70px;
-    padding-bottom: 70px;
+  /* Utilidad para centrado absoluto (estilo Kaizen) */
+  .center-absolute {
+    @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2;
   }
-}
-
-/* Scrollbar Styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f5f6f8;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Focus Visible */
-*:focus-visible {
-  outline: 2px solid #0066FF;
-  outline-offset: 2px;
-}
-
-/* Smooth Scroll */
-html {
-  scroll-behavior: smooth;
 }
