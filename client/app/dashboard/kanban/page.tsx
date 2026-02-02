@@ -231,17 +231,17 @@ export default function KanbanPage() {
             </div>
 
             <DragDropContext onDragEnd={onDragEnd}>
-                <div className="flex h-full gap-6 overflow-x-auto pb-4">
+                <div className="grid grid-cols-5 gap-4 h-full pb-4">
                     {COLUMNS.map((col) => (
-                        <div key={col.id} className="flex h-full w-80 min-w-[320px] flex-col rounded-2xl bg-white shadow-xl">
+                        <div key={col.id} className="flex h-full flex-col rounded-2xl bg-white shadow-xl min-w-0">
                             {/* Column Header */}
-                            <div className={`bg-gradient-to-r ${col.color} rounded-t-2xl p-6 shadow-lg`}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <col.icon size={28} className={col.textColor} />
-                                        <h3 className={`font-bold text-lg ${col.textColor}`}>{col.title}</h3>
+                            <div className={`bg-gradient-to-r ${col.color} rounded-t-2xl p-4 shadow-lg`}>
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <col.icon size={20} className={`shrink-0 ${col.textColor}`} />
+                                        <h3 className={`font-bold text-sm lg:text-base truncate ${col.textColor}`}>{col.title}</h3>
                                     </div>
-                                    <span className="rounded-full bg-white/30 backdrop-blur-sm px-3 py-1.5 text-sm font-bold text-white shadow-md">
+                                    <span className="shrink-0 rounded-full bg-white/30 backdrop-blur-sm px-2 py-1 text-xs font-bold text-white shadow-md">
                                         {board && board[col.id]?.length}
                                     </span>
                                 </div>
@@ -252,7 +252,7 @@ export default function KanbanPage() {
                                     <div
                                         {...provided.droppableProps}
                                         ref={provided.innerRef}
-                                        className={`flex-1 overflow-y-auto p-4 ${snapshot.isDraggingOver ? 'bg-blue-50/50' : ''} transition-colors`}
+                                        className={`flex-1 overflow-y-auto p-3 ${snapshot.isDraggingOver ? 'bg-blue-50/50' : ''} transition-colors scrollbar-thin scrollbar-thumb-gray-200`}
                                     >
                                         {board && board[col.id]?.map((client, index) => (
                                             <Draggable key={client.id} draggableId={client.id} index={index}>
@@ -262,19 +262,19 @@ export default function KanbanPage() {
                                                         {...provided.draggableProps}
                                                         {...provided.dragHandleProps}
                                                         onClick={() => setSelectedClientId(client.id)}
-                                                        className={`group mb-4 cursor-grab active:cursor-grabbing select-none rounded-xl bg-white p-5 shadow-md hover:shadow-xl transition-all border-l-4 border-[#0066FF] ${snapshot.isDragging ? 'shadow-2xl ring-4 ring-blue-300 scale-105 rotate-2' : 'hover:scale-[1.02]'
+                                                        className={`group mb-3 cursor-grab active:cursor-grabbing select-none rounded-xl bg-white p-3 shadow-md hover:shadow-xl transition-all border-l-4 border-[#0066FF] ${snapshot.isDragging ? 'shadow-2xl ring-4 ring-blue-300 scale-105 rotate-2' : 'hover:scale-[1.02]'
                                                             }`}
                                                     >
-                                                        <div className="flex items-start justify-between mb-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0066FF] to-[#0052CC] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                                                                    <LucideBuilding2 size={24} className="text-white" />
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                <div className="w-10 h-10 shrink-0 rounded-lg bg-gradient-to-br from-[#0066FF] to-[#0052CC] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                                                                    <LucideBuilding2 size={20} className="text-white" />
                                                                 </div>
-                                                                <div>
-                                                                    <h4 className="text-base font-bold text-[#000D42] group-hover:text-[#0066FF] transition-colors line-clamp-1">
+                                                                <div className="min-w-0">
+                                                                    <h4 className="text-sm font-bold text-[#000D42] group-hover:text-[#0066FF] transition-colors truncate">
                                                                         {client.company_name}
                                                                     </h4>
-                                                                    <p className="text-sm text-gray-600 line-clamp-1">
+                                                                    <p className="text-xs text-gray-600 truncate">
                                                                         {client.contact_name || 'Sin Contacto'}
                                                                     </p>
                                                                 </div>
@@ -282,16 +282,16 @@ export default function KanbanPage() {
                                                         </div>
 
                                                         {/* Info Tag */}
-                                                        <div className="flex items-center gap-2 text-xs bg-gray-50 rounded-lg px-3 py-2 text-gray-500 mb-3">
-                                                            <LucideCalendarClock size={14} className="text-[#0066FF]" />
-                                                            <span>Caduca: {client.assignment_expires_at ? new Date(client.assignment_expires_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : 'N/A'}</span>
+                                                        <div className="flex items-center gap-1.5 text-[10px] bg-gray-50 rounded-md px-2 py-1 text-gray-500 mb-2">
+                                                            <LucideCalendarClock size={12} className="text-[#0066FF]" />
+                                                            <span className="truncate">Caduca: {client.assignment_expires_at ? new Date(client.assignment_expires_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : 'N/A'}</span>
                                                         </div>
 
                                                         {/* Quick Action Button - NEW */}
                                                         {getNextStage(col.id) && (
                                                             <button
                                                                 onClick={(e) => handleQuickMove(e, client, col.id)}
-                                                                className="w-full mt-2 py-2 px-3 bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 group/btn"
+                                                                className="w-full mt-1 py-1.5 px-2 bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1 group/btn"
                                                             >
                                                                 Mover a {getNextStage(col.id)?.title}
                                                                 <span className="opacity-0 group-hover/btn:opacity-100 transition-opacity">→</span>

@@ -1,9 +1,10 @@
 export const INTERACTION_TYPES = [
-    { value: 'CALL', label: 'Llamada', icon: 'Phone', backendValue: 'CALL' },
-    { value: 'MEETING', label: 'Reunión / Visita', icon: 'Calendar', backendValue: 'MEETING' },
-    { value: 'EMAIL', label: 'Correo', icon: 'Mail', backendValue: 'EMAIL' },
-    { value: 'TEXT', label: 'Mensaje de texto', icon: 'MessageSquare', backendValue: 'SMS' },
-    { value: 'SALE', label: 'Venta Cerrada', icon: 'CheckCircle2', backendValue: 'QUOTE_DECISION' },
+    { value: 'CALL', label: 'Llamada', icon: 'Phone', backendValue: 'CALL', requiresModality: false },
+    { value: 'MEETING', label: 'Reunión', icon: 'Calendar', backendValue: 'MEETING', requiresModality: true },
+    { value: 'VISIT', label: 'Visita Comercial', icon: 'Briefcase', backendValue: 'MEETING', requiresModality: false, defaultModality: 'IN_PERSON' },
+    { value: 'EMAIL', label: 'Correo', icon: 'Mail', backendValue: 'EMAIL', requiresModality: false },
+    { value: 'TEXT', label: 'Mensaje de texto', icon: 'MessageSquare', backendValue: 'WHATSAPP', requiresModality: false },
+    { value: 'SALE', label: 'Venta Cerrada', icon: 'CheckCircle2', backendValue: 'QUOTE_DECISION', requiresModality: false },
 ]
 
 export const STATUS_OPTIONS = [

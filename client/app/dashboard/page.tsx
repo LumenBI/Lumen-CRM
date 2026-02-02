@@ -60,8 +60,8 @@ export default async function DashboardPage() {
                 <KpiCard
                     title="Nuevos Prospectos"
                     value={kpis.new_prospects}
-                    change="+4.5%"
-                    trend="up"
+                    change={kpis.new_prospects_change}
+                    trend={kpis.new_prospects_trend}
                     icon={<LucideUserPlus className="h-6 w-6 text-white" />}
                     color="bg-[#0066FF]"
                 />
@@ -69,8 +69,8 @@ export default async function DashboardPage() {
                 <KpiCard
                     title="Interacciones"
                     value={kpis.total_interactions}
-                    change="+12%"
-                    trend="up"
+                    change={kpis.total_interactions_change}
+                    trend={kpis.total_interactions_trend}
                     icon={<LucidePhone className="h-6 w-6 text-white" />}
                     color="bg-gradient-to-br from-purple-500 to-purple-700"
                 />
@@ -78,8 +78,8 @@ export default async function DashboardPage() {
                 <KpiCard
                     title="Visitas Comerciales"
                     value={kpis.appointments_count}
-                    change="+8%"
-                    trend="up"
+                    change={kpis.appointments_count_change}
+                    trend={kpis.appointments_count_trend}
                     icon={<LucideCalendarCheck className="h-6 w-6 text-white" />}
                     color="bg-gradient-to-br from-orange-400 to-orange-600"
                 />
@@ -87,8 +87,8 @@ export default async function DashboardPage() {
                 <KpiCard
                     title="Ventas Cerradas"
                     value={kpis.won_count}
-                    change="+6%"
-                    trend="up"
+                    change={kpis.won_count_change}
+                    trend={kpis.won_count_trend}
                     icon={<LucideDollarSign className="h-6 w-6 text-white" />}
                     color="bg-gradient-to-br from-emerald-400 to-emerald-600"
                 />

@@ -37,14 +37,34 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
         phone: ''
     })
 
-    // Tracking State
+    // Interaction State
     const [status, setStatus] = useState('PENDING')
     const [interaction, setInteraction] = useState({
         category: 'CALL',
         summary: ''
     })
+    const [modality, setModality] = useState('N_A')
+
+    // Scheduling State
+    const [scheduleFuture, setScheduleFuture] = useState(false)
+    const [futureDate, setFutureDate] = useState('')
+    const [futureTime, setFutureTime] = useState('')
 
     const supabase = createClient()
+
+    // Update modality when interaction category changes
+    useEffect(() => {
+        const selectedType = INTERACTION_TYPES.find(t => t.value === interaction.category)
+        if (selectedType) {
+            if (selectedType.defaultModality) {
+                setModality(selectedType.defaultModality)
+            } else if (selectedType.requiresModality) {
+                setModality('VIRTUAL') // Default to virtual for meetings
+            } else {
+                setModality('N_A')
+            }
+        }
+    }, [interaction.category])
 
     // Search Debounce
     useEffect(() => {
@@ -85,6 +105,8 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
 
             let clientId = selectedClient?.id
 
+            const selectedType = INTERACTION_TYPES.find(t => t.value === interaction.category)
+
             // 1. Create Client if needed
             if (mode === 'create') {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients`, {
@@ -103,8 +125,6 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                 clientId = newClient.id
             } else if (clientId && status !== 'PENDING') {
                 // If existing client, update status if changed
-                // We don't check previous status here, just force update to be safe or skip if logic too complex
-                // Better to call move endpoint
                 await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients/${clientId}/move`, {
                     method: 'PATCH',
                     headers: {
@@ -115,22 +135,49 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                 })
             }
 
-            // 2. Add Interaction if status implies contact
-            // If status is PENDING (No contactado), typically no interaction log needed unless user explicitly added notes?
-            // User requirement: "Si el estado es diferente a 'No contactado' debe solicitar los datos... y escribir el comentario"
-            if (status !== 'PENDING' && interaction.summary) {
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/interactions`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        clientId,
-                        category: INTERACTION_TYPES.find(t => t.value === interaction.category)?.backendValue || interaction.category,
-                        summary: interaction.summary
+            // 2. Add Interaction OR Appointment if status implies contact
+            if (status !== 'PENDING' && interaction.summary && selectedType) {
+                if (scheduleFuture) {
+                    if (!futureDate || !futureTime) {
+                        alert('Debes seleccionar fecha y hora para agendar.')
+                        setLoading(false)
+                        return
+                    }
+                    // CREATE APPOINTMENT
+                    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({
+                            clientId,
+                            title: `${selectedType.label} con Cliente`,
+                            description: interaction.summary,
+                            date: futureDate,
+                            time: futureTime,
+                            type: selectedType.backendValue === 'MEETING' ? (modality === 'IN_PERSON' ? 'presencial' : 'virtual') : 'virtual',
+                            meetingLink: '',
+                            location: '',
+                            notes: interaction.summary
+                        })
                     })
-                })
+                } else {
+                    // LOG INTERACTION
+                    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/interactions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({
+                            clientId,
+                            category: selectedType.backendValue,
+                            modality: modality,
+                            summary: interaction.summary
+                        })
+                    })
+                }
             }
 
             onSuccess()
@@ -143,6 +190,8 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
             setLoading(false)
         }
     }
+
+    const currentTypeConfig = INTERACTION_TYPES.find(t => t.value === interaction.category)
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -287,17 +336,33 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                     <LucideMessageSquare size={16} /> Detalles del Contacto
                                 </h4>
                                 <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs font-semibold text-gray-500 mb-1 block">Tipo de Interacción</label>
-                                        <select
-                                            className="w-full rounded-lg border border-gray-200 p-2 text-sm outline-none focus:border-blue-500 bg-white"
-                                            value={interaction.category}
-                                            onChange={e => setInteraction({ ...interaction, category: e.target.value })}
-                                        >
-                                            {INTERACTION_TYPES.map(t => (
-                                                <option key={t.value} value={t.value}>{t.label}</option>
-                                            ))}
-                                        </select>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs font-semibold text-gray-500 mb-1 block">Tipo de Interacción</label>
+                                            <select
+                                                className="w-full rounded-lg border border-gray-200 p-2 text-sm outline-none focus:border-blue-500 bg-white"
+                                                value={interaction.category}
+                                                onChange={e => setInteraction({ ...interaction, category: e.target.value })}
+                                            >
+                                                {INTERACTION_TYPES.map(t => (
+                                                    <option key={t.value} value={t.value}>{t.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        {/* Modality Selector (Only if required) */}
+                                        {currentTypeConfig?.requiresModality && (
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-500 mb-1 block">Modalidad</label>
+                                                <select
+                                                    className="w-full rounded-lg border border-gray-200 p-2 text-sm outline-none focus:border-blue-500 bg-white"
+                                                    value={modality}
+                                                    onChange={e => setModality(e.target.value)}
+                                                >
+                                                    <option value="VIRTUAL">Virtual</option>
+                                                    <option value="IN_PERSON">Presencial</option>
+                                                </select>
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="text-xs font-semibold text-gray-500 mb-1 block">Notas / Resumen</label>
@@ -308,6 +373,47 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                             value={interaction.summary}
                                             onChange={e => setInteraction({ ...interaction, summary: e.target.value })}
                                         />
+                                    </div>
+
+                                    {/* Scheudling Option */}
+                                    <div className="pt-2 border-t border-blue-100">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <input
+                                                type="checkbox"
+                                                id="scheduleFuture"
+                                                checked={scheduleFuture}
+                                                onChange={e => setScheduleFuture(e.target.checked)}
+                                                className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                                            />
+                                            <label htmlFor="scheduleFuture" className="text-sm font-medium text-blue-900 cursor-pointer">
+                                                Agendar Cita / Reunión Futura
+                                            </label>
+                                        </div>
+
+                                        {scheduleFuture && (
+                                            <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-1 bg-white p-3 rounded-lg border border-blue-100">
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Fecha</label>
+                                                    <input
+                                                        type="date"
+                                                        required
+                                                        value={futureDate}
+                                                        onChange={(e) => setFutureDate(e.target.value)}
+                                                        className="w-full rounded-lg border border-gray-200 p-2 text-xs outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Hora</label>
+                                                    <input
+                                                        type="time"
+                                                        required
+                                                        value={futureTime}
+                                                        onChange={(e) => setFutureTime(e.target.value)}
+                                                        className="w-full rounded-lg border border-gray-200 p-2 text-xs outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

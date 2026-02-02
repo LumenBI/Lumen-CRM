@@ -9,6 +9,7 @@ import {
     Calendar,
     MessageSquare,
     CheckCircle2,
+    Briefcase,
     DollarSign as LucideDollarSign
 } from 'lucide-react'
 import { INTERACTION_TYPES } from '@/constants/interactions'
@@ -23,6 +24,7 @@ const ICON_MAP: { [key: string]: React.ComponentType<{ size?: number; className?
     Calendar,
     MessageSquare,
     CheckCircle2,
+    Briefcase,
 }
 
 type Interaction = {
@@ -51,7 +53,13 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
 
     // Formulario nueva interacción
     const [newNote, setNewNote] = useState('')
-    const [type, setType] = useState('CALL') // CALL, EMAIL, MEETING
+    const [type, setType] = useState('CALL') // Frontend value
+    const [modality, setModality] = useState('N_A')
+
+    // Scheduling State
+    const [scheduleFuture, setScheduleFuture] = useState(false)
+    const [futureDate, setFutureDate] = useState('')
+    const [futureTime, setFutureTime] = useState('')
 
     const supabase = createClient()
 
@@ -77,34 +85,92 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
         fetchData()
     }, [clientId])
 
-    // 2. Guardar Nueva Interacción
+    // Update modality when type changes
+    useEffect(() => {
+        const selectedType = INTERACTION_TYPES.find(t => t.value === type)
+        if (selectedType) {
+            if (selectedType.defaultModality) {
+                setModality(selectedType.defaultModality)
+            } else if (selectedType.requiresModality) {
+                setModality('VIRTUAL') // Default to virtual for meetings
+            } else {
+                setModality('N_A')
+            }
+        }
+    }, [type])
+
+    // 2. Guardar Nueva Interacción o Cita
     const handleSaveInteraction = async () => {
         if (!newNote.trim()) return
+        if (scheduleFuture && (!futureDate || !futureTime)) return
+
         setIsSubmitting(true)
 
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) return
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/interactions`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({
-                    clientId,
-                    category: INTERACTION_TYPES.find(t => t.value === type)?.backendValue || type,
-                    modality: 'N_A', // Simplificado para velocidad
-                    summary: newNote,
-                    amount_usd: type === 'SALE' ? 1000 : 0 // Ejemplo: Si es venta, asignamos valor dummy o podrías pedirlo
+            const selectedType = INTERACTION_TYPES.find(t => t.value === type)
+            if (!selectedType) return
+
+            let res;
+
+            if (scheduleFuture) {
+                // CREATE APPOINTMENT
+                res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({
+                        clientId,
+                        title: `${selectedType.label} con Cliente`, // Auto title
+                        description: newNote,
+                        date: futureDate,
+                        time: futureTime,
+                        type: selectedType.backendValue === 'MEETING' ? (modality === 'IN_PERSON' ? 'presencial' : 'virtual') : 'virtual', // Map to appointment types
+                        meetingLink: '',
+                        location: '',
+                        notes: newNote
+                    })
                 })
-            })
+            } else {
+                // CREATE INTERACTION (HISTORY)
+                res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/interactions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({
+                        clientId,
+                        category: selectedType.backendValue,
+                        modality: modality,
+                        summary: newNote,
+                        amount_usd: type === 'SALE' ? 1000 : 0
+                    })
+                })
+            }
 
             if (res.ok) {
-                const newInteraction = await res.json()
-                setHistory([newInteraction, ...history]) // Actualizar lista visualmente
+                const data = await res.json()
+
+                if (scheduleFuture) {
+                    // If appointment created, maybe alert user? 
+                    // Ideally we would add it to history if it was immediate, but appointments are future.
+                    // We'll just reset form and maybe show success toast.
+                    alert('Cita agendada correctamente.')
+                } else {
+                    setHistory([data, ...history])
+                }
+
                 setNewNote('')
+                setScheduleFuture(false)
+                setFutureDate('')
+                setFutureTime('')
+            } else {
+                console.error('Error response', await res.text())
             }
         } catch (err) {
             console.error(err)
@@ -114,6 +180,8 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
     }
 
     if (!clientId) return null
+
+    const currentTypeConfig = INTERACTION_TYPES.find(t => t.value === type)
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -136,9 +204,9 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
                     </button>
                 </div>
                 {/* Body */}
-                <div className="flex max-h-[calc(95vh-120px)] overflow-hidden">
+                <div className="flex flex-col lg:flex-row max-h-[calc(95vh-100px)] overflow-hidden">
                     {/* Sidebar: Info del Cliente - MEJORADO */}
-                    <div className="w-96 border-r bg-gradient-to-b from-gray-50 to-white p-8">
+                    <div className="w-full lg:w-96 border-b lg:border-r lg:border-b-0 bg-gradient-to-b from-gray-50 to-white p-6 lg:p-8 overflow-y-auto shrink-0">
                         <h3 className="mb-6 text-sm font-bold uppercase text-[#000D42] tracking-wider">Información de Contacto</h3>
                         {loading ? (
                             <p className="text-gray-500">Cargando...</p>
@@ -177,7 +245,7 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
                             <div className="relative">
                                 <div className="grid grid-cols-3 gap-2">
                                     {INTERACTION_TYPES.map(t => {
-                                        const IconComponent = ICON_MAP[t.icon]
+                                        const IconComponent = ICON_MAP[t.icon] || MessageSquare // Default icon
                                         return (
                                             <button
                                                 key={t.value}
@@ -203,71 +271,140 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
                                     })}
                                 </div>
                             </div>
+
+                            {/* Modality Selector - Only for allowed types */}
+                            {currentTypeConfig?.requiresModality && (
+                                <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                                    <button
+                                        onClick={() => setModality('VIRTUAL')}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${modality === 'VIRTUAL' ? 'bg-white text-[#0066FF] shadow-sm border border-gray-100' : 'text-gray-500 hover:bg-gray-200'}`}
+                                    >
+                                        Virtual
+                                    </button>
+                                    <button
+                                        onClick={() => setModality('IN_PERSON')}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${modality === 'IN_PERSON' ? 'bg-white text-[#0066FF] shadow-sm border border-gray-100' : 'text-gray-500 hover:bg-gray-200'}`}
+                                    >
+                                        Presencial
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Schedule Toggle */}
+                            <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-xl border border-blue-100">
+                                <input
+                                    type="checkbox"
+                                    id="scheduleFuture"
+                                    checked={scheduleFuture}
+                                    onChange={(e) => setScheduleFuture(e.target.checked)}
+                                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                                />
+                                <label htmlFor="scheduleFuture" className="text-sm font-semibold text-blue-900 cursor-pointer select-none">
+                                    Agendar como cita futura
+                                    <p className="text-xs font-normal text-blue-600">Se guardará en el calendario</p>
+                                </label>
+                            </div>
+
+                            {/* Date Time Selection for Future */}
+                            {scheduleFuture && (
+                                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                                    <div>
+                                        <label className="text-xs font-semibold text-gray-500 mb-1 block">Fecha</label>
+                                        <input
+                                            type="date"
+                                            required
+                                            value={futureDate}
+                                            onChange={(e) => setFutureDate(e.target.value)}
+                                            className="w-full rounded-lg border border-gray-200 p-2 text-sm outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-semibold text-gray-500 mb-1 block">Hora</label>
+                                        <input
+                                            type="time"
+                                            required
+                                            value={futureTime}
+                                            onChange={(e) => setFutureTime(e.target.value)}
+                                            className="w-full rounded-lg border border-gray-200 p-2 text-sm outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
                             <textarea
                                 className="h-32 w-full resize-none rounded-xl border border-gray-300 p-3 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="Describe la interacción (ej: 'Se envió propuesta de 3 servicios, seguimiento en 2 días.')"
+                                placeholder={scheduleFuture ? "Detalles de la cita (agenda)..." : "Describe la interacción..."}
                                 value={newNote}
                                 onChange={(e) => setNewNote(e.target.value)}
                             />
                             <button
                                 onClick={handleSaveInteraction}
-                                disabled={isSubmitting || !newNote.trim()}
+                                disabled={isSubmitting || !newNote.trim() || (scheduleFuture && (!futureDate || !futureTime))}
                                 className="group relative w-full rounded-xl bg-gradient-to-r from-[#0066FF] to-[#0052CC] px-6 py-4 font-bold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-lg"
                             >
                                 <span className="flex items-center justify-center gap-2">
-                                    <CheckCircle2 size={20} />
-                                    {isSubmitting ? 'Guardando...' : 'Guardar Interacción'}
+                                    {scheduleFuture ? <Calendar size={20} /> : <CheckCircle2 size={20} />}
+                                    {isSubmitting ? 'Guardando...' : scheduleFuture ? 'Agendar Cita' : 'Guardar Interacción'}
                                 </span>
                             </button>
                         </div>
                     </div>
 
                     {/* Columna Derecha: Historial (Timeline) - MEJORADO */}
-                    <div className="flex-1 overflow-y-auto p-8">
+                    <div className="flex-1 overflow-y-auto p-6 lg:p-8 bg-white">
                         <h3 className="mb-4 text-lg font-bold text-[#000D42] flex items-center gap-2">
                             <Calendar size={20} className="text-[#0066FF]" />
                             Historial de Interacciones
                         </h3>
                         {loading ? <p className="text-gray-500">Cargando historial...</p> : (
-                            <div className="relative space-y-8 border-l-2 border-gray-100 pl-6">
+                            <div className="relative space-y-8 border-l-2 border-gray-100 pl-6 ml-2">
                                 {history.length === 0 && <p className="text-sm text-gray-400">Sin interacciones registradas aún.</p>}
-                                {history.map((item) => (
-                                    <div key={item.id} className="relative group">
-                                        <span className={`absolute -left-[31px] flex h-10 w-10 items-center justify-center rounded-xl shadow-lg border-2 border-white group-hover:scale-110 transition-transform ${item.category === 'QUOTE_DECISION' ? 'bg-gradient-to-br from-green-400 to-green-600 text-white' :
-                                            item.category === 'CALL' ? 'bg-gradient-to-br from-blue-400 to-blue-600 text-white' :
-                                                'bg-gradient-to-br from-purple-400 to-purple-600 text-white'
-                                            }`}>
-                                            {item.category === 'QUOTE_DECISION' ? <DollarSign size={18} /> : <MessageSquare size={18} />}
-                                        </span>
-                                        <div className="bg-white rounded-xl p-5 shadow-sm hover:shadow-lg transition-all border border-gray-100">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${item.category === 'QUOTE_DECISION' ? 'bg-green-100 text-green-700' :
-                                                    item.category === 'CALL' ? 'bg-blue-100 text-blue-700' :
-                                                        'bg-purple-100 text-purple-700'
-                                                    }`}>
-                                                    {item.category}
-                                                </span>
-                                                <span className="text-xs text-gray-400 font-medium">
-                                                    {new Date(item.created_at).toLocaleDateString('es-ES', {
-                                                        day: 'numeric',
-                                                        month: 'short',
-                                                        year: 'numeric'
-                                                    })}
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-gray-700 leading-relaxed">
-                                                {item.summary}
-                                            </p>
-                                            {(item.amount_usd ?? 0) > 0 && (
-                                                <div className="mt-3 pt-3 border-t border-gray-100">
-                                                    <span className="text-lg font-bold text-green-600">
-                                                        ${(item.amount_usd ?? 0).toLocaleString()} USD
+                                {history.map((item) => {
+                                    // Determine display label and color logic
+                                    let displayCategory = item.category
+                                    if (item.category === 'MEETING') {
+                                        if (item.modality === 'IN_PERSON') displayCategory = 'VISITA COMERCIAL'
+                                        else displayCategory = 'REUNIÓN'
+                                    }
+
+                                    return (
+                                        <div key={item.id} className="relative group">
+                                            <span className={`absolute -left-[33px] flex h-10 w-10 items-center justify-center rounded-xl shadow-lg border-2 border-white group-hover:scale-110 transition-transform ${item.category === 'QUOTE_DECISION' ? 'bg-gradient-to-br from-green-400 to-green-600 text-white' :
+                                                item.category === 'CALL' ? 'bg-gradient-to-br from-blue-400 to-blue-600 text-white' :
+                                                    'bg-gradient-to-br from-purple-400 to-purple-600 text-white'
+                                                }`}>
+                                                {item.category === 'QUOTE_DECISION' ? <DollarSign size={18} /> : <MessageSquare size={18} />}
+                                            </span>
+                                            <div className="bg-white rounded-xl p-5 shadow-sm hover:shadow-lg transition-all border border-gray-100">
+                                                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${item.category === 'QUOTE_DECISION' ? 'bg-green-100 text-green-700' :
+                                                        item.category === 'CALL' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-purple-100 text-purple-700'
+                                                        }`}>
+                                                        {displayCategory}
+                                                    </span>
+                                                    <span className="text-xs text-gray-400 font-medium">
+                                                        {new Date(item.created_at).toLocaleDateString('es-ES', {
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            year: 'numeric'
+                                                        })}
                                                     </span>
                                                 </div>
-                                            )}
+                                                <p className="text-sm text-gray-700 leading-relaxed break-words">
+                                                    {item.summary}
+                                                </p>
+                                                {(item.amount_usd ?? 0) > 0 && (
+                                                    <div className="mt-3 pt-3 border-t border-gray-100">
+                                                        <span className="text-lg font-bold text-green-600">
+                                                            ${(item.amount_usd ?? 0).toLocaleString()} USD
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                                 {history.length === 0 && <p className="text-sm text-gray-400">Sin interacciones registradas aún.</p>}
                             </div>
                         )}

@@ -44,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <img
                             src="/logos/uploaded_media_1_1769879788623.png"
                             alt="Star CRM"
-                            className="h-8 w-auto"
+                            className="h-8 w-auto object-contain"
                         />
                     </Link>
                 </div>
@@ -112,7 +112,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <img
                         src="/logos/uploaded_media_1_1769879788623.png"
                         alt="Star CRM"
-                        className="h-6 w-auto"
+                        className="h-6 w-auto object-contain"
                     />
                     <button className="rounded p-2 text-gray-500 hover:bg-gray-100">
                         <span className="sr-only">Menu</span>
