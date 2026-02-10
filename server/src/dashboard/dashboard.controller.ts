@@ -56,6 +56,14 @@ export class DashboardController {
     return this.dashboardService.deleteAppointment(token, id);
   }
 
+  // ==================== NOTIFICATIONS ====================
+
+  @Get('notifications/check')
+  async checkSystemNotifications(@Req() req) {
+    const token = this.extractToken(req);
+    return this.dashboardService.checkSystemNotifications(token, req.user.userId);
+  }
+
   // ==================== STATS & REPORTS ====================
 
   @Get('stats')
@@ -79,10 +87,10 @@ export class DashboardController {
     return this.dashboardService.getKanbanBoard(token, req.user.userId);
   }
 
-  @Patch('clients/:id/move')
-  async moveCard(@Req() req, @Param('id') clientId: string, @Body('status') newStatus: string) {
+  @Patch('deals/:id/move')
+  async moveCard(@Req() req, @Param('id') dealId: string, @Body('status') newStatus: string) {
     const token = this.extractToken(req);
-    return this.dashboardService.moveCard(token, req.user.userId, clientId, newStatus);
+    return this.dashboardService.moveCard(token, req.user.userId, dealId, newStatus);
   }
 
   // ==================== CLIENTS ====================
@@ -129,5 +137,31 @@ export class DashboardController {
   async deleteInteraction(@Req() req, @Param('id') id: string) {
     const token = this.extractToken(req);
     return this.dashboardService.deleteInteraction(token, id);
+  }
+
+  // ==================== DEALS ====================
+
+  @Get('deals')
+  async getDeals(@Req() req, @Query('clientId') clientId: string) {
+    const token = this.extractToken(req);
+    return this.dashboardService.getDeals(token, req.user.userId, clientId);
+  }
+
+  @Post('deals')
+  async createDeal(@Req() req, @Body() payload: any) {
+    const token = this.extractToken(req);
+    return this.dashboardService.createDeal(token, req.user.userId, payload);
+  }
+
+  @Patch('deals/:id')
+  async updateDeal(@Req() req, @Param('id') id: string, @Body() payload: any) {
+    const token = this.extractToken(req);
+    return this.dashboardService.updateDeal(token, id, payload);
+  }
+
+  @Delete('deals/:id')
+  async deleteDeal(@Req() req, @Param('id') id: string) {
+    const token = this.extractToken(req);
+    return this.dashboardService.deleteDeal(token, id);
   }
 }

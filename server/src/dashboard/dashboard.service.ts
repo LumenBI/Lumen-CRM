@@ -16,6 +16,31 @@ export class DashboardService {
         );
     }
 
+    private async createNotification(supabase: SupabaseClient, userId: string, type: string, message: string, link: string = '#') {
+        try {
+            await supabase.from('notifications').insert({
+                user_id: userId,
+                type,
+                message,
+                link,
+                is_read: false
+            });
+        } catch (error) {
+            console.error('Error creating notification:', error);
+        }
+    }
+
+    async getAgents(token: string) {
+        const supabase = this.getClient(token);
+        const { data, error } = await supabase
+            .from('profiles') // Assuming profiles table stores agents
+            .select('id, full_name, email')
+            .order('full_name', { ascending: true });
+
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
     // ==================== APPOINTMENTS ====================
 
     async getAppointments(token: string, userId: string, filters?: { from?: string; to?: string; status?: string }) {
@@ -104,6 +129,10 @@ export class DashboardService {
             .single();
 
         if (error) throw new Error(error.message);
+
+        // Notify
+        await this.createNotification(supabase, userId, 'APPOINTMENT_CREATED', `Nueva cita: ${payload.title}`, '/dashboard/citas');
+
         return data;
     }
 
@@ -296,22 +325,25 @@ export class DashboardService {
 
     // --- CLIENTES ---
     async getKanbanBoard(token: string, userId: string) {
-        const today = new Date().toISOString();
         const supabase = this.getClient(token);
-        const { data: clients, error } = await supabase
-            .from('clients')
-            .select('*')
-            .or(`assigned_agent_id.eq.${userId},assigned_agent_id.is.null,assignment_expires_at.lt.${today}`)
+        // Fetch deals with client info
+        const { data: deals, error } = await supabase
+            .from('deals')
+            .select(`
+                *,
+                client:clients(id, company_name, contact_name, phone, email)
+            `)
             .order('updated_at', { ascending: false });
 
         if (error) throw new Error(error.message);
 
+        // Map to custom stages as requested
         return {
-            PENDING: clients.filter(c => c.status === 'PENDING'),
-            CONTACTED: clients.filter(c => c.status === 'CONTACTED'),
-            IN_NEGOTIATION: clients.filter(c => c.status === 'IN_NEGOTIATION'),
-            CLOSED_WON: clients.filter(c => c.status === 'CLOSED_WON'),
-            CLOSED_LOST: clients.filter(c => c.status === 'CLOSED_LOST'),
+            CONTACTADO: deals.filter(d => d.status === 'CONTACTADO'),
+            CITA: deals.filter(d => d.status === 'CITA'),
+            PROCESO_COTIZACION: deals.filter(d => d.status === 'PROCESO_COTIZACION'),
+            COTIZACION_ENVIADA: deals.filter(d => d.status === 'COTIZACION_ENVIADA'),
+            CERRADO: deals.filter(d => d.status === 'CERRADO_GANADO' || d.status === 'CERRADO_PERDIDO'),
         };
     }
 
@@ -319,7 +351,7 @@ export class DashboardService {
         const supabase = this.getClient(token);
         let builder = supabase
             .from('clients')
-            .select('id, company_name, contact_name, email')
+            .select('id, company_name, contact_name, email, phone, origin')
             .order('company_name', { ascending: true })
             .limit(20);
 
@@ -333,8 +365,9 @@ export class DashboardService {
     }
 
     async createClient(token: string, userId: string, payload: any) {
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 30);
+        const defaultExpires = new Date();
+        defaultExpires.setDate(defaultExpires.getDate() + 90); // Default 3 months
+
         const supabase = this.getClient(token);
 
         const { data, error } = await supabase
@@ -344,9 +377,11 @@ export class DashboardService {
                 contact_name: payload.contact_name,
                 phone: payload.phone,
                 email: payload.email,
+                origin: payload.origin || 'MANUAL',
                 status: payload.status || 'PENDING',
-                assigned_agent_id: userId,
-                assignment_expires_at: expiresAt,
+                assigned_agent_id: payload.assigned_agent_id || userId,
+                assignment_expires_at: payload.assignment_expires_at || defaultExpires,
+                assigned_at: new Date()
             })
             .select()
             .single();
@@ -368,29 +403,154 @@ export class DashboardService {
         return data;
     }
 
-    async moveCard(token: string, userId: string, clientId: string, newStatus: string) {
-        const updatePayload: any = { status: newStatus };
+    async moveCard(token: string, userId: string, dealId: string, newStatus: string) {
         const supabase = this.getClient(token);
 
-        const { data: current } = await supabase
-            .from('clients')
-            .select('assigned_agent_id')
-            .eq('id', clientId)
-            .single();
-
-        if (!current?.assigned_agent_id) {
-            updatePayload.assigned_agent_id = userId;
-        }
-
         const { data, error } = await supabase
-            .from('clients')
-            .update(updatePayload)
-            .eq('id', clientId)
+            .from('deals')
+            .update({ status: newStatus })
+            .eq('id', dealId)
             .select()
             .single();
 
         if (error) throw new Error(error.message);
+
+        // Notify
+        await this.createNotification(supabase, userId, 'DEAL_MOVED', `Negociación movida a ${newStatus}`, '/dashboard/kanban');
+
+        // Check for Commission Trigger
+        if (newStatus === 'CERRADO_GANADO') {
+            await this.calculateAndCreateCommission(supabase, userId, dealId);
+        }
+
         return data;
+    }
+
+    async calculateAndCreateCommission(supabase: SupabaseClient, userId: string, dealId: string) {
+        // Fetch deal details
+        const { data: deal, error } = await supabase
+            .from('deals')
+            .select('*')
+            .eq('id', dealId)
+            .single();
+
+        if (error || !deal) return;
+
+        // Check if commission already exists
+        const { data: existing } = await supabase
+            .from('commissions')
+            .select('id')
+            .eq('deal_id', dealId)
+            .single();
+
+        if (existing) return; // Already calculated
+
+        let commissionAmount = 0;
+        const profit = Number(deal.profit || 0);
+
+        switch (deal.type) {
+            case 'FCL':
+                commissionAmount = profit * 0.10;
+                break;
+            case 'AEREO':
+                commissionAmount = profit * 0.10;
+                break;
+            case 'LCL':
+                commissionAmount = 15.00; // Flat fee
+                break;
+            default:
+                commissionAmount = 0;
+        }
+
+        if (commissionAmount > 0) {
+            await supabase.from('commissions').insert({
+                agent_id: deal.assigned_agent_id,
+                deal_id: dealId,
+                amount: commissionAmount,
+                status: 'PENDING'
+            });
+
+            // Notify about commission
+            await this.createNotification(
+                supabase,
+                deal.assigned_agent_id,
+                'COMMISSION_GENERATED',
+                `Comisión generada: $${commissionAmount.toFixed(2)} por negocio "${deal.title}"`,
+                '/dashboard/stats' // Or wherever comissions are shown
+            );
+        }
+    }
+
+    // ==================== DEALS (NEGOCIACIONES) ====================
+
+    async getDeals(token: string, userId: string, clientId?: string) {
+        const supabase = this.getClient(token);
+        let query = supabase
+            .from('deals')
+            .select(`
+                *,
+                client:clients(id, company_name, contact_name, email)
+            `)
+            .order('updated_at', { ascending: false });
+
+        if (clientId) {
+            query = query.eq('client_id', clientId);
+        }
+
+        const { data, error } = await query;
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
+    async createDeal(token: string, userId: string, payload: any) {
+        const supabase = this.getClient(token);
+        const { data, error } = await supabase
+            .from('deals')
+            .insert({
+                client_id: payload.client_id,
+                title: payload.title,
+                value: payload.value || 0,
+                profit: payload.profit || 0,
+                currency: payload.currency || 'USD',
+                status: payload.status || 'CONTACTADO',
+                type: payload.type || 'FCL',
+                assigned_agent_id: userId,
+            })
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+
+        // Notify
+        await this.createNotification(supabase, userId, 'DEAL_CREATED', `Nueva negociación: ${payload.title}`, '/dashboard/kanban');
+
+        return data;
+    }
+
+    async updateDeal(token: string, id: string, payload: any) {
+        const supabase = this.getClient(token);
+        const updateData: any = { ...payload };
+        if (payload.profit) updateData.profit = payload.profit;
+
+        const { data, error } = await supabase
+            .from('deals')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
+    async deleteDeal(token: string, id: string) {
+        const supabase = this.getClient(token);
+        const { error } = await supabase
+            .from('deals')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw new Error(error.message);
+        return { success: true };
     }
 
     async deleteClient(token: string, id: string) {
@@ -426,7 +586,14 @@ export class DashboardService {
             .order('created_at', { ascending: false });
         if (interactionsError) throw new Error(interactionsError.message);
 
-        return { client, interactions };
+        const { data: deals, error: dealsError } = await supabase
+            .from('deals')
+            .select('*')
+            .eq('client_id', clientId)
+            .order('updated_at', { ascending: false });
+        if (dealsError) throw new Error(dealsError.message);
+
+        return { client, interactions, deals };
     }
 
     async addInteraction(token: string, userId: string, payload: any) {
@@ -465,5 +632,117 @@ export class DashboardService {
 
         if (error) throw new Error(error.message);
         return { success: true };
+    }
+
+    // ==================== SYSTEM NOTIFICATIONS ====================
+
+    async checkSystemNotifications(token: string, userId: string) {
+        const supabase = this.getClient(token);
+        const notifications: string[] = [];
+
+        // 1. Check Upcoming Appointments (Tomorrow)
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+        const { data: appointments } = await supabase
+            .from('appointments')
+            .select('title, appointment_time')
+            .eq('agent_id', userId)
+            .eq('appointment_date', tomorrowStr)
+            .eq('status', 'pendiente');
+
+        if (appointments) {
+            for (const app of appointments) {
+                await this.createNotification(
+                    supabase,
+                    userId,
+                    'AGENDA_REMINDER', // Type
+                    `Recordatorio: Tu cita "${app.title}" es mañana a las ${app.appointment_time}`,
+                    '/dashboard/citas'
+                );
+                notifications.push(`Agenda: ${app.title}`);
+            }
+        }
+
+        // 2. Check Client Inactivity (> 3 days without interaction)
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+        const threeDaysAgoStr = threeDaysAgo.toISOString();
+
+        const { data: inactiveClients } = await supabase
+            .from('clients')
+            .select('id, company_name, last_interaction_at, created_at')
+            .eq('assigned_agent_id', userId)
+            .neq('status', 'CERRADO_GANADO')
+            .neq('status', 'CERRADO_PERDIDO')
+            .or(`last_interaction_at.lt.${threeDaysAgoStr},and(last_interaction_at.is.null,created_at.lt.${threeDaysAgoStr})`)
+            .limit(5); // Limit to avoid spamming
+
+        if (inactiveClients) {
+            for (const client of inactiveClients) {
+                // Check if we already notified recently? For MVP, we just notify. 
+                // Ideal: Check if notification exists. 
+                // We'll skip complex check for now and just add it. User can mark as read.
+                // To avoid duplicates every refresh, we could check existing unread notifications.
+                const { count } = await supabase
+                    .from('notifications')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', userId)
+                    .eq('type', 'INACTIVITY')
+                    .ilike('message', `%${client.company_name}%`)
+                    .eq('is_read', false);
+
+                if (count === 0) {
+                    await this.createNotification(
+                        supabase,
+                        userId,
+                        'INACTIVITY',
+                        `Alerta: Cliente "${client.company_name}" sin actividad por más de 3 días.`,
+                        `/dashboard/clients?id=${client.id}`
+                    );
+                    notifications.push(`Inactividad: ${client.company_name}`);
+                }
+            }
+        }
+
+        // 3. Check Assignment Expiration (within 7 days)
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        const nextWeekStr = nextWeek.toISOString();
+        const todayStr = new Date().toISOString();
+
+        const { data: expiringClients } = await supabase
+            .from('clients')
+            .select('id, company_name, assignment_expires_at')
+            .eq('assigned_agent_id', userId)
+            .gte('assignment_expires_at', todayStr)
+            .lte('assignment_expires_at', nextWeekStr);
+
+        if (expiringClients) {
+            for (const client of expiringClients) {
+                const { count } = await supabase
+                    .from('notifications')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', userId)
+                    .eq('type', 'EXPIRATION')
+                    .ilike('message', `%${client.company_name}%`)
+                    .eq('is_read', false);
+
+                if (count === 0) {
+                    const daysLeft = Math.ceil((new Date(client.assignment_expires_at).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                    await this.createNotification(
+                        supabase,
+                        userId,
+                        'EXPIRATION',
+                        `Aviso: La asignación de "${client.company_name}" vence en ${daysLeft} días.`,
+                        `/dashboard/clients?id=${client.id}`
+                    );
+                    notifications.push(`Expiración: ${client.company_name}`);
+                }
+            }
+        }
+
+        return { triggered: notifications };
     }
 }

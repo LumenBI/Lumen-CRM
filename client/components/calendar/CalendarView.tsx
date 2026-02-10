@@ -25,6 +25,7 @@ interface Appointment {
 interface CalendarViewProps {
     appointments: Appointment[]
     onAppointmentClick?: (appointment: Appointment) => void
+    onAppointmentContextMenu?: (e: React.MouseEvent, appointment: Appointment) => void
 }
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
@@ -33,7 +34,7 @@ const MONTHS = [
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ]
 
-export default function CalendarView({ appointments, onAppointmentClick }: CalendarViewProps) {
+export default function CalendarView({ appointments, onAppointmentClick, onAppointmentContextMenu }: CalendarViewProps) {
     const [currentDate, setCurrentDate] = useState(new Date())
 
     const getDaysInMonth = (year: number, month: number) => {
@@ -143,6 +144,13 @@ export default function CalendarView({ appointments, onAppointmentClick }: Calen
                                     <button
                                         key={app.id}
                                         onClick={() => onAppointmentClick && onAppointmentClick(app)}
+                                        onContextMenu={(e) => {
+                                            if (onAppointmentContextMenu) {
+                                                e.preventDefault()
+                                                e.stopPropagation()
+                                                onAppointmentContextMenu(e, app)
+                                            }
+                                        }}
                                         className={`w-full text-left p-1.5 rounded-md border text-[10px] sm:text-xs transition hover:scale-[1.02] shadow-sm ${getStatusColor(app.status)}`}
                                     >
                                         <div className="flex items-center gap-1 mb-0.5 line-clamp-1 font-bold">

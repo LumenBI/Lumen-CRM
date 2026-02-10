@@ -15,8 +15,14 @@ import {
     LucideX,
     LucideClock,
     LucideLayoutGrid,
-    LucideList
+    LucideList,
+    LucideExternalLink,
+    LucideEye,
+    LucidePencil,
+    LucideCheckCircle,
+    LucideXCircle
 } from 'lucide-react'
+import ContextMenu from '@/components/ContextMenu'
 
 interface Appointment {
     id: string
@@ -43,6 +49,19 @@ export default function AppointmentsPage() {
     const [filter, setFilter] = useState<'all' | 'pendiente' | 'confirmada' | 'completada'>('all')
     const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar') // Default to calendar
     const [isModalOpen, setIsModalOpen] = useState(false)
+
+    // Context Menu State
+    const [contextMenu, setContextMenu] = useState<{
+        isOpen: boolean
+        x: number
+        y: number
+        appointmentId: string | null
+    }>({
+        isOpen: false,
+        x: 0,
+        y: 0,
+        appointmentId: null
+    })
 
     const supabase = createClient()
 
@@ -108,6 +127,53 @@ export default function AppointmentsPage() {
         })
     }
 
+    const handleContextMenu = (e: React.MouseEvent, appointmentId: string) => {
+        e.preventDefault()
+        setContextMenu({
+            isOpen: true,
+            x: e.clientX,
+            y: e.clientY,
+            appointmentId
+        })
+    }
+
+    const getContextAppointment = () => {
+        if (!contextMenu.appointmentId) return null
+        return appointments.find(a => a.id === contextMenu.appointmentId)
+    }
+
+    const handleJoinMeeting = (appointment: Appointment) => {
+        if (appointment.appointment_type === 'virtual' && appointment.meeting_link) {
+            window.open(appointment.meeting_link, '_blank')
+        } else {
+            alert('Esta cita no tiene enlace de reunión virtual.')
+        }
+    }
+
+    const handleCompleteAppointment = async (appointmentId: string) => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) return
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${appointmentId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ status: 'completada' })
+            })
+
+            if (res.ok) {
+                fetchAppointments()
+            } else {
+                alert('Error al actualizar el estado')
+            }
+        } catch (error) {
+            console.error('Error updating appointment:', error)
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -133,8 +199,8 @@ export default function AppointmentsPage() {
                         <button
                             onClick={() => setViewMode('calendar')}
                             className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'calendar'
-                                    ? 'bg-blue-50 text-[#0056fc]'
-                                    : 'text-slate-500 hover:bg-slate-50'
+                                ? 'bg-blue-50 text-[#0056fc]'
+                                : 'text-slate-500 hover:bg-slate-50'
                                 }`}
                         >
                             <LucideCalendar size={18} />
@@ -143,8 +209,8 @@ export default function AppointmentsPage() {
                         <button
                             onClick={() => setViewMode('list')}
                             className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'list'
-                                    ? 'bg-blue-50 text-[#0056fc]'
-                                    : 'text-slate-500 hover:bg-slate-50'
+                                ? 'bg-blue-50 text-[#0056fc]'
+                                : 'text-slate-500 hover:bg-slate-50'
                                 }`}
                         >
                             <LucideList size={18} />
@@ -195,6 +261,14 @@ export default function AppointmentsPage() {
                             // To keep it premium, maybe just console log or TODO
                             console.log("Clicked appointment", app)
                         }}
+                        onAppointmentContextMenu={(e, app) => {
+                            setContextMenu({
+                                isOpen: true,
+                                x: e.clientX,
+                                y: e.clientY,
+                                appointmentId: app.id
+                            })
+                        }}
                     />
                 </div>
             ) : (
@@ -220,7 +294,11 @@ export default function AppointmentsPage() {
                                     </tr>
                                 ) : (
                                     filteredAppointments.map((appointment) => (
-                                        <tr key={appointment.id} className="hover:bg-slate-50 transition group">
+                                        <tr
+                                            key={appointment.id}
+                                            className="hover:bg-slate-50 transition group"
+                                            onContextMenu={(e) => handleContextMenu(e, appointment.id)}
+                                        >
                                             <td className="px-6 py-4">
                                                 <div>
                                                     <p className="font-bold text-[#000d42] group-hover:text-[#0056fc] transition-colors">{appointment.client.company_name}</p>
@@ -267,6 +345,63 @@ export default function AppointmentsPage() {
                 onClose={() => setIsModalOpen(false)}
                 onSuccess={fetchAppointments}
             />
+
+            {/* Context Menu */}
+            {contextMenu.isOpen && getContextAppointment() && (
+                <ContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    title={getContextAppointment()?.title}
+                    onClose={() => setContextMenu({ ...contextMenu, isOpen: false })}
+                    items={[
+                        {
+                            label: 'Entrar a Reunión',
+                            icon: LucideExternalLink,
+                            action: () => {
+                                const apt = getContextAppointment()
+                                if (apt) handleJoinMeeting(apt)
+                            },
+                            disabled: getContextAppointment()?.appointment_type !== 'virtual'
+                        },
+                        {
+                            label: 'Ver Detalles',
+                            icon: LucideEye,
+                            action: () => {
+                                const apt = getContextAppointment()
+                                if (apt) console.log('View details:', apt)
+                                // TODO: Open appointment detail modal
+                            }
+                        },
+                        {
+                            label: 'Editar Cita',
+                            icon: LucidePencil,
+                            action: () => {
+                                alert('Funcionalidad de edición en desarrollo')
+                                // TODO: Open edit modal
+                            }
+                        },
+                        {
+                            label: 'Marcar Completada',
+                            icon: LucideCheckCircle,
+                            action: () => {
+                                const apt = getContextAppointment()
+                                if (apt) handleCompleteAppointment(apt.id)
+                            },
+                            className: 'text-green-600 hover:bg-green-50',
+                            disabled: getContextAppointment()?.status === 'completada'
+                        },
+                        {
+                            label: 'Cancelar Cita',
+                            icon: LucideXCircle,
+                            action: () => {
+                                alert('Funcionalidad de cancelación en desarrollo')
+                                // TODO: Cancel appointment
+                            },
+                            className: 'text-red-600 hover:bg-red-50'
+                        }
+                    ]}
+                />
+            )}
         </div>
     )
 }

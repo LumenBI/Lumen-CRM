@@ -15,7 +15,7 @@ interface StageChangeModalProps {
     isOpen: boolean
     onClose: () => void
     onConfirm: (data: { interactionType: string, summary: string, nextStep?: string }) => void
-    clientName: string
+    dealTitle: string
     fromStage: string
     toStage: string
     loading?: boolean
@@ -34,7 +34,7 @@ export default function StageChangeModal({
     isOpen,
     onClose,
     onConfirm,
-    clientName,
+    dealTitle,
     fromStage,
     toStage,
     loading = false
@@ -55,7 +55,7 @@ export default function StageChangeModal({
     }
 
     return (
-        <div className="fixed inset-0 z[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <div
                 className="absolute inset-0 bg-[#000D42]/60 backdrop-blur-sm animate-in fade-in duration-200"
                 onClick={loading ? undefined : onClose}
@@ -79,7 +79,7 @@ export default function StageChangeModal({
                         <ArrowRight size={16} />
                         <span className="font-bold text-white">{toStage}</span>
                     </div>
-                    <p className="mt-2 text-sm opacity-90">Cliente: <strong>{clientName}</strong></p>
+                    <p className="mt-2 text-sm opacity-90">Negociación: <strong>{dealTitle}</strong></p>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -94,8 +94,8 @@ export default function StageChangeModal({
                                     key={option.id}
                                     onClick={() => setInteractionType(option.id)}
                                     className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${interactionType === option.id
-                                            ? 'border-[#0066FF] bg-blue-50 text-[#0066FF]'
-                                            : 'border-gray-100 hover:border-blue-200 text-gray-600'
+                                        ? 'border-[#0066FF] bg-blue-50 text-[#0066FF]'
+                                        : 'border-gray-100 hover:border-blue-200 text-gray-600'
                                         }`}
                                 >
                                     <option.icon size={20} />

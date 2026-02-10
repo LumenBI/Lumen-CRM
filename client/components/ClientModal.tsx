@@ -36,6 +36,15 @@ type Interaction = {
     amount_usd?: number
 }
 
+type Deal = {
+    id: string
+    title: string
+    status: string
+    value: number
+    currency: string
+    created_at: string
+}
+
 type ClientData = {
     id: string
     company_name: string
@@ -48,6 +57,7 @@ type ClientData = {
 export default function ClientModal({ clientId, onClose }: { clientId: string, onClose: () => void }) {
     const [client, setClient] = useState<ClientData | null>(null)
     const [history, setHistory] = useState<Interaction[]>([])
+    const [deals, setDeals] = useState<Deal[]>([])
     const [loading, setLoading] = useState(true)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -76,6 +86,7 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
                 const data = await res.json()
                 setClient(data.client)
                 setHistory(data.interactions)
+                setDeals(data.deals || [])
             } catch (err) {
                 console.error(err)
             } finally {
@@ -239,7 +250,7 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
 
                         <hr className="my-8 border-gray-200" />
 
-                        <h3 className="mb-6 text-sm font-bold uppercase text-[#000D42] tracking-wider">Registrar Nueva Actividad</h3>
+                        <h3 className="mb-6 text-sm font-bold uppercase text-[#000D42] tracking-wider">Nueva Actividad</h3>
                         <div className="space-y-4">
                             {/* Custom Select with Icons */}
                             <div className="relative">
@@ -344,17 +355,50 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
                             >
                                 <span className="flex items-center justify-center gap-2">
                                     {scheduleFuture ? <Calendar size={20} /> : <CheckCircle2 size={20} />}
-                                    {isSubmitting ? 'Guardando...' : scheduleFuture ? 'Agendar Cita' : 'Guardar Interacción'}
+                                    {isSubmitting ? 'Guardando...' : scheduleFuture ? 'Agendar Cita' : 'Guardar Actividad'}
                                 </span>
                             </button>
                         </div>
                     </div>
 
-                    {/* Columna Derecha: Historial (Timeline) - MEJORADO */}
+                    {/* Columna Derecha: Negociaciones y Historial */}
                     <div className="flex-1 overflow-y-auto p-6 lg:p-8 bg-white">
+
+                        {/* Deals Section */}
+                        <div className="mb-8 border-b border-gray-100 pb-8">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-[#000D42] flex items-center gap-2">
+                                    <Briefcase size={20} className="text-[#0066FF]" />
+                                    Negociaciones Activas ({deals.length})
+                                </h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3">
+                                {deals.length === 0 && <p className="text-sm text-gray-400 italic">No hay negociaciones registradas.</p>}
+                                {deals.map(deal => (
+                                    <div key={deal.id} className="p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all bg-white flex justify-between items-center group">
+                                        <div>
+                                            <h4 className="font-bold text-gray-800 group-hover:text-[#0066FF] transition-colors">{deal.title}</h4>
+                                            <div className="text-xs text-gray-500 mt-1 flex gap-2">
+                                                <span>{new Date(deal.created_at).toLocaleDateString()}</span>
+                                                <span>•</span>
+                                                <span className="font-medium text-gray-700">${deal.value?.toLocaleString()} {deal.currency}</span>
+                                            </div>
+                                        </div>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${deal.status === 'CERRADO_GANADO' ? 'bg-green-100 text-green-700' :
+                                            deal.status === 'CERRADO_PERDIDO' ? 'bg-red-100 text-red-700' :
+                                                'bg-blue-50 text-blue-700'
+                                            }`}>
+                                            {deal.status.replace('_', ' ')}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                         <h3 className="mb-4 text-lg font-bold text-[#000D42] flex items-center gap-2">
                             <Calendar size={20} className="text-[#0066FF]" />
-                            Historial de Interacciones
+                            Historial
                         </h3>
                         {loading ? <p className="text-gray-500">Cargando historial...</p> : (
                             <div className="relative space-y-8 border-l-2 border-gray-100 pl-6 ml-2">

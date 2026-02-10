@@ -34,7 +34,8 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
         company_name: '',
         contact_name: '',
         email: '',
-        phone: ''
+        phone: '',
+        origin: 'APP COBUS'
     })
 
     // Interaction State
@@ -199,7 +200,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
 
                 {/* Header */}
                 <div className="flex items-center justify-between border-b bg-gray-50 px-6 py-4">
-                    <h2 className="text-xl font-bold text-gray-800">Nuevo Seguimiento</h2>
+                    <h2 className="text-xl font-bold text-gray-800">Nueva Actividad</h2>
                     <button onClick={onClose} className="rounded-full p-1 hover:bg-gray-200">
                         <LucideX className="text-gray-500" size={20} />
                     </button>
@@ -303,6 +304,20 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                         value={clientForm.phone}
                                         onChange={e => setClientForm({ ...clientForm, phone: e.target.value })}
                                     />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Origen del Prospecto</label>
+                                    <select
+                                        className="w-full rounded-lg border border-gray-200 p-2 text-sm outline-none focus:border-blue-500 bg-white"
+                                        value={clientForm.origin}
+                                        onChange={e => setClientForm({ ...clientForm, origin: e.target.value })}
+                                    >
+                                        <option value="APP COBUS">APP COBUS</option>
+                                        <option value="MANUAL">Manual / Directo</option>
+                                        <option value="REFERIDO">Referido</option>
+                                        <option value="WEB">Sitio Web</option>
+                                        <option value="REDES">Redes Sociales</option>
+                                    </select>
                                 </div>
                             </div>
                         )}
@@ -430,12 +445,12 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                         Cancelar
                     </button>
                     <button
-                        onClick={handleSubmit}
-                        disabled={loading || (mode === 'select' && !selectedClient)}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                        type="submit"
+                        disabled={loading || !interaction.summary}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         {loading && <LucideLoader2 className="animate-spin" size={18} />}
-                        Guardar Seguimiento
+                        Guardar Actividad
                     </button>
                 </div>
             </div>

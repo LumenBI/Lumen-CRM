@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
+import NotificationBell from '@/components/notifications/NotificationBell'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -26,13 +27,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const menuItems = [
         { name: 'Resumen', href: '/dashboard', icon: LucideLayoutDashboard },
-        { name: 'Flujo de Ventas', href: '/dashboard/kanban', icon: LucideKanban },
-        { name: 'Agenda de Citas', href: '/dashboard/citas', icon: LucideCalendar },
-        { name: 'Cartera de Clientes', href: '/dashboard/clients', icon: LucideUsers },
+        { name: 'Ventas', href: '/dashboard/kanban', icon: LucideKanban },
+        { name: 'Agenda', href: '/dashboard/citas', icon: LucideCalendar },
+        { name: 'Clientes', href: '/dashboard/clients', icon: LucideUsers },
     ]
 
     const systemItems = [
-        { name: 'Usuarios del Sistema', href: '/dashboard/users', icon: LucideSettings },
+        { name: 'Usuarios', href: '/dashboard/users', icon: LucideSettings },
     ]
 
     return (
@@ -106,7 +107,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </aside>
 
             {/* MAIN CONTENT AREA */}
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto relative">
+                {/* Desktop Header for Notifications */}
+                <div className="hidden md:flex absolute top-4 right-8 z-50 items-center gap-4">
+                    <NotificationBell />
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#0066FF] to-[#000D42] text-white flex items-center justify-center font-bold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform">
+                        A
+                    </div>
+                </div>
+
                 {/* Header Móvil (visible solo en pantallas pequeñas) */}
                 <div className="flex h-16 items-center justify-between border-b bg-white px-4 md:hidden">
                     <img
@@ -114,12 +123,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         alt="Star CRM"
                         className="h-6 w-auto object-contain"
                     />
-                    <button className="rounded p-2 text-gray-500 hover:bg-gray-100">
-                        <span className="sr-only">Menu</span>
-                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <NotificationBell />
+                        <button className="rounded p-2 text-gray-500 hover:bg-gray-100">
+                            <span className="sr-only">Menu</span>
+                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Contenido Dinámico */}

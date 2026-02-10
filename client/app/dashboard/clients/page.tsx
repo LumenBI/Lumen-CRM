@@ -17,6 +17,7 @@ interface Client {
     phone: string;
     status: string;
     created_at: string;
+    origin?: string;
 }
 
 export default function ClientsPage() {
@@ -183,6 +184,7 @@ export default function ClientsPage() {
                             <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
                                 <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide">EMPRESA</th>
                                 <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide">CONTACTO</th>
+                                <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide">ORIGEN</th>
                                 <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide">INFORMACIÓN</th>
                                 <th className="px-8 py-5 text-right text-sm font-bold text-[#000D42] tracking-wide">ACCIONES</th>
                             </tr>
@@ -215,6 +217,14 @@ export default function ClientsPage() {
                                             </div>
                                             <span className="text-gray-800 font-medium">{client.contact_name || 'N/A'}</span>
                                         </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${client.origin === 'APP COBUS' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                                                client.origin === 'WEB' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                                                    'bg-gray-100 text-gray-600 border border-gray-200'
+                                            }`}>
+                                            {client.origin || 'MANUAL'}
+                                        </span>
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="space-y-2">

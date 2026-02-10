@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { motion, useScroll, useTransform, useSpring, useMotionValue, useMotionTemplate } from 'framer-motion'
+import { motion, useScroll, useTransform, useSpring, useMotionValue, useMotionTemplate, Variants } from 'framer-motion'
 import { ArrowRight, Globe, ShieldCheck } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
 // Animation Variants
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -18,16 +18,16 @@ const staggerContainer = {
   }
 }
 
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] as const }
   }
 }
 
-const navVariants = {
+const navVariants: Variants = {
   hidden: { y: -100, opacity: 0 },
   visible: {
     y: 0,
@@ -36,11 +36,11 @@ const navVariants = {
   }
 }
 
-const clipReveal = {
+const clipReveal: Variants = {
   hidden: { clipPath: "polygon(0 0, 100% 0, 100% 0, 0 0)" },
   visible: {
     clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
-    transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.4 }
+    transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] as const, delay: 0.4 }
   }
 }
 
