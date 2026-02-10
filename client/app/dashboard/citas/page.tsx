@@ -1,20 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase/client'
-import Link from 'next/link'
 import CreateAppointmentModal from '@/components/CreateAppointmentModal'
+import AppointmentDetailsModal from '@/components/AppointmentDetailsModal'
 import CalendarView from '@/components/calendar/CalendarView'
+import { useAuthFetch } from '@/hooks/useAuthFetch'
+import { getTypeIcon, getStatusBadge, formatAppointmentDate } from '@/utils/appointmentUtils'
+import type { Appointment } from '@/types'
 import {
     LucideCalendar,
-    LucidePhone,
-    LucideVideo,
-    LucideMapPin,
     LucidePlus,
-    LucideCheck,
-    LucideX,
-    LucideClock,
-    LucideLayoutGrid,
     LucideList,
     LucideExternalLink,
     LucideEye,
@@ -24,46 +19,32 @@ import {
 } from 'lucide-react'
 import ContextMenu from '@/components/ContextMenu'
 
-interface Appointment {
-    id: string
-    title: string
-    description?: string
-    appointment_date: string
-    appointment_time: string
-    appointment_type: 'virtual' | 'presencial' | 'llamada'
-    status: 'pendiente' | 'confirmada' | 'completada' | 'cancelada'
-    meeting_link?: string
-    location?: string
-    client: {
-        id: string
-        company_name: string
-        contact_name: string
-        phone?: string
-        email?: string
-    }
-}
-
 export default function AppointmentsPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([])
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState<'all' | 'pendiente' | 'confirmada' | 'completada'>('all')
-    const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar') // Default to calendar
+    const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar')
     const [isModalOpen, setIsModalOpen] = useState(false)
 
-    // Context Menu State
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+    const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
+
     const [contextMenu, setContextMenu] = useState<{
         isOpen: boolean
         x: number
         y: number
         appointmentId: string | null
+        date: string | null
     }>({
         isOpen: false,
         x: 0,
         y: 0,
-        appointmentId: null
+        appointmentId: null,
+        date: null
     })
 
-    const supabase = createClient()
+    const { authFetch } = useAuthFetch()
 
     useEffect(() => {
         fetchAppointments()
@@ -72,18 +53,8 @@ export default function AppointmentsPage() {
     async function fetchAppointments() {
         setLoading(true)
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
-
-            const token = session.access_token
-            const url = `${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`
-
-            const res = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-
+            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`)
             if (!res.ok) throw new Error('Failed to fetch appointments')
-
             const data = await res.json()
             setAppointments(data)
         } catch (error) {
@@ -97,43 +68,14 @@ export default function AppointmentsPage() {
         ? appointments
         : appointments.filter(a => a.status === filter)
 
-    const getTypeIcon = (type: string) => {
-        switch (type) {
-            case 'virtual': return <LucideVideo className="h-4 w-4" />
-            case 'presencial': return <LucideMapPin className="h-4 w-4" />
-            case 'llamada': return <LucidePhone className="h-4 w-4" />
-            default: return <LucideClock className="h-4 w-4" />
-        }
-    }
-
-    const getStatusBadge = (status: string) => {
-        const styles = {
-            pendiente: 'bg-orange-100 text-orange-700',
-            confirmada: 'bg-green-100 text-green-700',
-            completada: 'bg-slate-100 text-slate-600',
-            cancelada: 'bg-red-100 text-red-700'
-        }
-        return styles[status as keyof typeof styles] || styles.pendiente
-    }
-
-    const formatDate = (dateStr: string) => {
-        // Fix for date parsing to avoid timezone offset
-        const [year, month, day] = dateStr.split('-').map(Number)
-        const date = new Date(year, month - 1, day)
-        return date.toLocaleDateString('es-ES', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        })
-    }
-
     const handleContextMenu = (e: React.MouseEvent, appointmentId: string) => {
         e.preventDefault()
         setContextMenu({
             isOpen: true,
             x: e.clientX,
             y: e.clientY,
-            appointmentId
+            appointmentId,
+            date: null
         })
     }
 
@@ -150,27 +92,24 @@ export default function AppointmentsPage() {
         }
     }
 
-    const handleCompleteAppointment = async (appointmentId: string) => {
-        try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
+    /** Merged handler for both complete and cancel actions (were near-identical) */
+    const updateAppointmentStatus = async (appointmentId: string, status: 'completada' | 'cancelada') => {
+        if (status === 'cancelada' && !confirm('¿Estás seguro de que deseas cancelar esta cita?')) return
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${appointmentId}`, {
+        try {
+            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${appointmentId}`, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({ status: 'completada' })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
             })
 
             if (res.ok) {
                 fetchAppointments()
             } else {
-                alert('Error al actualizar el estado')
+                alert(status === 'completada' ? 'Error al actualizar el estado' : 'Error al cancelar la cita')
             }
         } catch (error) {
-            console.error('Error updating appointment:', error)
+            console.error(`Error updating appointment to ${status}:`, error)
         }
     }
 
@@ -184,6 +123,9 @@ export default function AppointmentsPage() {
             </div>
         )
     }
+
+    // Cache the context appointment once for use in context menu items
+    const contextAppointment = getContextAppointment()
 
     return (
         <div className="space-y-6">
@@ -228,9 +170,7 @@ export default function AppointmentsPage() {
                 </div>
             </div>
 
-            {/* Filters (Only show for list view or apply to both? Let's apply to both for consistency, or maybe just list?)
-                Actually, filters are useful for calendar too to see only 'pending' etc.
-            */}
+            {/* Filters */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 {['all', 'pendiente', 'confirmada', 'completada'].map((status) => (
                     <button
@@ -256,18 +196,50 @@ export default function AppointmentsPage() {
                 <div className="animate-in fade-in duration-300">
                     <CalendarView
                         appointments={filteredAppointments}
-                        onAppointmentClick={(app) => {
-                            // Ideally show detail modal here. For now alert or could reuse edit functionality logic
-                            // To keep it premium, maybe just console log or TODO
-                            console.log("Clicked appointment", app)
+                        onAppointmentClick={(e, app) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setSelectedAppointment(app)
+                            setIsDetailsOpen(true)
                         }}
                         onAppointmentContextMenu={(e, app) => {
                             setContextMenu({
                                 isOpen: true,
                                 x: e.clientX,
                                 y: e.clientY,
-                                appointmentId: app.id
+                                appointmentId: app.id,
+                                date: null
                             })
+                        }}
+                        onDateContextMenu={(e, date) => {
+                            setContextMenu({
+                                isOpen: true,
+                                x: e.clientX,
+                                y: e.clientY,
+                                appointmentId: null,
+                                date: date
+                            })
+                        }}
+                        onAppointmentMove={async (appointmentId, newDate) => {
+                            try {
+                                setAppointments(prev => prev.map(app =>
+                                    app.id === appointmentId ? { ...app, appointment_date: newDate } : app
+                                ))
+
+                                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${appointmentId}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ appointment_date: newDate })
+                                })
+
+                                if (!res.ok) throw new Error('Failed to move appointment')
+
+                                fetchAppointments()
+                            } catch (error) {
+                                console.error('Error moving appointment:', error)
+                                alert('Error al mover la cita')
+                                fetchAppointments()
+                            }
                         }}
                     />
                 </div>
@@ -293,45 +265,48 @@ export default function AppointmentsPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredAppointments.map((appointment) => (
-                                        <tr
-                                            key={appointment.id}
-                                            className="hover:bg-slate-50 transition group"
-                                            onContextMenu={(e) => handleContextMenu(e, appointment.id)}
-                                        >
-                                            <td className="px-6 py-4">
-                                                <div>
-                                                    <p className="font-bold text-[#000d42] group-hover:text-[#0056fc] transition-colors">{appointment.client.company_name}</p>
-                                                    <p className="text-sm text-slate-500">{appointment.client.contact_name}</p>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-col">
-                                                    <span className="font-semibold text-slate-700">{formatDate(appointment.appointment_date)}</span>
-                                                    <span className="text-xs text-slate-400 font-medium">{appointment.appointment_time.slice(0, 5)}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2 text-slate-600">
-                                                    {getTypeIcon(appointment.appointment_type)}
-                                                    <span className="text-sm capitalize font-medium">{appointment.appointment_type}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-sm text-slate-700 font-medium">{appointment.title}</p>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusBadge(appointment.status).replace('bg-', 'bg-opacity-10 border-')}`}>
-                                                    <span className={getStatusBadge(appointment.status).split(' ')[1]}>{appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}</span>
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button className="text-slate-400 hover:text-[#0056fc] transition p-2 hover:bg-blue-50 rounded-lg">
-                                                    <span className="material-symbols-outlined text-[20px]">edit</span>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
+                                    filteredAppointments.map((appointment) => {
+                                        const badge = getStatusBadge(appointment.status)
+                                        return (
+                                            <tr
+                                                key={appointment.id}
+                                                className="hover:bg-slate-50 transition group"
+                                                onContextMenu={(e) => handleContextMenu(e, appointment.id)}
+                                            >
+                                                <td className="px-6 py-4">
+                                                    <div>
+                                                        <p className="font-bold text-[#000d42] group-hover:text-[#0056fc] transition-colors">{appointment.client.company_name}</p>
+                                                        <p className="text-sm text-slate-500">{appointment.client.contact_name}</p>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-semibold text-slate-700">{formatAppointmentDate(appointment.appointment_date)}</span>
+                                                        <span className="text-xs text-slate-400 font-medium">{appointment.appointment_time.slice(0, 5)}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2 text-slate-600">
+                                                        {getTypeIcon(appointment.appointment_type)}
+                                                        <span className="text-sm capitalize font-medium">{appointment.appointment_type}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="text-sm text-slate-700 font-medium">{appointment.title}</p>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${badge.className}`}>
+                                                        {badge.label}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <button className="text-slate-400 hover:text-[#0056fc] transition p-2 hover:bg-blue-50 rounded-lg">
+                                                        <span className="material-symbols-outlined text-[20px]">edit</span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })
                                 )}
                             </tbody>
                         </table>
@@ -339,65 +314,92 @@ export default function AppointmentsPage() {
                 </div>
             )}
 
-            {/* Create Appointment Modal */}
             <CreateAppointmentModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={fetchAppointments}
+                onClose={() => {
+                    setIsModalOpen(false)
+                    setEditingAppointment(null)
+                }}
+                onSuccess={() => {
+                    fetchAppointments()
+                    setIsModalOpen(false)
+                    setEditingAppointment(null)
+                }}
+                initialData={editingAppointment}
             />
 
-            {/* Context Menu */}
-            {contextMenu.isOpen && getContextAppointment() && (
+            <AppointmentDetailsModal
+                isOpen={isDetailsOpen}
+                onClose={() => setIsDetailsOpen(false)}
+                appointment={selectedAppointment}
+                onEdit={() => {
+                    if (selectedAppointment) {
+                        setEditingAppointment(selectedAppointment)
+                        setIsDetailsOpen(false)
+                        setIsModalOpen(true)
+                    }
+                }}
+            />
+
+            {contextMenu.isOpen && (
                 <ContextMenu
                     x={contextMenu.x}
                     y={contextMenu.y}
-                    title={getContextAppointment()?.title}
+                    title={contextAppointment?.title || 'Acciones'}
                     onClose={() => setContextMenu({ ...contextMenu, isOpen: false })}
-                    items={[
+                    items={contextMenu.appointmentId ? [
                         {
                             label: 'Entrar a Reunión',
                             icon: LucideExternalLink,
-                            action: () => {
-                                const apt = getContextAppointment()
-                                if (apt) handleJoinMeeting(apt)
-                            },
-                            disabled: getContextAppointment()?.appointment_type !== 'virtual'
+                            action: () => { if (contextAppointment) handleJoinMeeting(contextAppointment) },
+                            disabled: contextAppointment?.appointment_type !== 'virtual'
                         },
                         {
                             label: 'Ver Detalles',
                             icon: LucideEye,
                             action: () => {
-                                const apt = getContextAppointment()
-                                if (apt) console.log('View details:', apt)
-                                // TODO: Open appointment detail modal
+                                if (contextAppointment) {
+                                    setSelectedAppointment(contextAppointment)
+                                    setIsDetailsOpen(true)
+                                }
                             }
                         },
                         {
                             label: 'Editar Cita',
                             icon: LucidePencil,
                             action: () => {
-                                alert('Funcionalidad de edición en desarrollo')
-                                // TODO: Open edit modal
+                                if (contextAppointment) {
+                                    setEditingAppointment(contextAppointment)
+                                    setIsModalOpen(true)
+                                }
                             }
                         },
                         {
                             label: 'Marcar Completada',
                             icon: LucideCheckCircle,
-                            action: () => {
-                                const apt = getContextAppointment()
-                                if (apt) handleCompleteAppointment(apt.id)
-                            },
+                            action: () => { if (contextAppointment) updateAppointmentStatus(contextAppointment.id, 'completada') },
                             className: 'text-green-600 hover:bg-green-50',
-                            disabled: getContextAppointment()?.status === 'completada'
+                            disabled: contextAppointment?.status === 'completada'
                         },
                         {
                             label: 'Cancelar Cita',
                             icon: LucideXCircle,
+                            action: () => { if (contextAppointment) updateAppointmentStatus(contextAppointment.id, 'cancelada') },
+                            className: 'text-red-600 hover:bg-red-50',
+                            disabled: contextAppointment?.status === 'cancelada'
+                        }
+                    ] : [
+                        {
+                            label: 'Crear Cita Aquí',
+                            icon: LucidePlus,
                             action: () => {
-                                alert('Funcionalidad de cancelación en desarrollo')
-                                // TODO: Cancel appointment
-                            },
-                            className: 'text-red-600 hover:bg-red-50'
+                                if (contextMenu.date) {
+                                    setEditingAppointment({
+                                        appointment_date: contextMenu.date
+                                    } as any)
+                                    setIsModalOpen(true)
+                                }
+                            }
                         }
                     ]}
                 />

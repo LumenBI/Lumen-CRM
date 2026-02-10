@@ -56,7 +56,6 @@ export class DashboardService {
             .order('appointment_date', { ascending: true })
             .order('appointment_time', { ascending: true });
 
-        // Apply filters
         if (filters?.from) {
             query = query.gte('appointment_date', filters.from);
         }
@@ -76,7 +75,6 @@ export class DashboardService {
     async getUpcomingAppointments(token: string, userId: string, limit: number = 5) {
         try {
             const supabase = this.getClient(token);
-            // Get today's date in Central America timezone
             const today = new Intl.DateTimeFormat('en-CA', {
                 timeZone: 'America/Guatemala',
                 year: 'numeric',
@@ -130,7 +128,6 @@ export class DashboardService {
 
         if (error) throw new Error(error.message);
 
-        // Notify
         await this.createNotification(supabase, userId, 'APPOINTMENT_CREATED', `Nueva cita: ${payload.title}`, '/dashboard/citas');
 
         return data;
@@ -142,10 +139,14 @@ export class DashboardService {
 
         if (payload.title !== undefined) updateData.title = payload.title;
         if (payload.description !== undefined) updateData.description = payload.description;
+        if (payload.appointment_date !== undefined) updateData.appointment_date = payload.appointment_date;
+        if (payload.appointment_time !== undefined) updateData.appointment_time = payload.appointment_time;
         if (payload.date !== undefined) updateData.appointment_date = payload.date;
         if (payload.time !== undefined) updateData.appointment_time = payload.time;
         if (payload.type !== undefined) updateData.appointment_type = payload.type;
+        if (payload.appointment_type !== undefined) updateData.appointment_type = payload.appointment_type;
         if (payload.meetingLink !== undefined) updateData.meeting_link = payload.meetingLink;
+        if (payload.meeting_link !== undefined) updateData.meeting_link = payload.meeting_link;
         if (payload.location !== undefined) updateData.location = payload.location;
         if (payload.notes !== undefined) updateData.notes = payload.notes;
 
@@ -194,11 +195,9 @@ export class DashboardService {
 
     // ==================== REPORTES ====================
 
-    // --- REPORTES ---
     async getUserStats(token: string, userId: string) {
         const supabase = this.getClient(token);
 
-        // Calculate dates in Central America timezone
         const getCADate = (date: Date) => {
             return new Intl.DateTimeFormat('en-CA', {
                 timeZone: 'America/Guatemala',
@@ -212,15 +211,12 @@ export class DashboardService {
         const currentYear = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Guatemala', year: 'numeric' }).format(now));
         const currentMonth = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Guatemala', month: 'numeric' }).format(now));
 
-        // Start of current month
         const startOfCurrentMonth = new Date(currentYear, currentMonth - 1, 1);
         const startOfCurrentMonthStr = getCADate(startOfCurrentMonth);
 
-        // Start of previous month
         const startOfPrevMonth = new Date(currentYear, currentMonth - 2, 1);
         const startOfPrevMonthStr = getCADate(startOfPrevMonth);
 
-        // Fetch data from start of previous month
         const { data, error } = await supabase
             .from('view_daily_kpis')
             .select('*')
@@ -229,10 +225,9 @@ export class DashboardService {
 
         if (error) throw new Error(error.message);
 
-        // Aggregate data
         const currentMonthStats = {
             new_prospects: 0,
-            total_contacts: 0, // Interactions
+            total_contacts: 0,
             commercial_visits: 0,
             deals_won: 0,
         };
@@ -254,7 +249,6 @@ export class DashboardService {
             target.deals_won += (record.deals_won || 0);
         });
 
-        // Helper to calculate change
         const calculateChange = (current: number, prev: number) => {
             if (prev === 0) return current > 0 ? 100 : 0;
             return ((current - prev) / prev) * 100;
@@ -281,7 +275,6 @@ export class DashboardService {
             total_interactions_change: formatChange(interactionsChange),
             total_interactions_trend: getTrend(interactionsChange),
 
-            // Using keys compatible with frontend expectations (mapping commercial_visits to appointments_count intention)
             appointments_count: currentMonthStats.commercial_visits,
             appointments_count_change: formatChange(visitsChange),
             appointments_count_trend: getTrend(visitsChange),
@@ -290,7 +283,6 @@ export class DashboardService {
             won_count_change: formatChange(salesChange),
             won_count_trend: getTrend(salesChange),
 
-            // Retain other fields just in case
             virtual_meetings: 0,
             quotes_sent: 0,
             total_sales_usd: 0,
@@ -301,10 +293,9 @@ export class DashboardService {
     async getHistory(token: string | null) {
         if (!token) throw new Error('Token is required for history');
 
-        // Create a scoped client for this request to respect RLS
         const scopedSupabase = createClient(
             process.env.SUPABASE_URL!,
-            process.env.SUPABASE_KEY!, // Public/Anon Key
+            process.env.SUPABASE_KEY!,
             {
                 global: {
                     headers: {
@@ -323,21 +314,19 @@ export class DashboardService {
         return data;
     }
 
-    // --- CLIENTES ---
     async getKanbanBoard(token: string, userId: string) {
         const supabase = this.getClient(token);
-        // Fetch deals with client info
         const { data: deals, error } = await supabase
             .from('deals')
             .select(`
                 *,
-                client:clients(id, company_name, contact_name, phone, email)
+                client:clients!inner(id, company_name, contact_name, phone, email, assigned_agent_id)
             `)
+            .eq('client.assigned_agent_id', userId)
             .order('updated_at', { ascending: false });
 
         if (error) throw new Error(error.message);
 
-        // Map to custom stages as requested
         return {
             CONTACTADO: deals.filter(d => d.status === 'CONTACTADO'),
             CITA: deals.filter(d => d.status === 'CITA'),
@@ -347,17 +336,25 @@ export class DashboardService {
         };
     }
 
-    async getClients(token: string, query: string) {
+    async getClients(token: string, query: string, mine: boolean = false, userId?: string) {
         const supabase = this.getClient(token);
         let builder = supabase
             .from('clients')
-            .select('id, company_name, contact_name, email, phone, origin')
-            .order('company_name', { ascending: true })
-            .limit(20);
+            .select('id, company_name, contact_name, email, phone, origin, assigned_agent_id, assignment_expires_at')
+            .order('company_name', { ascending: true });
+
+        if (mine && userId) {
+            builder = builder.eq('assigned_agent_id', userId);
+        }
 
         if (query) {
             builder = builder.or(`company_name.ilike.%${query}%,contact_name.ilike.%${query}%`);
         }
+
+        // Limit only if searching or viewing a general list, 
+        // but for global context we might want more. 
+        // However, 50 is a safe default for now.
+        builder = builder.limit(100);
 
         const { data, error } = await builder;
         if (error) throw new Error(error.message);
@@ -392,9 +389,32 @@ export class DashboardService {
 
     async updateClient(token: string, id: string, payload: any) {
         const supabase = this.getClient(token);
+
+        const updateData: any = {};
+        if (payload.company_name !== undefined) updateData.company_name = payload.company_name;
+        if (payload.contact_name !== undefined) updateData.contact_name = payload.contact_name;
+        if (payload.phone !== undefined) updateData.phone = payload.phone;
+        if (payload.email !== undefined) updateData.email = payload.email;
+        if (payload.status !== undefined) updateData.status = payload.status;
+        if (payload.origin !== undefined) updateData.origin = payload.origin;
+
+        // STRICT SECURITY: Only ADMIN/MANAGER can reassign
+        if (payload.assigned_agent_id !== undefined) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+                if (profile && profile.role !== 'ADMIN' && profile.role !== 'MANAGER') {
+                    throw new BadRequestException('No tienes permisos para reasignar clientes.');
+                }
+            }
+            updateData.assigned_agent_id = payload.assigned_agent_id;
+        }
+
+        if (payload.assignment_expires_at !== undefined) updateData.assignment_expires_at = payload.assignment_expires_at;
+
         const { data, error } = await supabase
             .from('clients')
-            .update(payload)
+            .update(updateData)
             .eq('id', id)
             .select()
             .single();
@@ -415,10 +435,8 @@ export class DashboardService {
 
         if (error) throw new Error(error.message);
 
-        // Notify
         await this.createNotification(supabase, userId, 'DEAL_MOVED', `Negociación movida a ${newStatus}`, '/dashboard/kanban');
 
-        // Check for Commission Trigger
         if (newStatus === 'CERRADO_GANADO') {
             await this.calculateAndCreateCommission(supabase, userId, dealId);
         }
@@ -427,7 +445,6 @@ export class DashboardService {
     }
 
     async calculateAndCreateCommission(supabase: SupabaseClient, userId: string, dealId: string) {
-        // Fetch deal details
         const { data: deal, error } = await supabase
             .from('deals')
             .select('*')
@@ -436,14 +453,13 @@ export class DashboardService {
 
         if (error || !deal) return;
 
-        // Check if commission already exists
         const { data: existing } = await supabase
             .from('commissions')
             .select('id')
             .eq('deal_id', dealId)
             .single();
 
-        if (existing) return; // Already calculated
+        if (existing) return;
 
         let commissionAmount = 0;
         const profit = Number(deal.profit || 0);
@@ -470,18 +486,17 @@ export class DashboardService {
                 status: 'PENDING'
             });
 
-            // Notify about commission
             await this.createNotification(
                 supabase,
                 deal.assigned_agent_id,
                 'COMMISSION_GENERATED',
                 `Comisión generada: $${commissionAmount.toFixed(2)} por negocio "${deal.title}"`,
-                '/dashboard/stats' // Or wherever comissions are shown
+                '/dashboard/stats'
             );
         }
     }
 
-    // ==================== DEALS (NEGOCIACIONES) ====================
+    // ==================== DEALS ====================
 
     async getDeals(token: string, userId: string, clientId?: string) {
         const supabase = this.getClient(token);
@@ -521,7 +536,6 @@ export class DashboardService {
 
         if (error) throw new Error(error.message);
 
-        // Notify
         await this.createNotification(supabase, userId, 'DEAL_CREATED', `Nueva negociación: ${payload.title}`, '/dashboard/kanban');
 
         return data;
@@ -529,8 +543,15 @@ export class DashboardService {
 
     async updateDeal(token: string, id: string, payload: any) {
         const supabase = this.getClient(token);
-        const updateData: any = { ...payload };
-        if (payload.profit) updateData.profit = payload.profit;
+
+        const updateData: any = {};
+        if (payload.title !== undefined) updateData.title = payload.title;
+        if (payload.value !== undefined) updateData.value = payload.value;
+        if (payload.profit !== undefined) updateData.profit = payload.profit;
+        if (payload.currency !== undefined) updateData.currency = payload.currency;
+        if (payload.status !== undefined) updateData.status = payload.status;
+        if (payload.type !== undefined) updateData.type = payload.type;
+        if (payload.expected_close_date !== undefined) updateData.expected_close_date = payload.expected_close_date;
 
         const { data, error } = await supabase
             .from('deals')
@@ -561,7 +582,6 @@ export class DashboardService {
             .eq('id', id);
 
         if (error) {
-            // Foreign key violation
             if (error.code === '23503') {
                 throw new BadRequestException('No se puede eliminar el cliente porque tiene registros relacionados (citas, interacciones, etc).');
             }
@@ -636,11 +656,38 @@ export class DashboardService {
 
     // ==================== SYSTEM NOTIFICATIONS ====================
 
+    async checkAndReleaseExpiredClients(supabase: SupabaseClient, userId: string) {
+        const nowStr = new Date().toISOString();
+        const { data: expiredClients } = await supabase
+            .from('clients')
+            .select('id, company_name')
+            .eq('assigned_agent_id', userId)
+            .lt('assignment_expires_at', nowStr);
+
+        if (expiredClients && expiredClients.length > 0) {
+            for (const client of expiredClients) {
+                await supabase
+                    .from('clients')
+                    .update({ assigned_agent_id: null, assignment_expires_at: null })
+                    .eq('id', client.id);
+
+                await this.createNotification(
+                    supabase,
+                    userId,
+                    'EXPIRATION_RELEASE',
+                    `Tu asignación con "${client.company_name}" ha expirado y el cliente ha sido liberado.`,
+                    `/dashboard/clients`
+                );
+            }
+        }
+    }
+
     async checkSystemNotifications(token: string, userId: string) {
         const supabase = this.getClient(token);
         const notifications: string[] = [];
 
-        // 1. Check Upcoming Appointments (Tomorrow)
+        await this.checkAndReleaseExpiredClients(supabase, userId);
+
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowStr = tomorrow.toISOString().split('T')[0];
@@ -657,7 +704,7 @@ export class DashboardService {
                 await this.createNotification(
                     supabase,
                     userId,
-                    'AGENDA_REMINDER', // Type
+                    'AGENDA_REMINDER',
                     `Recordatorio: Tu cita "${app.title}" es mañana a las ${app.appointment_time}`,
                     '/dashboard/citas'
                 );
@@ -665,7 +712,6 @@ export class DashboardService {
             }
         }
 
-        // 2. Check Client Inactivity (> 3 days without interaction)
         const threeDaysAgo = new Date();
         threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
         const threeDaysAgoStr = threeDaysAgo.toISOString();
@@ -677,14 +723,10 @@ export class DashboardService {
             .neq('status', 'CERRADO_GANADO')
             .neq('status', 'CERRADO_PERDIDO')
             .or(`last_interaction_at.lt.${threeDaysAgoStr},and(last_interaction_at.is.null,created_at.lt.${threeDaysAgoStr})`)
-            .limit(5); // Limit to avoid spamming
+            .limit(5);
 
         if (inactiveClients) {
             for (const client of inactiveClients) {
-                // Check if we already notified recently? For MVP, we just notify. 
-                // Ideal: Check if notification exists. 
-                // We'll skip complex check for now and just add it. User can mark as read.
-                // To avoid duplicates every refresh, we could check existing unread notifications.
                 const { count } = await supabase
                     .from('notifications')
                     .select('*', { count: 'exact', head: true })
@@ -706,7 +748,6 @@ export class DashboardService {
             }
         }
 
-        // 3. Check Assignment Expiration (within 7 days)
         const nextWeek = new Date();
         nextWeek.setDate(nextWeek.getDate() + 7);
         const nextWeekStr = nextWeek.toISOString();

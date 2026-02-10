@@ -1,9 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase/client'
 import { LucideX, LucideLoader2, LucideSearch, LucideUserPlus, LucideCheck, LucideBuilding2, LucideMessageSquare, LucideCalendar } from 'lucide-react'
 import { INTERACTION_TYPES, STATUS_OPTIONS } from '@/constants/interactions'
+import { useUser } from '@/context/UserContext'
+import { useAuthFetch } from '@/hooks/useAuthFetch'
+import { useClients } from '@/context/ClientsContext'
+import ModalPortal from '@/components/ui/ModalPortal'
+import type { Client } from '@/types'
 
 type NewTrackingModalProps = {
     onClose: () => void
@@ -11,25 +15,18 @@ type NewTrackingModalProps = {
     initialMode?: 'select' | 'create'
 }
 
-type Client = {
-    id: string
-    company_name: string
-    contact_name: string
-    email: string
-}
+
 
 export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'select' }: NewTrackingModalProps) {
     const [loading, setLoading] = useState(false)
     const [step, setStep] = useState<'client' | 'details'>('client')
     const [mode, setMode] = useState<'select' | 'create'>(initialMode)
 
-    // Client Search State
     const [searchTerm, setSearchTerm] = useState('')
     const [searchResults, setSearchResults] = useState<Client[]>([])
     const [selectedClient, setSelectedClient] = useState<Client | null>(null)
     const [searching, setSearching] = useState(false)
 
-    // New Client Form State
     const [clientForm, setClientForm] = useState({
         company_name: '',
         contact_name: '',
@@ -38,7 +35,6 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
         origin: 'APP COBUS'
     })
 
-    // Interaction State
     const [status, setStatus] = useState('PENDING')
     const [interaction, setInteraction] = useState({
         category: 'CALL',
@@ -46,12 +42,14 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
     })
     const [modality, setModality] = useState('N_A')
 
-    // Scheduling State
     const [scheduleFuture, setScheduleFuture] = useState(false)
     const [futureDate, setFutureDate] = useState('')
     const [futureTime, setFutureTime] = useState('')
 
-    const supabase = createClient()
+    const { authFetch } = useAuthFetch()
+    const { searchClients } = useClients()
+
+    const { profile } = useUser()
 
     // Update modality when interaction category changes
     useEffect(() => {
@@ -60,83 +58,72 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
             if (selectedType.defaultModality) {
                 setModality(selectedType.defaultModality)
             } else if (selectedType.requiresModality) {
-                setModality('VIRTUAL') // Default to virtual for meetings
+                setModality('VIRTUAL')
             } else {
                 setModality('N_A')
             }
         }
     }, [interaction.category])
 
-    // Search Debounce
+    // Client-side search using context cache
     useEffect(() => {
-        const delayDebounceFn = setTimeout(async () => {
-            if (searchTerm.length > 1 && mode === 'select') {
-                setSearching(true)
-                const { data: { session } } = await supabase.auth.getSession()
-                if (session) {
-                    try {
-                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients?query=${searchTerm}`, {
-                            headers: { Authorization: `Bearer ${session.access_token}` }
-                        })
-                        if (res.ok) {
-                            const data = await res.json()
-                            setSearchResults(data)
-                        }
-                    } catch (e) {
-                        console.error(e)
-                    } finally {
-                        setSearching(false)
-                    }
-                }
-            } else {
-                setSearchResults([])
-            }
-        }, 300)
-
-        return () => clearTimeout(delayDebounceFn)
-    }, [searchTerm, mode])
+        if (searchTerm.length > 1 && mode === 'select') {
+            setSearchResults(searchClients(searchTerm))
+        } else {
+            setSearchResults([])
+        }
+    }, [searchTerm, mode, searchClients])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
 
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
-
             let clientId = selectedClient?.id
+
+            // Least privilege is now enforced at context level—searchClients only returns myClients
+            // But keep explicit check as defense-in-depth
+            if (mode === 'select' && selectedClient && profile?.role !== 'ADMIN' && profile?.role !== 'MANAGER') {
+                if (selectedClient.assigned_agent_id !== profile?.id) {
+                    alert('No tienes permisos para gestionar este cliente. No está asignado a ti.')
+                    setLoading(false)
+                    return
+                }
+            }
 
             const selectedType = INTERACTION_TYPES.find(t => t.value === interaction.category)
 
             // 1. Create Client if needed
             if (mode === 'create') {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients`, {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${session.access_token}`
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         ...clientForm,
-                        status: status // Pass initial status
+                        status: status
                     })
                 })
                 if (!res.ok) throw new Error('Error creando cliente')
                 const newClient = await res.json()
                 clientId = newClient.id
+
+                if (profile?.role !== 'ADMIN' && profile?.role !== 'MANAGER') {
+                    if (status !== 'PENDING') {
+                        alert('Cliente creado exitosamente. Debe ser asignado a ti para registrar seguimientos.')
+                        onSuccess()
+                        onClose()
+                        return
+                    }
+                }
+
             } else if (clientId && status !== 'PENDING') {
-                // If existing client, update status if changed
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients/${clientId}/move`, {
+                await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients/${clientId}/move`, {
                     method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${session.access_token}`
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status })
                 })
             }
 
-            // 2. Add Interaction OR Appointment if status implies contact
             if (status !== 'PENDING' && interaction.summary && selectedType) {
                 if (scheduleFuture) {
                     if (!futureDate || !futureTime) {
@@ -144,13 +131,9 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                         setLoading(false)
                         return
                     }
-                    // CREATE APPOINTMENT
-                    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`, {
+                    await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${session.access_token}`
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             clientId,
                             title: `${selectedType.label} con Cliente`,
@@ -164,13 +147,9 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                         })
                     })
                 } else {
-                    // LOG INTERACTION
-                    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/interactions`, {
+                    await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/interactions`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${session.access_token}`
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             clientId,
                             category: selectedType.backendValue,
@@ -195,7 +174,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
     const currentTypeConfig = INTERACTION_TYPES.find(t => t.value === interaction.category)
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <ModalPortal>
             <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
 
                 {/* Header */}
@@ -454,6 +433,6 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalPortal>
     )
 }

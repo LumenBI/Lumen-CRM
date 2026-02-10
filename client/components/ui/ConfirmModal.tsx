@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { AlertTriangle, Trash2 } from 'lucide-react';
+import { createPortal } from 'react-dom'
 
 interface ConfirmModalProps {
     isOpen: boolean;
@@ -13,6 +14,8 @@ interface ConfirmModalProps {
     cancelText?: string;
     isLoading?: boolean;
 }
+
+
 
 export default function ConfirmModal({
     isOpen,
@@ -26,8 +29,17 @@ export default function ConfirmModal({
 }: ConfirmModalProps) {
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    // Portal logic
+    const [mounted, setMounted] = React.useState(false)
+    React.useEffect(() => {
+        setMounted(true)
+        return () => setMounted(false)
+    }, [])
+
+    if (!mounted) return null
+
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-[#000D42]/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -62,6 +74,7 @@ export default function ConfirmModal({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

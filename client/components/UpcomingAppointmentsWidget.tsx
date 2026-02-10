@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
-import { LucideCalendar, LucideVideo, LucideMapPin, LucidePhone, LucideClock } from 'lucide-react'
+import { LucideCalendar } from 'lucide-react'
+import { useAuthFetch } from '@/hooks/useAuthFetch'
+import { getTypeIcon } from '@/utils/appointmentUtils'
 
 interface UpcomingAppointment {
     id: string
@@ -22,8 +23,7 @@ interface UpcomingAppointment {
 export default function UpcomingAppointmentsWidget() {
     const [appointments, setAppointments] = useState<UpcomingAppointment[]>([])
     const [loading, setLoading] = useState(true)
-
-    const supabase = createClient()
+    const { authFetch } = useAuthFetch()
 
     useEffect(() => {
         fetchUpcomingAppointments()
@@ -31,16 +31,8 @@ export default function UpcomingAppointmentsWidget() {
 
     async function fetchUpcomingAppointments() {
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
-
-            const token = session.access_token
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/upcoming?limit=3`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-
+            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/upcoming?limit=3`)
             if (!res.ok) throw new Error('Failed to fetch appointments')
-
             const data = await res.json()
             setAppointments(data)
         } catch (error) {
@@ -50,17 +42,7 @@ export default function UpcomingAppointmentsWidget() {
         }
     }
 
-    const getTypeIcon = (type: string) => {
-        switch (type) {
-            case 'virtual': return <LucideVideo className="h-4 w-4 text-[#0056fc]" />
-            case 'presencial': return <LucideMapPin className="h-4 w-4 text-purple-600" />
-            case 'llamada': return <LucidePhone className="h-4 w-4 text-emerald-600" />
-            default: return <LucideClock className="h-4 w-4 text-slate-500" />
-        }
-    }
-
     const formatDate = (dateStr: string) => {
-        // Safe parsing of YYYY-MM-DD to avoid timezone issues
         const [year, month, day] = dateStr.split('-').map(Number)
         const date = new Date(year, month - 1, day)
         const monthName = date.toLocaleString('es-ES', { month: 'short' })
@@ -117,7 +99,6 @@ export default function UpcomingAppointmentsWidget() {
                 <div className="space-y-3">
                     {appointments.map((appointment) => {
                         const { day, month } = formatDate(appointment.appointment_date)
-                        // Use meeting link if available, otherwise fallback to appointments page
                         const linkHref = appointment.meeting_link || '/dashboard/citas'
                         const isExternal = !!appointment.meeting_link
 

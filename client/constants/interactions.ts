@@ -14,3 +14,11 @@ export const STATUS_OPTIONS = [
     { value: 'CLOSED_WON', label: 'Cerrado Ganado' },
     { value: 'CLOSED_LOST', label: 'Perdido' },
 ]
+
+export const ORIGIN_OPTIONS = [
+    { value: 'APP COBUS', label: 'APP COBUS' },
+    { value: 'MANUAL', label: 'Manual / Directo' },
+    { value: 'REFERIDO', label: 'Referido' },
+    { value: 'WEB', label: 'Sitio Web' },
+    { value: 'REDES', label: 'Redes Sociales' },
+]

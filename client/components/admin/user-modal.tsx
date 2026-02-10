@@ -47,7 +47,6 @@ export function UserModal({ isOpen, onClose, onUserCreated }: UserModalProps) {
 
             onUserCreated();
             onClose();
-            // Reset form
             setFormData({ email: '', role: 'SALES_REP' });
 
         } catch (error: any) {
@@ -71,7 +70,7 @@ export function UserModal({ isOpen, onClose, onUserCreated }: UserModalProps) {
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                            <Mail size={16} /> Correo Electrónico
+                            <Mail size={16} /> Correo electrónico
                         </label>
                         <input
                             type="email"
@@ -86,7 +85,7 @@ export function UserModal({ isOpen, onClose, onUserCreated }: UserModalProps) {
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                            <Shield size={16} /> Rol del Usuario
+                            <Shield size={16} /> Rol del usuario
                         </label>
                         <div className="grid grid-cols-2 gap-3">
                             <label className={`

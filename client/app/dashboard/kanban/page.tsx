@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { createClient } from '@/utils/supabase/client'
+import { useAuthFetch } from '@/hooks/useAuthFetch'
+import PageHeader from '@/components/ui/PageHeader'
 import {
     Loader2,
     Building2,
@@ -16,14 +17,15 @@ import {
     FileText,
     Container,
     Plane,
-    MapPin,
-    DollarSign
+    DollarSign,
+    Eye,
+    Pencil,
+    ArrowRightCircle
 } from 'lucide-react'
 import ClientModal from '@/components/ClientModal'
 import NewDealModal from '@/components/kanban/NewDealModal'
 import StageChangeModal from '@/components/kanban/StageChangeModal'
 import ContextMenu from '@/components/ContextMenu'
-import { Eye, Pencil, ArrowRightCircle } from 'lucide-react'
 
 type Deal = {
     id: string
@@ -62,10 +64,9 @@ const TYPE_ICONS = {
 export default function KanbanPage() {
     const [board, setBoard] = useState<BoardData | null>(null)
     const [loading, setLoading] = useState(true)
-    const [selectedClientId, setSelectedClientId] = useState<string | null>(null) // We can still open client modal by clicking deal
+    const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-    // State for Stage Change Modal
     const [stageModal, setStageModal] = useState<{
         isOpen: boolean
         dealId: string | null
@@ -82,7 +83,6 @@ export default function KanbanPage() {
         toStage: ''
     })
 
-    // Context Menu State
     const [contextMenu, setContextMenu] = useState<{
         isOpen: boolean
         x: number
@@ -95,44 +95,27 @@ export default function KanbanPage() {
         dealId: null
     })
 
-    // Filter State
     const [filterType, setFilterType] = useState('ALL')
 
-    const supabase = createClient()
+    const { authFetch } = useAuthFetch()
 
     useEffect(() => {
         fetchBoard()
     }, [])
 
     const fetchBoard = async () => {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) return
-
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/kanban`, {
-                headers: { Authorization: `Bearer ${session.access_token}` }
-            })
+            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/kanban`)
             if (res.ok) {
                 const data = await res.json()
-                // Backend might group 'CERRADO' into one array. We need to split them if backend does so.
-                // However, our backend implementation is: 
-                // CERRADO: deals.filter(d => d.status === 'CERRADO_GANADO' || d.status === 'CERRADO_PERDIDO')
-                // This puts both in 'CERRADO' key.
-                // But we want separate columns.
-                // We should manually redistribute 'CERRADO' into 'CERRADO_GANADO' and 'CERRADO_PERDIDO' if needed.
-                // Or better: Update backend to return them separately? 
-                // Or handle it here on frontend.
-
                 const splitBoard = { ...data }
 
-                // If backend returns 'CERRADO' array, split it
                 if (splitBoard.CERRADO) {
                     splitBoard.CERRADO_GANADO = splitBoard.CERRADO.filter((d: Deal) => d.status === 'CERRADO_GANADO')
                     splitBoard.CERRADO_PERDIDO = splitBoard.CERRADO.filter((d: Deal) => d.status === 'CERRADO_PERDIDO')
                     delete splitBoard.CERRADO
                 }
 
-                // Ensure all expected columns exist
                 COLUMNS.forEach(col => {
                     if (!splitBoard[col.id]) splitBoard[col.id] = []
                 })
@@ -172,7 +155,6 @@ export default function KanbanPage() {
 
         const newStatus = stageModal.pendingDest.droppableId
 
-        // 1. Optimistic Update
         const newBoard = { ...board }
 
         const sourceCol = newBoard[stageModal.pendingSource.droppableId]
@@ -193,37 +175,20 @@ export default function KanbanPage() {
         setBoard(newBoard)
         setStageModal(prev => ({ ...prev, isOpen: false }))
 
-        // 2. API Call
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) return
-
         try {
             const promises = []
 
-            // Move Deal
-            promises.push(fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals/${stageModal.dealId}/move`, {
+            promises.push(authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals/${stageModal.dealId}/move`, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({
-                    status: newStatus
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
             }))
 
-            // Log Interaction (Linked to Client? Or Deal?)
-            // Backend logs interaction to client currently.
-            // Ideally we should link to deal too, but for now linking to client is key.
-            // We need client_id from the deal object.
-            const deal = movedDeal // Has client object
+            const deal = movedDeal
 
-            promises.push(fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/interactions`, {
+            promises.push(authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/interactions`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${session.access_token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     clientId: deal.client.id,
                     category: interactionData.interactionType,
@@ -251,14 +216,12 @@ export default function KanbanPage() {
         })
     }
 
-    // Constants for Context Menu Logic
     const getContextDeal = () => {
         if (!contextMenu.dealId || !board) return null
         return Object.values(board).flat().find(d => d.id === contextMenu.dealId)
     }
 
     const handleMoveFromContext = (deal: Deal) => {
-        // Find current stage
         let currentStageId = ''
         Object.keys(board || {}).forEach(key => {
             if (board?.[key].some(d => d.id === deal.id)) {
@@ -287,42 +250,35 @@ export default function KanbanPage() {
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 p-8">
-            <div className="mb-8 bg-gradient-to-r from-[#000D42] to-[#0066FF] rounded-2xl p-8 shadow-xl">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-4xl font-bold text-white mb-2">Flujo de Ventas</h1>
-                        <p className="text-blue-100 text-lg">Gestiona tus oportunidades comerciales</p>
+            <div className="mb-8">
+                <PageHeader
+                    title="Flujo de Ventas"
+                    subtitle="Gestiona tus oportunidades comerciales"
+                    actionLabel="Nueva Negociación"
+                    actionIcon={<Plus size={20} />}
+                    onAction={() => setIsCreateModalOpen(true)}
+                >
+                    {/* Filters */}
+                    <div className="mt-6 flex gap-2">
+                        {[
+                            { id: 'ALL', label: 'Todos' },
+                            { id: 'FCL', label: 'FCL' },
+                            { id: 'LCL', label: 'LCL' },
+                            { id: 'AEREO', label: 'Aéreo' },
+                        ].map(type => (
+                            <button
+                                key={type.id}
+                                onClick={() => setFilterType(type.id)}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${filterType === type.id
+                                    ? 'bg-white text-[#0066FF] shadow-md'
+                                    : 'bg-[#000D42]/30 text-blue-100 hover:bg-[#000D42]/50'
+                                    }`}
+                            >
+                                {type.label}
+                            </button>
+                        ))}
                     </div>
-                    <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="flex items-center gap-2 bg-white text-[#0066FF] px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
-                    >
-                        <Plus size={20} />
-                        Nueva Negociación
-                    </button>
-
-                </div>
-
-                {/* Filters */}
-                <div className="mt-6 flex gap-2">
-                    {[
-                        { id: 'ALL', label: 'Todos' },
-                        { id: 'FCL', label: 'FCL' },
-                        { id: 'LCL', label: 'LCL' },
-                        { id: 'AEREO', label: 'Aéreo' },
-                    ].map(type => (
-                        <button
-                            key={type.id}
-                            onClick={() => setFilterType(type.id)}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${filterType === type.id
-                                ? 'bg-white text-[#0066FF] shadow-md'
-                                : 'bg-[#000D42]/30 text-blue-100 hover:bg-[#000D42]/50'
-                                }`}
-                        >
-                            {type.label}
-                        </button>
-                    ))}
-                </div>
+                </PageHeader>
             </div>
 
             <DragDropContext onDragEnd={onDragEnd}>
@@ -403,25 +359,21 @@ export default function KanbanPage() {
             </DragDropContext>
 
             {/* MODALS */}
-            {
-                selectedClientId && (
-                    <ClientModal
-                        clientId={selectedClientId}
-                        onClose={() => setSelectedClientId(null)}
-                    />
-                )
-            }
+            {selectedClientId && (
+                <ClientModal
+                    clientId={selectedClientId}
+                    onClose={() => setSelectedClientId(null)}
+                />
+            )}
 
-            {
-                isCreateModalOpen && (
-                    <NewDealModal
-                        onClose={() => setIsCreateModalOpen(false)}
-                        onSuccess={() => {
-                            fetchBoard()
-                        }}
-                    />
-                )
-            }
+            {isCreateModalOpen && (
+                <NewDealModal
+                    onClose={() => setIsCreateModalOpen(false)}
+                    onSuccess={() => {
+                        fetchBoard()
+                    }}
+                />
+            )}
 
             <StageChangeModal
                 isOpen={stageModal.isOpen}

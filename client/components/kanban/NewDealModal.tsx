@@ -1,32 +1,26 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase/client'
 import { LucideX, LucideLoader2, LucideSearch, LucideCheck, LucideDollarSign, LucideBriefcase, LucideContainer, LucidePlane } from 'lucide-react'
+import { useAuthFetch } from '@/hooks/useAuthFetch'
+import { useClients } from '@/context/ClientsContext'
+import ModalPortal from '@/components/ui/ModalPortal'
+import type { Client } from '@/types'
 
 type NewDealModalProps = {
     onClose: () => void
     onSuccess: () => void
 }
 
-type Client = {
-    id: string
-    company_name: string
-    contact_name: string
-    email: string
-}
-
 export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) {
     const [loading, setLoading] = useState(false)
     const [step, setStep] = useState<'client' | 'details'>('client')
 
-    // Client Search State
     const [searchTerm, setSearchTerm] = useState('')
     const [searchResults, setSearchResults] = useState<Client[]>([])
     const [selectedClient, setSelectedClient] = useState<Client | null>(null)
     const [searching, setSearching] = useState(false)
 
-    // Deal Form State
     const [dealForm, setDealForm] = useState({
         title: '',
         value: '',
@@ -35,36 +29,17 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
         type: 'FCL'
     })
 
-    const supabase = createClient()
+    const { authFetch } = useAuthFetch()
+    const { searchClients } = useClients()
 
-    // Search Debounce
+    // Client-side search using context cache
     useEffect(() => {
-        const delayDebounceFn = setTimeout(async () => {
-            if (searchTerm.length > 1 && !selectedClient) {
-                setSearching(true)
-                const { data: { session } } = await supabase.auth.getSession()
-                if (session) {
-                    try {
-                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients?query=${searchTerm}`, {
-                            headers: { Authorization: `Bearer ${session.access_token}` }
-                        })
-                        if (res.ok) {
-                            const data = await res.json()
-                            setSearchResults(data)
-                        }
-                    } catch (e) {
-                        console.error(e)
-                    } finally {
-                        setSearching(false)
-                    }
-                }
-            } else {
-                setSearchResults([])
-            }
-        }, 300)
-
-        return () => clearTimeout(delayDebounceFn)
-    }, [searchTerm, selectedClient])
+        if (searchTerm.length > 1 && !selectedClient) {
+            setSearchResults(searchClients(searchTerm))
+        } else {
+            setSearchResults([])
+        }
+    }, [searchTerm, selectedClient, searchClients])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -72,15 +47,9 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
         setLoading(true)
 
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
-
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals`, {
+            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${session.access_token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     client_id: selectedClient.id,
                     title: dealForm.title,
@@ -106,14 +75,13 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <ModalPortal>
             <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in duration-200">
 
-                {/* Header */}
                 <div className="flex items-center justify-between border-b bg-gray-50 px-6 py-4">
                     <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                         <LucideBriefcase className="text-blue-600" />
-                        Nueva Negociación
+                        Nueva negociación
                     </h2>
                     <button onClick={onClose} className="rounded-full p-1 hover:bg-gray-200 transaction-colors">
                         <LucideX className="text-gray-500" size={20} />
@@ -122,7 +90,6 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
 
-                    {/* 1. Select Client */}
                     <div className="space-y-4">
                         <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Cliente</label>
 
@@ -184,10 +151,9 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
 
                     <hr className="border-gray-100" />
 
-                    {/* 2. Deal Details */}
                     <div className="space-y-4">
                         <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1 block">Título de la Negociación</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1 block">Título de la negociación</label>
                             <input
                                 required
                                 className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
@@ -279,12 +245,12 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
                             className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             {loading && <LucideLoader2 className="animate-spin" size={18} />}
-                            Crear Negociación
+                            Crear negociación
                         </button>
                     </div>
 
                 </form>
             </div>
-        </div>
+        </ModalPortal>
     )
 }

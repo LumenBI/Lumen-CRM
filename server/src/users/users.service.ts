@@ -17,7 +17,6 @@ export class UsersService {
     async findAll(token: string) {
         const supabase = this.getClient(token);
 
-        // 1. Get registered profiles
         const { data: profiles, error: profilesError } = await supabase
             .from('profiles')
             .select('*')
@@ -25,7 +24,6 @@ export class UsersService {
 
         if (profilesError) throw new Error(profilesError.message);
 
-        // 2. Get pending invites
         const { data: invites, error: invitesError } = await supabase
             .from('user_invites')
             .select('*')
@@ -33,18 +31,15 @@ export class UsersService {
 
         if (invitesError) throw new Error(invitesError.message);
 
-        // 3. Merge lists
-        // If an email exists in profiles, it's a registered user.
-        // If it only exists in invites, it's 'PENDING'.
         const registeredEmails = new Set(profiles?.map(p => p.email));
 
         const pendingInvites = invites?.filter(i => !registeredEmails.has(i.email)).map(i => ({
-            id: `invite-${i.email}`, // Temporary ID for frontend key
+            id: `invite-${i.email}`,
             email: i.email,
             full_name: 'Pendiente de Registro',
             role: i.role,
             is_active: false,
-            status: 'PENDING', // UI Status
+            status: 'PENDING',
             created_at: i.created_at
         })) || [];
 
@@ -59,7 +54,6 @@ export class UsersService {
     async createInvite(token: string, payload: { email: string; role: string }) {
         const supabase = this.getClient(token);
 
-        // Check if user already exists in profiles
         const { data: existingProfile } = await supabase
             .from('profiles')
             .select('id')

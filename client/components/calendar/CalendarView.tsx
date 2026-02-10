@@ -16,16 +16,20 @@ interface Appointment {
     appointment_date: string
     appointment_time: string
     appointment_type: 'virtual' | 'presencial' | 'llamada'
-    status: string
+    status: 'pendiente' | 'confirmada' | 'completada' | 'cancelada'
     client: {
+        id: string
         company_name: string
+        contact_name: string
     }
 }
 
 interface CalendarViewProps {
     appointments: Appointment[]
-    onAppointmentClick?: (appointment: Appointment) => void
+    onAppointmentClick?: (e: React.MouseEvent, appointment: Appointment) => void
     onAppointmentContextMenu?: (e: React.MouseEvent, appointment: Appointment) => void
+    onDateContextMenu?: (e: React.MouseEvent, date: string) => void
+    onAppointmentMove?: (appointmentId: string, newDate: string) => void
 }
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
@@ -34,7 +38,7 @@ const MONTHS = [
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ]
 
-export default function CalendarView({ appointments, onAppointmentClick, onAppointmentContextMenu }: CalendarViewProps) {
+export default function CalendarView({ appointments, onAppointmentClick, onAppointmentContextMenu, onDateContextMenu, onAppointmentMove }: CalendarViewProps) {
     const [currentDate, setCurrentDate] = useState(new Date())
 
     const getDaysInMonth = (year: number, month: number) => {
@@ -127,8 +131,32 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
                     const dayAppointments = appointments.filter(app => app.appointment_date === dateString)
 
                     return (
-                        <div key={day} className={`p-2 relative group hover:bg-blue-50/20 transition-colors ${isToday ? 'bg-blue-50/50' : ''}`}>
-                            <div className="flex justify-between items-start mb-1">
+                        <div
+                            key={day}
+                            onContextMenu={(e) => {
+                                if (onDateContextMenu) {
+                                    e.preventDefault()
+                                    onDateContextMenu(e, dateString)
+                                }
+                            }}
+                            onDragOver={(e) => {
+                                e.preventDefault() // Allow dropping
+                                e.currentTarget.classList.add('bg-blue-50', 'ring-2', 'ring-blue-200', 'ring-inset')
+                            }}
+                            onDragLeave={(e) => {
+                                e.currentTarget.classList.remove('bg-blue-50', 'ring-2', 'ring-blue-200', 'ring-inset')
+                            }}
+                            onDrop={(e) => {
+                                e.preventDefault()
+                                e.currentTarget.classList.remove('bg-blue-50', 'ring-2', 'ring-blue-200', 'ring-inset')
+                                const appointmentId = e.dataTransfer.getData('text/plain')
+                                if (appointmentId && onAppointmentMove) {
+                                    onAppointmentMove(appointmentId, dateString)
+                                }
+                            }}
+                            className={`p-2 relative group hover:bg-blue-50/20 transition-all ${isToday ? 'bg-blue-50/50' : ''} min-h-[120px]`}
+                        >
+                            <div className="flex justify-between items-start mb-1 pointer-events-none">
                                 <span className={`flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold ${isToday ? 'bg-[#0056fc] text-white' : 'text-slate-700'}`}>
                                     {day}
                                 </span>
@@ -141,9 +169,14 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
 
                             <div className="space-y-1.5 max-h-[100px] overflow-y-auto custom-scrollbar">
                                 {dayAppointments.map(app => (
-                                    <button
+                                    <div
                                         key={app.id}
-                                        onClick={() => onAppointmentClick && onAppointmentClick(app)}
+                                        draggable
+                                        onDragStart={(e) => {
+                                            e.dataTransfer.setData('text/plain', app.id)
+                                            e.dataTransfer.effectAllowed = 'move'
+                                        }}
+                                        onClick={(e) => onAppointmentClick && onAppointmentClick(e, app)}
                                         onContextMenu={(e) => {
                                             if (onAppointmentContextMenu) {
                                                 e.preventDefault()
@@ -151,16 +184,16 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
                                                 onAppointmentContextMenu(e, app)
                                             }
                                         }}
-                                        className={`w-full text-left p-1.5 rounded-md border text-[10px] sm:text-xs transition hover:scale-[1.02] shadow-sm ${getStatusColor(app.status)}`}
+                                        className={`w-full text-left p-1.5 rounded-md border text-[10px] sm:text-xs transition hover:scale-[1.02] shadow-sm ${getStatusColor(app.status)} cursor-grab active:cursor-grabbing`}
                                     >
-                                        <div className="flex items-center gap-1 mb-0.5 line-clamp-1 font-bold">
+                                        <div className="flex items-center gap-1 mb-0.5 line-clamp-1 font-bold pointer-events-none">
                                             {getTypeIcon(app.appointment_type)}
                                             {app.appointment_time.slice(0, 5)}
                                         </div>
-                                        <div className="line-clamp-1 opacity-90">
+                                        <div className="line-clamp-1 opacity-90 pointer-events-none">
                                             {app.client.company_name}
                                         </div>
-                                    </button>
+                                    </div>
                                 ))}
                             </div>
                         </div>

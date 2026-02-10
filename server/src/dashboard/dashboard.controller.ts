@@ -96,9 +96,9 @@ export class DashboardController {
   // ==================== CLIENTS ====================
 
   @Get('clients')
-  async getClients(@Req() req, @Query('query') query: string) {
+  async getClients(@Req() req, @Query('query') query: string, @Query('mine') mine: string) {
     const token = this.extractToken(req);
-    return this.dashboardService.getClients(token, query);
+    return this.dashboardService.getClients(token, query, mine === 'true', req.user.userId);
   }
 
   @Post('clients')

@@ -7,7 +7,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// Componente del formulario aislado
 function LoginForm() {
     const [loading, setLoading] = useState(false)
     const supabase = createClient()
@@ -31,7 +30,6 @@ function LoginForm() {
             transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
             className="w-full max-w-[420px] bg-white p-10 md:p-12 rounded-3xl shadow-soft border border-gray-100 relative overflow-hidden"
         >
-            {/* Decoración sutil superior animated */}
             <motion.div
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
@@ -46,7 +44,6 @@ function LoginForm() {
                     transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.3 }}
                     className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 text-blue-600 shadow-sm"
                 >
-                    {/* Icono de llave o logo simplificado */}
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
                 </motion.div>
                 <h1 className="text-2xl font-bold text-base-900 tracking-tight">Bienvenido</h1>
@@ -60,7 +57,6 @@ function LoginForm() {
                 disabled={loading}
                 className="w-full relative group flex items-center justify-center gap-3 bg-white border-2 border-gray-100 hover:border-blue-100 hover:bg-blue-50/50 text-base-900 font-bold py-4 px-4 rounded-xl transition-all duration-300 disabled:opacity-50 overflow-hidden"
             >
-                {/* Shine effect on hover */}
                 <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
                     initial={{ x: '-100%' }}
@@ -102,11 +98,9 @@ import ParticleBackground from '@/components/ui/ParticleBackground'
 export default function LoginPage() {
     return (
         <div className="min-h-screen w-full flex relative bg-[#F8FAFC] overflow-hidden">
-            {/* Fondo Animado de Partículas (Red Logística) */}
             <ParticleBackground />
 
             <div className="container mx-auto px-6 relative z-10 flex flex-col h-screen">
-                {/* Header Login */}
                 <motion.div
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -118,14 +112,12 @@ export default function LoginPage() {
                     </Link>
                 </motion.div>
 
-                {/* Contenido Centrado */}
                 <div className="flex-1 flex items-center justify-center pb-20">
                     <Suspense fallback={<div>Cargando...</div>}>
                         <LoginForm />
                     </Suspense>
                 </div>
 
-                {/* Footer Login */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

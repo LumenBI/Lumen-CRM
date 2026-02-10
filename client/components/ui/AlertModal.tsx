@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { X, AlertCircle, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import { createPortal } from 'react-dom'
 
 export type AlertType = 'success' | 'error' | 'warning' | 'info';
 
@@ -44,14 +45,25 @@ const TYPE_CONFIG = {
     },
 };
 
+
+
 export default function AlertModal({ isOpen, onClose, title, message, type = 'info' }: AlertModalProps) {
     if (!isOpen) return null;
 
     const config = TYPE_CONFIG[type];
     const Icon = config.icon;
 
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    // Portal logic
+    const [mounted, setMounted] = React.useState(false)
+    React.useEffect(() => {
+        setMounted(true)
+        return () => setMounted(false)
+    }, [])
+
+    if (!mounted) return null
+
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-[#000D42]/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -76,6 +88,7 @@ export default function AlertModal({ isOpen, onClose, title, message, type = 'in
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

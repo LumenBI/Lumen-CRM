@@ -1,29 +1,26 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase/client'
 import { LucideX } from 'lucide-react'
-
-interface Client {
-    id: string
-    company_name: string
-    contact_name: string
-}
+import { useAuthFetch } from '@/hooks/useAuthFetch'
+import { useClients } from '@/context/ClientsContext'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 interface CreateAppointmentModalProps {
     isOpen: boolean
     onClose: () => void
     onSuccess: () => void
     preselectedClientId?: string
+    initialData?: any // Add initial data for editing
 }
 
 export default function CreateAppointmentModal({
     isOpen,
     onClose,
     onSuccess,
-    preselectedClientId
+    preselectedClientId,
+    initialData
 }: CreateAppointmentModalProps) {
-    const [clients, setClients] = useState<Client[]>([])
     const [formData, setFormData] = useState({
         clientId: preselectedClientId || '',
         title: '',
@@ -36,68 +33,90 @@ export default function CreateAppointmentModal({
     })
     const [loading, setLoading] = useState(false)
 
-    const supabase = createClient()
+    const { authFetch } = useAuthFetch()
+    const { myClients } = useClients()
 
     useEffect(() => {
         if (isOpen) {
-            fetchClients()
-            // Set default date to today
-            const today = new Date().toISOString().split('T')[0]
-            setFormData(prev => ({ ...prev, date: today }))
-
-            if (preselectedClientId) {
-                setFormData(prev => ({ ...prev, clientId: preselectedClientId }))
+            if (initialData) {
+                // Edit Mode
+                setFormData({
+                    clientId: initialData.client?.id || '',
+                    title: initialData.title || '',
+                    description: initialData.description || '',
+                    date: initialData.appointment_date || '',
+                    time: initialData.appointment_time || '',
+                    type: initialData.appointment_type || 'virtual',
+                    meetingLink: initialData.meeting_link || '',
+                    location: initialData.location || ''
+                })
+            } else {
+                // Create Mode
+                const today = new Date().toISOString().split('T')[0]
+                setFormData({
+                    clientId: preselectedClientId || '',
+                    title: '',
+                    description: '',
+                    date: today,
+                    time: '',
+                    type: 'virtual',
+                    meetingLink: '',
+                    location: ''
+                })
             }
         }
-    }, [isOpen, preselectedClientId])
+    }, [isOpen, preselectedClientId, initialData])
 
-    async function fetchClients() {
-        try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
-
-            const token = session.access_token
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/kanban`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-
-            if (!res.ok) return
-
-            const kanbanData = await res.json()
-            const allClients: Client[] = []
-
-            // Flatten all clients from kanban columns
-            Object.values(kanbanData).forEach((column: any) => {
-                if (Array.isArray(column)) {
-                    allClients.push(...column)
-                }
-            })
-
-            setClients(allClients)
-        } catch (error) {
-            console.error('Error fetching clients:', error)
-        }
-    }
+    const [recurrence, setRecurrence] = useState('none') // none, daily, weekly
+    const [recurrenceCount, setRecurrenceCount] = useState(1)
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         setLoading(true)
 
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
+            const method = initialData ? 'PATCH' : 'POST'
 
-            const token = session.access_token
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            })
+            const createRequest = async (data: any) => {
+                const url = initialData
+                    ? `${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${initialData.id}`
+                    : `${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`
 
-            if (!res.ok) throw new Error('Failed to create appointment')
+                const res = await authFetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                })
+
+                if (!res.ok) throw new Error('Failed to create appointment')
+            }
+
+            if (recurrence === 'none' || initialData) {
+                // Normal single creation/update
+                await createRequest(formData)
+            } else {
+                // Recurrence Creation (Loop)
+                const baseDate = new Date(formData.date + 'T' + formData.time)
+                // Use user-defined count
+                const iterations = recurrenceCount
+
+                const promises = []
+                for (let i = 0; i < iterations; i++) {
+                    const newDate = new Date(baseDate)
+                    if (recurrence === 'daily') {
+                        newDate.setDate(baseDate.getDate() + i)
+                    } else if (recurrence === 'weekly') {
+                        newDate.setDate(baseDate.getDate() + (i * 7))
+                    }
+
+                    const dateStr = newDate.toISOString().split('T')[0]
+                    promises.push(createRequest({
+                        ...formData,
+                        date: dateStr
+                    }))
+                }
+                await Promise.all(promises)
+            }
 
             onSuccess()
             handleClose()
@@ -120,17 +139,19 @@ export default function CreateAppointmentModal({
             meetingLink: '',
             location: ''
         })
+        setRecurrence('none')
+        setRecurrenceCount(1)
         onClose()
     }
 
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <ModalPortal>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                    <h2 className="text-xl font-bold text-[#000d42]">Nueva Cita</h2>
+                    <h2 className="text-xl font-bold text-[#000d42]">{initialData ? 'Editar Cita' : 'Nueva Cita'}</h2>
                     <button
                         onClick={handleClose}
                         className="text-slate-400 hover:text-slate-600 transition"
@@ -153,7 +174,7 @@ export default function CreateAppointmentModal({
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056fc]"
                         >
                             <option value="">Seleccionar cliente...</option>
-                            {clients.map((client) => (
+                            {myClients.map((client) => (
                                 <option key={client.id} value={client.id}>
                                     {client.company_name} - {client.contact_name}
                                 </option>
@@ -266,6 +287,48 @@ export default function CreateAppointmentModal({
                         />
                     </div>
 
+                    {/* Recurrence (Create Mode Only) */}
+                    {!initialData && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Repetir
+                                </label>
+                                <select
+                                    value={recurrence}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setRecurrence(val);
+                                        // Set defaults based on selection
+                                        if (val === 'daily') setRecurrenceCount(5);
+                                        else if (val === 'weekly') setRecurrenceCount(4);
+                                        else setRecurrenceCount(1);
+                                    }}
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056fc]"
+                                >
+                                    <option value="none">No repetir</option>
+                                    <option value="daily">Diariamente</option>
+                                    <option value="weekly">Semanalmente</option>
+                                </select>
+                            </div>
+                            {recurrence !== 'none' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                        Veces
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="50"
+                                        value={recurrenceCount}
+                                        onChange={(e) => setRecurrenceCount(parseInt(e.target.value) || 1)}
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056fc]"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Actions */}
                     <div className="flex gap-3 pt-4">
                         <button
@@ -280,11 +343,11 @@ export default function CreateAppointmentModal({
                             disabled={loading}
                             className="flex-1 px-4 py-2 bg-[#0056fc] text-white rounded-lg hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {loading ? 'Guardando...' : 'Agendar Cita'}
+                            {loading ? 'Guardando...' : (initialData ? 'Actualizar Cita' : 'Agendar Cita')}
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
+        </ModalPortal>
     )
 }

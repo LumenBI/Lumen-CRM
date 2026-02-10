@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
     X,
     MessageSquare,
@@ -30,6 +30,8 @@ const INTERACTION_OPTIONS: { id: InteractionType; label: string; icon: any }[] =
     { id: 'MEETING', label: 'Reunión', icon: CalendarPlus },
 ]
 
+import { createPortal } from 'react-dom'
+
 export default function StageChangeModal({
     isOpen,
     onClose,
@@ -54,8 +56,18 @@ export default function StageChangeModal({
         })
     }
 
-    return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    const [mounted, setMounted] = useState(false)
+    useEffect(() => {
+        setMounted(true)
+        return () => setMounted(false)
+    }, [])
+
+    if (!mounted) return null
+
+    if (!mounted) return null
+
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div
                 className="absolute inset-0 bg-[#000D42]/60 backdrop-blur-sm animate-in fade-in duration-200"
                 onClick={loading ? undefined : onClose}
@@ -151,6 +163,7 @@ export default function StageChangeModal({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }

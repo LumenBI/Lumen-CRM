@@ -6,7 +6,6 @@ import { motion, useScroll, useTransform, useSpring, useMotionValue, useMotionTe
 import { ArrowRight, Globe, ShieldCheck } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
-// Animation Variants
 const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
@@ -45,7 +44,6 @@ const clipReveal: Variants = {
 }
 
 export default function LandingPage() {
-  // Mouse move effect for floating card
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
@@ -58,7 +56,6 @@ export default function LandingPage() {
     mouseY.set(yPoint);
   }
 
-  // Parallax effect based on mouse
   const rotateX = useTransform(mouseY, [0, 1], [5, -5]);
   const rotateY = useTransform(mouseX, [0, 1], [-5, 5]);
 
@@ -68,7 +65,6 @@ export default function LandingPage() {
       onMouseMove={handleMouseMove}
     >
 
-      {/* --- NAVBAR --- */}
       <motion.nav
         variants={navVariants}
         initial="hidden"
@@ -84,25 +80,23 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-8">
             <Link href="https://starcargoservice.com" target="_blank" className="hidden md:block text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors">
-              Sitio Corporativo
+              Sitio web
             </Link>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link
                 href="/login"
                 className="px-6 py-2.5 rounded-full bg-base-900 text-white text-sm font-bold hover:bg-blue-600 transition-all shadow-glow"
               >
-                Acceso Clientes
+                Acceder al portal
               </Link>
             </motion.div>
           </div>
         </div>
       </motion.nav>
 
-      {/* --- HERO SECTION --- */}
       <main className="pt-20 lg:pt-0 min-h-screen flex items-center relative">
         <div className="w-full max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0 h-full">
 
-          {/* LEFT SIDE: Text Content */}
           <div className="lg:col-span-5 flex flex-col justify-center px-6 lg:pl-20 lg:pr-12 py-20 z-10 bg-white">
             <motion.div
               variants={staggerContainer}
@@ -123,7 +117,6 @@ export default function LandingPage() {
                 Logística <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400 relative inline-block">
                   Inteligente.
-                  {/* Shimmer Effect overlay */}
                   <motion.span
                     className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent"
                     animate={{ x: ['-100%', '200%'] }}
@@ -144,22 +137,20 @@ export default function LandingPage() {
                   href="/login"
                   className="group flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-lg font-bold hover:bg-base-900 transition-all shadow-soft"
                 >
-                  Ingresar al Portal
+                  Ingresar al portal
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <div className="flex items-center gap-2 px-4 text-sm font-semibold text-gray-400">
                   <ShieldCheck className="w-4 h-4" />
-                  Plataforma Segura
+                  Plataforma segura
                 </div>
               </motion.div>
             </motion.div>
           </div>
 
-          {/* RIGHT SIDE: Visuals */}
           <div className="lg:col-span-7 relative min-h-[50vh] lg:h-auto lg:min-h-screen">
             <div className="absolute inset-0 bg-base-900 lg:bg-transparent"></div>
 
-            {/* Main Image with Diagonal Clip Reveal */}
             <motion.div
               className="absolute inset-0 w-full h-full clip-diagonal overflow-hidden"
               variants={clipReveal}
@@ -182,7 +173,6 @@ export default function LandingPage() {
               </motion.div>
             </motion.div>
 
-            {/* Floating Card with Parallax */}
             <motion.div
               style={{ rotateX, rotateY, perspective: 1000 }}
               initial={{ opacity: 0, x: 100 }}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { createClient } from '@/utils/supabase/client'
 import {
     X as LucideX,
@@ -13,6 +14,7 @@ import {
     DollarSign as LucideDollarSign
 } from 'lucide-react'
 import { INTERACTION_TYPES } from '@/constants/interactions'
+import { useUser } from '@/context/UserContext'
 
 // Create aliases for icons
 const DollarSign = LucideDollarSign
@@ -52,9 +54,11 @@ type ClientData = {
     email: string
     phone?: string
     status: string
+    assigned_agent_id?: string
 }
 
-export default function ClientModal({ clientId, onClose }: { clientId: string, onClose: () => void }) {
+export default function ClientModal({ clientId, onClose, onSuccess }: { clientId: string, onClose: () => void, onSuccess?: () => void }) {
+    const { profile } = useUser()
     const [client, setClient] = useState<ClientData | null>(null)
     const [history, setHistory] = useState<Interaction[]>([])
     const [deals, setDeals] = useState<Deal[]>([])
@@ -114,6 +118,14 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
     const handleSaveInteraction = async () => {
         if (!newNote.trim()) return
         if (scheduleFuture && (!futureDate || !futureTime)) return
+
+        // STRICT RBAC ENFORCEMENT
+        if (profile?.role !== 'ADMIN' && profile?.role !== 'MANAGER') {
+            if (client?.assigned_agent_id !== profile?.id) {
+                alert('No tienes permisos para registrar actividad en este cliente.')
+                return
+            }
+        }
 
         setIsSubmitting(true)
 
@@ -190,13 +202,23 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
         }
     }
 
-    if (!clientId) return null
+    const [mounted, setMounted] = useState(false)
+    useEffect(() => {
+        setMounted(true)
+        return () => setMounted(false)
+    }, [])
 
+    if (!clientId || !mounted) return null
+
+    // STRICT RBAC CHECK
+    const canInteract = profile?.role === 'ADMIN' || profile?.role === 'MANAGER' || (client?.assigned_agent_id === profile?.id)
+
+    // const { createPortal } = require('react-dom') -- REMOVED
     const currentTypeConfig = INTERACTION_TYPES.find(t => t.value === type)
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="relative max-h-[95vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="relative max-h-[95vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-200">
                 {/* Header - MEJORADO con gradiente Star Cargo */}
                 <div className="flex items-center justify-between bg-gradient-to-r from-[#000D42] to-[#0066FF] px-8 py-6 shadow-lg">
                     <div>
@@ -251,7 +273,13 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
                         <hr className="my-8 border-gray-200" />
 
                         <h3 className="mb-6 text-sm font-bold uppercase text-[#000D42] tracking-wider">Nueva Actividad</h3>
-                        <div className="space-y-4">
+                        {!canInteract && (
+                            <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 font-medium flex items-center gap-2">
+                                <LucideX size={16} />
+                                Solo el agente asignado puede registrar actividad.
+                            </div>
+                        )}
+                        <div className={`space-y-4 ${!canInteract ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
                             {/* Custom Select with Icons */}
                             <div className="relative">
                                 <div className="grid grid-cols-3 gap-2">
@@ -455,6 +483,7 @@ export default function ClientModal({ clientId, onClose }: { clientId: string, o
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }

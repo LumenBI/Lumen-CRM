@@ -16,7 +16,6 @@ export async function createClient() {
                     try {
                         cookieStore.set({ name, value, ...options })
                     } catch (error) {
-                        // Manejo de errores en Server Components (Next.js a veces se queja aquí)
                     }
                 },
                 remove(name: string, options: CookieOptions) {
