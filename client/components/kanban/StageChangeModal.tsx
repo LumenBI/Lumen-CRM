@@ -44,6 +44,12 @@ export default function StageChangeModal({
     const [interactionType, setInteractionType] = useState<InteractionType>('CALL')
     const [summary, setSummary] = useState('')
     const [nextStep, setNextStep] = useState('')
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+        return () => setMounted(false)
+    }, [])
 
     if (!isOpen) return null
 
@@ -55,14 +61,6 @@ export default function StageChangeModal({
             nextStep
         })
     }
-
-    const [mounted, setMounted] = useState(false)
-    useEffect(() => {
-        setMounted(true)
-        return () => setMounted(false)
-    }, [])
-
-    if (!mounted) return null
 
     if (!mounted) return null
 

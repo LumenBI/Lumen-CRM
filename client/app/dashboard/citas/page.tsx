@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import CreateAppointmentModal from '@/components/CreateAppointmentModal'
 import AppointmentDetailsModal from '@/components/AppointmentDetailsModal'
 import CalendarView from '@/components/calendar/CalendarView'
-import { useAuthFetch } from '@/hooks/useAuthFetch'
+import { useAppointments } from '@/context/AppointmentsContext'
 import { getTypeIcon, getStatusBadge, formatAppointmentDate } from '@/utils/appointmentUtils'
 import type { Appointment } from '@/types'
 import {
@@ -20,8 +20,7 @@ import {
 import ContextMenu from '@/components/ContextMenu'
 
 export default function AppointmentsPage() {
-    const [appointments, setAppointments] = useState<Appointment[]>([])
-    const [loading, setLoading] = useState(true)
+    const { appointments, loading, refreshAppointments, updateAppointment } = useAppointments()
     const [filter, setFilter] = useState<'all' | 'pendiente' | 'confirmada' | 'completada'>('all')
     const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar')
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -43,26 +42,6 @@ export default function AppointmentsPage() {
         appointmentId: null,
         date: null
     })
-
-    const { authFetch } = useAuthFetch()
-
-    useEffect(() => {
-        fetchAppointments()
-    }, [])
-
-    async function fetchAppointments() {
-        setLoading(true)
-        try {
-            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`)
-            if (!res.ok) throw new Error('Failed to fetch appointments')
-            const data = await res.json()
-            setAppointments(data)
-        } catch (error) {
-            console.error('Error fetching appointments:', error)
-        } finally {
-            setLoading(false)
-        }
-    }
 
     const filteredAppointments = filter === 'all'
         ? appointments
@@ -97,17 +76,7 @@ export default function AppointmentsPage() {
         if (status === 'cancelada' && !confirm('¿Estás seguro de que deseas cancelar esta cita?')) return
 
         try {
-            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${appointmentId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status })
-            })
-
-            if (res.ok) {
-                fetchAppointments()
-            } else {
-                alert(status === 'completada' ? 'Error al actualizar el estado' : 'Error al cancelar la cita')
-            }
+            await updateAppointment(appointmentId, { status })
         } catch (error) {
             console.error(`Error updating appointment to ${status}:`, error)
         }
@@ -222,23 +191,10 @@ export default function AppointmentsPage() {
                         }}
                         onAppointmentMove={async (appointmentId, newDate) => {
                             try {
-                                setAppointments(prev => prev.map(app =>
-                                    app.id === appointmentId ? { ...app, appointment_date: newDate } : app
-                                ))
-
-                                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${appointmentId}`, {
-                                    method: 'PATCH',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ appointment_date: newDate })
-                                })
-
-                                if (!res.ok) throw new Error('Failed to move appointment')
-
-                                fetchAppointments()
+                                await updateAppointment(appointmentId, { appointment_date: newDate })
                             } catch (error) {
                                 console.error('Error moving appointment:', error)
                                 alert('Error al mover la cita')
-                                fetchAppointments()
                             }
                         }}
                     />
@@ -321,7 +277,7 @@ export default function AppointmentsPage() {
                     setEditingAppointment(null)
                 }}
                 onSuccess={() => {
-                    fetchAppointments()
+                    refreshAppointments()
                     setIsModalOpen(false)
                     setEditingAppointment(null)
                 }}

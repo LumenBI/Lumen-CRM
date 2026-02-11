@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 
 /**
@@ -9,7 +10,7 @@ import { createClient } from '@/utils/supabase/client'
 export function useAuthFetch() {
     const supabase = createClient()
 
-    const authFetch = async (url: string, options?: RequestInit): Promise<Response> => {
+    const authFetch = useCallback(async (url: string, options?: RequestInit): Promise<Response> => {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) throw new Error('No active session')
 
@@ -20,7 +21,7 @@ export function useAuthFetch() {
                 Authorization: `Bearer ${session.access_token}`,
             },
         })
-    }
+    }, [])
 
     return { authFetch, supabase }
 }

@@ -431,7 +431,7 @@ export class DashboardService {
             .update({ status: newStatus })
             .eq('id', dealId)
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw new Error(error.message);
 
@@ -624,7 +624,7 @@ export class DashboardService {
                 agent_id: userId,
                 client_id: payload.clientId,
                 category: payload.category,
-                modality: payload.modality || 'N_A',
+                modality: (payload.modality === 'N_A' || payload.modality === 'OTHER' || !payload.modality) ? 'VIRTUAL' : payload.modality,
                 summary: payload.summary,
                 amount_usd: payload.amount_usd || 0,
                 is_completed: true,

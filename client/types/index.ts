@@ -35,3 +35,18 @@ export interface Appointment {
         email?: string
     }
 }
+
+export type Deal = {
+    id: string
+    title: string
+    value: number
+    currency: string
+    status: string
+    type: 'FCL' | 'LCL' | 'AEREO'
+    client: {
+        id: string
+        company_name: string
+        contact_name: string
+    }
+    updated_at: string
+}

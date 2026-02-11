@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { useAuthFetch } from '@/hooks/useAuthFetch'
 import PageHeader from '@/components/ui/PageHeader'
 import {
     Loader2,
@@ -17,7 +16,6 @@ import {
     FileText,
     Container,
     Plane,
-    DollarSign,
     Eye,
     Pencil,
     ArrowRightCircle
@@ -26,34 +24,8 @@ import ClientModal from '@/components/ClientModal'
 import NewDealModal from '@/components/kanban/NewDealModal'
 import StageChangeModal from '@/components/kanban/StageChangeModal'
 import ContextMenu from '@/components/ContextMenu'
-
-type Deal = {
-    id: string
-    title: string
-    value: number
-    currency: string
-    status: string
-    type: 'FCL' | 'LCL' | 'AEREO'
-    client: {
-        id: string
-        company_name: string
-        contact_name: string
-    }
-    updated_at: string
-}
-
-type BoardData = {
-    [key: string]: Deal[]
-}
-
-const COLUMNS = [
-    { id: 'CONTACTADO', title: 'Contactado', color: 'from-gray-400 to-gray-600', textColor: 'text-white', icon: ClipboardList },
-    { id: 'CITA', title: 'Cita / Reunión', color: 'from-blue-400 to-blue-600', textColor: 'text-white', icon: PhoneCall },
-    { id: 'PROCESO_COTIZACION', title: 'Cotizando', color: 'from-amber-400 to-orange-600', textColor: 'text-white', icon: Briefcase },
-    { id: 'COTIZACION_ENVIADA', title: 'Cot. Enviada', color: 'from-purple-400 to-purple-600', textColor: 'text-white', icon: FileText },
-    { id: 'CERRADO_GANADO', title: 'Ganado', color: 'from-emerald-400 to-green-600', textColor: 'text-white', icon: CheckCircle2 },
-    { id: 'CERRADO_PERDIDO', title: 'Perdido', color: 'from-red-400 to-red-600', textColor: 'text-white', icon: XCircle },
-]
+import { useDeals, KANBAN_COLUMNS } from '@/context/DealsContext'
+import type { Deal } from '@/types'
 
 const TYPE_ICONS = {
     FCL: Container,
@@ -62,8 +34,7 @@ const TYPE_ICONS = {
 }
 
 export default function KanbanPage() {
-    const [board, setBoard] = useState<BoardData | null>(null)
-    const [loading, setLoading] = useState(true)
+    const { board, loading, refreshBoard, moveDeal } = useDeals()
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
@@ -97,38 +68,6 @@ export default function KanbanPage() {
 
     const [filterType, setFilterType] = useState('ALL')
 
-    const { authFetch } = useAuthFetch()
-
-    useEffect(() => {
-        fetchBoard()
-    }, [])
-
-    const fetchBoard = async () => {
-        try {
-            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/kanban`)
-            if (res.ok) {
-                const data = await res.json()
-                const splitBoard = { ...data }
-
-                if (splitBoard.CERRADO) {
-                    splitBoard.CERRADO_GANADO = splitBoard.CERRADO.filter((d: Deal) => d.status === 'CERRADO_GANADO')
-                    splitBoard.CERRADO_PERDIDO = splitBoard.CERRADO.filter((d: Deal) => d.status === 'CERRADO_PERDIDO')
-                    delete splitBoard.CERRADO
-                }
-
-                COLUMNS.forEach(col => {
-                    if (!splitBoard[col.id]) splitBoard[col.id] = []
-                })
-
-                setBoard(splitBoard)
-            }
-        } catch (error) {
-            console.error("Error cargando kanban:", error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
     const onDragEnd = (result: DropResult) => {
         const { source, destination, draggableId } = result
 
@@ -143,8 +82,8 @@ export default function KanbanPage() {
             isOpen: true,
             dealId: deal.id,
             dealTitle: deal.title,
-            fromStage: COLUMNS.find(c => c.id === source.droppableId)?.title || source.droppableId,
-            toStage: COLUMNS.find(c => c.id === destination.droppableId)?.title || destination.droppableId,
+            fromStage: KANBAN_COLUMNS.find(c => c.id === source.droppableId)?.title || source.droppableId,
+            toStage: KANBAN_COLUMNS.find(c => c.id === destination.droppableId)?.title || destination.droppableId,
             pendingSource: source,
             pendingDest: destination
         })
@@ -155,54 +94,11 @@ export default function KanbanPage() {
 
         const newStatus = stageModal.pendingDest.droppableId
 
-        const newBoard = { ...board }
-
-        const sourceCol = newBoard[stageModal.pendingSource.droppableId]
-        const destCol = newBoard[newStatus]
-
-        const dealIndex = sourceCol.findIndex(d => d.id === stageModal.dealId)
-        if (dealIndex === -1) return
-
-        const [movedDeal] = sourceCol.splice(dealIndex, 1)
-        movedDeal.status = newStatus
-
-        if (stageModal.pendingDest.index !== undefined) {
-            destCol.splice(stageModal.pendingDest.index, 0, movedDeal)
-        } else {
-            destCol.push(movedDeal)
-        }
-
-        setBoard(newBoard)
-        setStageModal(prev => ({ ...prev, isOpen: false }))
-
         try {
-            const promises = []
-
-            promises.push(authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals/${stageModal.dealId}/move`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
-            }))
-
-            const deal = movedDeal
-
-            promises.push(authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/interactions`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    clientId: deal.client.id,
-                    category: interactionData.interactionType,
-                    summary: `[CAMBIO DE ETAPA: ${newStatus}] ${interactionData.summary}` + (interactionData.nextStep ? `\nPróximo paso: ${interactionData.nextStep}` : ''),
-                    modality: 'N/A'
-                })
-            }))
-
-            await Promise.all(promises)
-
+            await moveDeal(stageModal.dealId, newStatus, interactionData)
+            setStageModal(prev => ({ ...prev, isOpen: false }))
         } catch (error) {
-            console.error("Error executing move/log:", error)
-            alert("Hubo un error al guardar los cambios.")
-            fetchBoard()
+            console.error("Error confirming move:", error)
         }
     }
 
@@ -229,14 +125,14 @@ export default function KanbanPage() {
             }
         })
 
-        const currentIndex = COLUMNS.findIndex(c => c.id === currentStageId)
-        if (currentIndex !== -1 && currentIndex < COLUMNS.length - 1) {
-            const nextStage = COLUMNS[currentIndex + 1]
+        const currentIndex = KANBAN_COLUMNS.findIndex(c => c.id === currentStageId)
+        if (currentIndex !== -1 && currentIndex < KANBAN_COLUMNS.length - 1) {
+            const nextStage = KANBAN_COLUMNS[currentIndex + 1]
             setStageModal({
                 isOpen: true,
                 dealId: deal.id,
                 dealTitle: deal.title,
-                fromStage: COLUMNS[currentIndex].title,
+                fromStage: KANBAN_COLUMNS[currentIndex].title,
                 toStage: nextStage.title,
                 pendingSource: { droppableId: currentStageId },
                 pendingDest: { droppableId: nextStage.id, index: 0 }
@@ -247,6 +143,21 @@ export default function KanbanPage() {
     }
 
     if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>
+
+    // Augment KANBAN_COLUMNS with UI info
+    const COLUMNS_UI = KANBAN_COLUMNS.map(col => {
+        let uiInfo = { color: 'from-gray-400 to-gray-600', textColor: 'text-white', icon: ClipboardList }
+        switch (col.id) {
+            case 'CONTACTADO': uiInfo = { color: 'from-gray-400 to-gray-600', textColor: 'text-white', icon: ClipboardList }; break;
+            case 'CITA': uiInfo = { color: 'from-blue-400 to-blue-600', textColor: 'text-white', icon: PhoneCall }; break;
+            case 'PROCESO_COTIZACION': uiInfo = { color: 'from-amber-400 to-orange-600', textColor: 'text-white', icon: Briefcase }; break;
+            case 'COTIZACION_ENVIADA': uiInfo = { color: 'from-purple-400 to-purple-600', textColor: 'text-white', icon: FileText }; break;
+            case 'CERRADO_GANADO': uiInfo = { color: 'from-emerald-400 to-green-600', textColor: 'text-white', icon: CheckCircle2 }; break;
+            case 'CERRADO_PERDIDO': uiInfo = { color: 'from-red-400 to-red-600', textColor: 'text-white', icon: XCircle }; break;
+        }
+        return { ...col, ...uiInfo }
+    })
+
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 p-8">
@@ -283,7 +194,7 @@ export default function KanbanPage() {
 
             <DragDropContext onDragEnd={onDragEnd}>
                 <div className="flex gap-4 h-full pb-4 overflow-x-auto">
-                    {COLUMNS.map((col) => (
+                    {COLUMNS_UI.map((col) => (
                         <div key={col.id} className="flex h-full flex-col rounded-2xl bg-white shadow-xl min-w-[300px] w-[300px]">
                             {/* Column Header */}
                             <div className={`bg-gradient-to-r ${col.color} rounded-t-2xl p-4 shadow-lg sticky top-0 z-10`}>
@@ -370,7 +281,7 @@ export default function KanbanPage() {
                 <NewDealModal
                     onClose={() => setIsCreateModalOpen(false)}
                     onSuccess={() => {
-                        fetchBoard()
+                        refreshBoard()
                     }}
                 />
             )}

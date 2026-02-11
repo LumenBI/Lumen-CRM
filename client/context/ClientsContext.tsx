@@ -76,7 +76,7 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
     // Least privilege: filter by assigned_agent_id for non-admin roles
     const myClients = useMemo(() => {
         if (!profile) return []
-        if (profile.role === 'ADMIN' || profile.role === 'MANAGER') {
+        if (['ADMIN', 'MANAGER'].includes(profile.role.toUpperCase())) {
             return allClients
         }
         return allClients.filter(c => c.assigned_agent_id === profile.id)
@@ -100,15 +100,17 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
         )
     }, [allClients])
 
+    const value = useMemo(() => ({
+        allClients,
+        myClients,
+        searchClients,
+        searchAllClients,
+        refreshClients: fetchClients,
+        loading,
+    }), [allClients, myClients, searchClients, searchAllClients, fetchClients, loading])
+
     return (
-        <ClientsContext.Provider value={{
-            allClients,
-            myClients,
-            searchClients,
-            searchAllClients,
-            refreshClients: fetchClients,
-            loading,
-        }}>
+        <ClientsContext.Provider value={value}>
             {children}
         </ClientsContext.Provider>
     )

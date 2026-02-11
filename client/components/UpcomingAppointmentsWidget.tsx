@@ -1,46 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { LucideCalendar } from 'lucide-react'
-import { useAuthFetch } from '@/hooks/useAuthFetch'
+import { useAppointments } from '@/context/AppointmentsContext'
 import { getTypeIcon } from '@/utils/appointmentUtils'
 
-interface UpcomingAppointment {
-    id: string
-    title: string
-    appointment_date: string
-    appointment_time: string
-    appointment_type: 'virtual' | 'presencial' | 'llamada'
-    status: 'pendiente' | 'confirmada'
-    meeting_link?: string
-    client: {
-        company_name: string
-        contact_name: string
-    }
-}
-
 export default function UpcomingAppointmentsWidget() {
-    const [appointments, setAppointments] = useState<UpcomingAppointment[]>([])
-    const [loading, setLoading] = useState(true)
-    const { authFetch } = useAuthFetch()
+    const { appointments, loading } = useAppointments()
 
-    useEffect(() => {
-        fetchUpcomingAppointments()
-    }, [])
-
-    async function fetchUpcomingAppointments() {
-        try {
-            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/upcoming?limit=3`)
-            if (!res.ok) throw new Error('Failed to fetch appointments')
-            const data = await res.json()
-            setAppointments(data)
-        } catch (error) {
-            console.error('Error fetching upcoming appointments:', error)
-        } finally {
-            setLoading(false)
-        }
-    }
+    const upcomingAppointments = useMemo(() => {
+        if (!appointments) return []
+        const now = new Date()
+        return appointments
+            .filter(app => new Date(app.appointment_date + 'T' + app.appointment_time) >= now)
+            .sort((a, b) => new Date(a.appointment_date + 'T' + a.appointment_time).getTime() - new Date(b.appointment_date + 'T' + b.appointment_time).getTime())
+            .slice(0, 3)
+    }, [appointments])
 
     const formatDate = (dateStr: string) => {
         const [year, month, day] = dateStr.split('-').map(Number)
@@ -84,7 +60,7 @@ export default function UpcomingAppointmentsWidget() {
                 </Link>
             </div>
 
-            {appointments.length === 0 ? (
+            {upcomingAppointments.length === 0 ? (
                 <div className="text-center py-8 text-slate-400">
                     <LucideCalendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No hay citas programadas</p>
@@ -97,7 +73,7 @@ export default function UpcomingAppointmentsWidget() {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {appointments.map((appointment) => {
+                    {upcomingAppointments.map((appointment) => {
                         const { day, month } = formatDate(appointment.appointment_date)
                         const linkHref = appointment.meeting_link || '/dashboard/citas'
                         const isExternal = !!appointment.meeting_link
@@ -122,7 +98,7 @@ export default function UpcomingAppointmentsWidget() {
                                         </div>
                                         <p className="text-xs text-slate-500 flex items-center gap-1">
                                             {getTypeIcon(appointment.appointment_type)}
-                                            <span>{appointment.appointment_time}</span>
+                                            <span>{appointment.appointment_time.slice(0, 5)}</span>
                                             <span className="mx-1">•</span>
                                             <span className="capitalize">{appointment.appointment_type}</span>
                                         </p>
