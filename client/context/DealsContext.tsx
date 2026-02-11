@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
+import { useData } from '@/context/DataContext'
 import { useApi } from '@/hooks/useApi'
 import type { Deal } from '@/types'
 
@@ -30,6 +31,7 @@ const DealsContext = createContext<DealsContextType | undefined>(undefined)
 export function DealsProvider({ children }: { children: React.ReactNode }) {
     const [board, setBoard] = useState<KanbanBoard | null>(null)
     const [loading, setLoading] = useState(true)
+    const { deals: bootstrapBoard, loading: dataLoading } = useData()
 
     const { deals: dealsApi, interactions: interactionsApi } = useApi()
 
@@ -56,9 +58,25 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
         }
     }, [dealsApi])
 
+    // Bridge with DataContext
     useEffect(() => {
-        fetchBoard()
-    }, [fetchBoard])
+        if (bootstrapBoard) {
+            const splitBoard = { ...bootstrapBoard }
+            // Handle splitting CERRADO if not already handled by backend
+            if (splitBoard.CERRADO) {
+                splitBoard.CERRADO_GANADO = splitBoard.CERRADO.filter((d: Deal) => d.status === 'CERRADO_GANADO')
+                splitBoard.CERRADO_PERDIDO = splitBoard.CERRADO.filter((d: Deal) => d.status === 'CERRADO_PERDIDO')
+                delete splitBoard.CERRADO
+            }
+            KANBAN_COLUMNS.forEach(col => {
+                if (!splitBoard[col.id]) splitBoard[col.id] = []
+            })
+            setBoard(splitBoard)
+            setLoading(false)
+        } else if (!dataLoading) {
+            fetchBoard()
+        }
+    }, [bootstrapBoard, dataLoading, fetchBoard])
 
     const moveDeal = useCallback(async (dealId: string, newStatus: string, interactionData?: { interactionType: string, summary: string, nextStep?: string }) => {
         if (!board) return

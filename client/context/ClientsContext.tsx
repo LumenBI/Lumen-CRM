@@ -1,9 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
-import { createClient as createSupabaseClient } from '@/utils/supabase/client'
-import { useUser } from '@/context/UserContext'
-import { useApi } from '@/hooks/useApi'
+import { useData } from '@/context/DataContext'
 import type { Client } from '@/types'
 
 interface ClientsContextType {
@@ -23,6 +20,7 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
     const [allClients, setAllClients] = useState<Client[]>([])
     const [loading, setLoading] = useState(true)
     const { profile } = useUser()
+    const { clients: bootstrapClients, loading: dataLoading } = useData()
     const supabase = createSupabaseClient()
 
     const { clients: clientsApi } = useApi()
@@ -38,9 +36,16 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
         }
     }, [clientsApi])
 
+    // Bridge with DataContext
     useEffect(() => {
-        fetchClients()
-    }, [fetchClients])
+        if (bootstrapClients && bootstrapClients.length > 0) {
+            setAllClients(bootstrapClients)
+            setLoading(false)
+        } else if (!dataLoading) {
+            // Only fetch if bootstrap is done and empty (or if we really need a fresh copy)
+            fetchClients()
+        }
+    }, [bootstrapClients, dataLoading, fetchClients])
     useEffect(() => {
         const channel = supabase
             .channel('clients-realtime')

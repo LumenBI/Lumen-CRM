@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
+import { useData } from '@/context/DataContext'
 import { useApi } from '@/hooks/useApi'
 import type { Appointment } from '@/types'
 
@@ -18,6 +19,7 @@ const AppointmentsContext = createContext<AppointmentsContextType | undefined>(u
 export function AppointmentsProvider({ children }: { children: React.ReactNode }) {
     const [appointments, setAppointments] = useState<Appointment[]>([])
     const [loading, setLoading] = useState(true)
+    const { appointments: bootstrapAppointments, loading: dataLoading } = useData()
     const { appointments: appointmentsApi } = useApi()
 
     const fetchAppointments = useCallback(async () => {
@@ -31,9 +33,15 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
         }
     }, [appointmentsApi])
 
+    // Bridge with DataContext
     useEffect(() => {
-        fetchAppointments()
-    }, [fetchAppointments])
+        if (bootstrapAppointments && bootstrapAppointments.length > 0) {
+            setAppointments(bootstrapAppointments)
+            setLoading(false)
+        } else if (!dataLoading) {
+            fetchAppointments()
+        }
+    }, [bootstrapAppointments, dataLoading, fetchAppointments])
 
     const createAppointment = useCallback(async (appointment: Partial<Appointment>) => {
         try {
