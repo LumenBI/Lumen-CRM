@@ -1,5 +1,9 @@
 'use client'
 
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
+import { createClient as createSupabaseClient } from '@/utils/supabase/client'
+import { useUser } from '@/context/UserContext'
+import { useApi } from '@/hooks/useApi'
 import { useData } from '@/context/DataContext'
 import type { Client } from '@/types'
 
@@ -49,16 +53,16 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const channel = supabase
             .channel('clients-realtime')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'clients' }, (payload) => {
-                setAllClients(prev => [...prev, payload.new as Client])
+            .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'clients' }, (payload: any) => {
+                setAllClients((prev: Client[]) => [...prev, payload.new as Client])
             })
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'clients' }, (payload) => {
-                setAllClients(prev =>
-                    prev.map(c => c.id === (payload.new as Client).id ? (payload.new as Client) : c)
+            .on('postgres_changes' as any, { event: 'UPDATE', schema: 'public', table: 'clients' }, (payload: any) => {
+                setAllClients((prev: Client[]) =>
+                    prev.map((c: Client) => c.id === (payload.new as Client).id ? (payload.new as Client) : c)
                 )
             })
-            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'clients' }, (payload) => {
-                setAllClients(prev => prev.filter(c => c.id !== (payload.old as Client).id))
+            .on('postgres_changes' as any, { event: 'DELETE', schema: 'public', table: 'clients' }, (payload: any) => {
+                setAllClients((prev: Client[]) => prev.filter((c: Client) => c.id !== (payload.old as Client).id))
             })
             .subscribe()
 
@@ -72,13 +76,13 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
         if (['ADMIN', 'MANAGER'].includes(profile.role.toUpperCase())) {
             return allClients
         }
-        return allClients.filter(c => c.assigned_agent_id === profile.id)
+        return allClients.filter((c: Client) => c.assigned_agent_id === profile.id)
     }, [allClients, profile])
 
     const searchClients = useCallback((query: string): Client[] => {
         if (!query || query.length < 2) return myClients
         const q = query.toLowerCase()
-        return myClients.filter(c =>
+        return myClients.filter((c: Client) =>
             c.company_name.toLowerCase().includes(q) ||
             c.contact_name.toLowerCase().includes(q)
         )
@@ -87,7 +91,7 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
     const searchAllClients = useCallback((query: string): Client[] => {
         if (!query || query.length < 2) return allClients
         const q = query.toLowerCase()
-        return allClients.filter(c =>
+        return allClients.filter((c: Client) =>
             c.company_name.toLowerCase().includes(q) ||
             c.contact_name.toLowerCase().includes(q)
         )
@@ -104,14 +108,14 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
             assigned_agent_id: clientData.assigned_agent_id || profile?.id
         } as Client
 
-        setAllClients(prev => [...prev, tempClient])
+        setAllClients((prev: Client[]) => [...prev, tempClient])
 
         try {
             const newClient = await clientsApi.create(clientData)
-            setAllClients(prev => prev.map(c => c.id === tempId ? newClient : c))
+            setAllClients((prev: Client[]) => prev.map((c: Client) => c.id === tempId ? newClient : c))
             return newClient
         } catch (error) {
-            setAllClients(prev => prev.filter(c => c.id !== tempId))
+            setAllClients((prev: Client[]) => prev.filter((c: Client) => c.id !== tempId))
             throw error
         }
     }, [clientsApi, profile])
@@ -119,7 +123,7 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
     const updateClient = useCallback(async (id: string, clientData: Partial<Client>) => {
         const previousClients = [...allClients]
 
-        setAllClients(prev => prev.map(c => c.id === id ? { ...c, ...clientData } : c))
+        setAllClients((prev: Client[]) => prev.map((c: Client) => c.id === id ? { ...c, ...clientData } as Client : c))
 
         try {
             const updatedClient = await clientsApi.update(id, clientData)

@@ -55,7 +55,7 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
 
     const updateAppointment = useCallback(async (id: string, updates: Partial<Appointment>) => {
         try {
-            setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a))
+            setAppointments((prev: Appointment[]) => prev.map((a: Appointment) => a.id === id ? { ...a, ...updates } : a))
 
             await appointmentsApi.update(id, updates)
             fetchAppointments()
@@ -68,7 +68,7 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
 
     const deleteAppointment = useCallback(async (id: string) => {
         try {
-            setAppointments(prev => prev.filter(a => a.id !== id))
+            setAppointments((prev: Appointment[]) => prev.filter((a: Appointment) => a.id !== id))
 
             await appointmentsApi.delete(id)
         } catch (error) {

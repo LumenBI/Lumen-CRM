@@ -87,7 +87,7 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
         let movedDeal: Deal | undefined = undefined
 
         for (const colId in newBoard) {
-            const index = newBoard[colId].findIndex(d => d.id === dealId)
+            const index = newBoard[colId].findIndex((d: Deal) => d.id === dealId)
             if (index !== -1) {
                 movedDeal = newBoard[colId][index]
                 newBoard[colId] = [...newBoard[colId]]
