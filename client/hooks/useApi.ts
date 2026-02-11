@@ -123,6 +123,21 @@ export const useApi = () => {
                     toast.error('Error al actualizar estado de usuario')
                     throw error
                 }
+            },
+
+            updateNotificationInterval: async (interval: number) => {
+                try {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/profile/notifications`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ interval })
+                    })
+                    if (!res.ok) throw new Error('Failed to update notification settings')
+                    return res.json()
+                } catch (error) {
+                    console.error('Error updating notification interval:', error)
+                    throw error
+                }
             }
         },
 
@@ -135,7 +150,7 @@ export const useApi = () => {
 
             create: async (data: any) => {
                 try {
-                    DealSchema.parse(data)
+                    DealSchema.partial().parse(data)
 
                     const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals`, {
                         method: 'POST',
@@ -216,6 +231,7 @@ export const useApi = () => {
 
             update: async (id: string, data: Partial<Appointment>) => {
                 try {
+                    console.log('Updating appointment:', id, data)
                     AppointmentSchema.partial().parse(data)
 
                     const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${id}`, {
@@ -248,6 +264,22 @@ export const useApi = () => {
                     return res.json()
                 } catch (error) {
                     toast.error('Error al eliminar cita')
+                    throw error
+                }
+            },
+
+            updateStatus: async (id: string, status: string) => {
+                try {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${id}/status`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status })
+                    })
+                    if (!res.ok) throw new Error('Failed to update appointment status')
+                    toast.success('Estado de cita actualizado')
+                    return res.json() as Promise<Appointment>
+                } catch (error) {
+                    toast.error('Error al actualizar estado de cita')
                     throw error
                 }
             },

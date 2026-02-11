@@ -4,7 +4,8 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import { LucideCalendar } from 'lucide-react'
 import { useData } from '@/context/DataContext'
-import { getTypeIcon } from '@/utils/appointmentUtils'
+import { getTypeIcon, getStatusBadge } from '@/utils/appointmentUtils'
+import { getTypeLabel } from '@/constants/appointments'
 
 export default function UpcomingAppointmentsWidget() {
     const { appointments, loading } = useData()
@@ -100,15 +101,17 @@ export default function UpcomingAppointmentsWidget() {
                                             {getTypeIcon(appointment.appointment_type)}
                                             <span>{appointment.appointment_time.slice(0, 5)}</span>
                                             <span className="mx-1">•</span>
-                                            <span className="capitalize">{appointment.appointment_type}</span>
+                                            <span className="capitalize">{getTypeLabel(appointment.appointment_type)}</span>
                                         </p>
                                     </div>
-                                    <div className={`px-2 py-1 rounded-full text-xs font-semibold ${appointment.status === 'confirmada'
-                                        ? 'bg-green-100 text-green-700'
-                                        : 'bg-orange-100 text-orange-700'
-                                        }`}>
-                                        {appointment.status === 'confirmada' ? '✓' : '⏱'}
-                                    </div>
+                                    {(() => {
+                                        const badge = getStatusBadge(appointment.status)
+                                        return (
+                                            <div className={`px-2 py-1 rounded-full text-xs font-semibold ${badge.className}`}>
+                                                {appointment.status === 'confirmada' ? '✓' : '⏱'}
+                                            </div>
+                                        )
+                                    })()}
                                 </div>
                             </Link>
                         )

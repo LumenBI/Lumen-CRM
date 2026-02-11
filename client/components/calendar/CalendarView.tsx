@@ -9,20 +9,11 @@ import {
     LucidePhone,
     LucideClock
 } from 'lucide-react'
+import { DAYS, MONTHS } from '@/constants/calendar'
+import { APPOINTMENT_TYPES, getStatusCalendarColor } from '@/constants/appointments'
+import type { Appointment } from '@/types'
 
-interface Appointment {
-    id: string
-    title: string
-    appointment_date: string
-    appointment_time: string
-    appointment_type: 'virtual' | 'presencial' | 'llamada'
-    status: 'pendiente' | 'confirmada' | 'completada' | 'cancelada'
-    client: {
-        id: string
-        company_name: string
-        contact_name: string
-    }
-}
+
 
 interface CalendarViewProps {
     appointments: Appointment[]
@@ -32,11 +23,18 @@ interface CalendarViewProps {
     onAppointmentMove?: (appointmentId: string, newDate: string) => void
 }
 
-const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-const MONTHS = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-]
+
+const TYPE_ICON_MAP: Record<string, typeof LucideVideo> = {
+    'LucideVideo': LucideVideo,
+    'LucideMapPin': LucideMapPin,
+    'LucidePhone': LucidePhone,
+}
+
+function getTypeIcon(type: string) {
+    const typeConfig = APPOINTMENT_TYPES.find(t => t.id === type)
+    const Icon = typeConfig ? TYPE_ICON_MAP[typeConfig.iconName] : LucideClock
+    return Icon ? <Icon className="h-3 w-3" /> : <LucideClock className="h-3 w-3" />
+}
 
 export default function CalendarView({ appointments, onAppointmentClick, onAppointmentContextMenu, onDateContextMenu, onAppointmentMove }: CalendarViewProps) {
     const [currentDate, setCurrentDate] = useState(new Date())
@@ -64,24 +62,6 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
     }
 
     const todayStr = new Date().toISOString().split('T')[0]
-
-    const getTypeIcon = (type: string) => {
-        switch (type) {
-            case 'virtual': return <LucideVideo className="h-3 w-3" />
-            case 'presencial': return <LucideMapPin className="h-3 w-3" />
-            case 'llamada': return <LucidePhone className="h-3 w-3" />
-            default: return <LucideClock className="h-3 w-3" />
-        }
-    }
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'confirmada': return 'bg-green-100 text-green-700 border-green-200'
-            case 'pendiente': return 'bg-orange-100 text-orange-700 border-orange-200'
-            case 'cancelada': return 'bg-red-100 text-red-700 border-red-200'
-            default: return 'bg-gray-100 text-gray-700 border-gray-200'
-        }
-    }
 
     const blanks = Array(firstDay).fill(null)
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
@@ -177,7 +157,7 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
                                                 onAppointmentContextMenu(e, app)
                                             }
                                         }}
-                                        className={`w-full text-left p-1.5 rounded-md border text-[10px] sm:text-xs transition hover:scale-[1.02] shadow-sm ${getStatusColor(app.status)} cursor-grab active:cursor-grabbing`}
+                                        className={`w-full text-left p-1.5 rounded-md border text-[10px] sm:text-xs transition hover:scale-[1.02] shadow-sm ${getStatusCalendarColor(app.status)} cursor-grab active:cursor-grabbing`}
                                     >
                                         <div className="flex items-center gap-1 mb-0.5 line-clamp-1 font-bold pointer-events-none">
                                             {getTypeIcon(app.appointment_type)}

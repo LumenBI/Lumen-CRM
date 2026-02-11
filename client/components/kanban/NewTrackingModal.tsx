@@ -10,7 +10,8 @@ import {
     LucideMessageSquare,
     LucideCalendar
 } from 'lucide-react'
-import { INTERACTION_TYPES, STATUS_OPTIONS } from '@/constants/interactions'
+import { INTERACTION_TYPES } from '@/constants/interactions'
+import { STAGES } from '@/constants/stages'
 import { useUser } from '@/context/UserContext'
 import { useApi } from '@/hooks/useApi'
 import { useClients } from '@/context/ClientsContext'
@@ -312,17 +313,17 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                         <div className="space-y-4">
                             <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Estado Inicial</label>
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                                {STATUS_OPTIONS.map(opt => (
+                                {STAGES.map(stage => (
                                     <button
-                                        key={opt.value}
+                                        key={stage.id}
                                         type="button"
-                                        onClick={() => setStatus(opt.value)}
-                                        className={`p-2 rounded-lg text-xs font-medium border transition-all ${status === opt.value
+                                        onClick={() => setStatus(stage.id)}
+                                        className={`p-2 rounded-lg text-xs font-medium border transition-all ${status === stage.id
                                             ? 'bg-blue-600 text-white border-blue-600 shadow-md'
                                             : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
                                             }`}
                                     >
-                                        {opt.label}
+                                        {stage.title}
                                     </button>
                                 ))}
                             </div>

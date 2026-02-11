@@ -1,3 +1,7 @@
+import { APPOINTMENT_STATUS_IDS, APPOINTMENT_TYPE_IDS } from '@/constants/appointments'
+import { SHIPPING_TYPE_IDS } from '@/constants/shipping'
+import { STAGE_IDS } from '@/constants/stages'
+
 export interface Client {
     id: string
     company_name: string
@@ -17,8 +21,8 @@ export interface Appointment {
     description?: string
     appointment_date: string
     appointment_time: string
-    appointment_type: 'virtual' | 'presencial' | 'llamada'
-    status: 'pendiente' | 'confirmada' | 'completada' | 'cancelada'
+    appointment_type: (typeof APPOINTMENT_TYPE_IDS)[number]
+    status: (typeof APPOINTMENT_STATUS_IDS)[number]
     meeting_link?: string
     location?: string
     client: {
@@ -35,8 +39,8 @@ export type Deal = {
     title: string
     value: number
     currency: string
-    status: string
-    type: 'FCL' | 'LCL' | 'AEREO'
+    status: (typeof STAGE_IDS)[number]
+    type: (typeof SHIPPING_TYPE_IDS)[number]
     client: {
         id: string
         company_name: string

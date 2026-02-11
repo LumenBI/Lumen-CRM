@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react'
 import { LucideX } from 'lucide-react'
 import { useApi } from '@/hooks/useApi'
 import { useClients } from '@/context/ClientsContext'
+import { useAgents } from '@/context/AgentsContext'
+import { useUser } from '@/context/UserContext'
 import ModalPortal from '@/components/ui/ModalPortal'
+import { APPOINTMENT_TYPES } from '@/constants/appointments'
 
 interface CreateAppointmentModalProps {
     isOpen: boolean
@@ -29,12 +32,17 @@ export default function CreateAppointmentModal({
         time: '',
         type: 'virtual',
         meetingLink: '',
-        location: ''
+        location: '',
     })
+    const [participants, setParticipants] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
+    const [searchTerm, setSearchTerm] = useState('')
+    const [showResults, setShowResults] = useState(false)
 
     const { appointments: appointmentsApi } = useApi()
     const { myClients } = useClients()
+    const { agents } = useAgents()
+    const { profile } = useUser()
 
     useEffect(() => {
         if (isOpen) {
@@ -47,8 +55,12 @@ export default function CreateAppointmentModal({
                     time: initialData.appointment_time || '',
                     type: initialData.appointment_type || 'virtual',
                     meetingLink: initialData.meeting_link || '',
-                    location: initialData.location || ''
+                    location: initialData.location || '',
                 })
+                // Participants from backend relation
+                if (initialData.participants) {
+                    setParticipants(initialData.participants.map((p: any) => p.user || p))
+                }
             } else {
                 const today = new Date().toISOString().split('T')[0]
                 setFormData({
@@ -59,11 +71,15 @@ export default function CreateAppointmentModal({
                     time: '',
                     type: 'virtual',
                     meetingLink: '',
-                    location: ''
+                    location: '',
                 })
+                // Add current user by default
+                if (profile) {
+                    setParticipants([profile])
+                }
             }
         }
-    }, [isOpen, preselectedClientId, initialData])
+    }, [isOpen, preselectedClientId, initialData, profile])
 
     const [recurrence, setRecurrence] = useState('none')
     const [recurrenceCount, setRecurrenceCount] = useState(1)
@@ -72,12 +88,25 @@ export default function CreateAppointmentModal({
         e.preventDefault()
         setLoading(true)
 
+        // Map form field names to standardized DB column names
+        const payload = {
+            client_id: formData.clientId,
+            title: formData.title,
+            description: formData.description,
+            appointment_date: formData.date,
+            appointment_time: formData.time,
+            appointment_type: formData.type as 'virtual' | 'presencial' | 'llamada',
+            meeting_link: formData.meetingLink,
+            location: formData.location,
+            participants: participants.map(p => p.id),
+        }
+
         try {
             if (initialData) {
-                await appointmentsApi.update(initialData.id, formData)
+                await appointmentsApi.update(initialData.id, payload)
             } else {
                 if (recurrence === 'none') {
-                    await appointmentsApi.create(formData as any)
+                    await appointmentsApi.create(payload as any)
                 } else {
                     const baseDate = new Date(formData.date + 'T' + formData.time)
                     const promises = []
@@ -93,8 +122,8 @@ export default function CreateAppointmentModal({
                         const dateStr = nextDate.toISOString().split('T')[0]
 
                         promises.push(appointmentsApi.create({
-                            ...formData,
-                            date: dateStr
+                            ...payload,
+                            appointment_date: dateStr
                         } as any))
                     }
 
@@ -121,7 +150,7 @@ export default function CreateAppointmentModal({
             time: '',
             type: 'virtual',
             meetingLink: '',
-            location: ''
+            location: '',
         })
         setRecurrence('none')
         setRecurrenceCount(1)
@@ -132,7 +161,7 @@ export default function CreateAppointmentModal({
 
     return (
         <ModalPortal>
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between p-6 border-b border-slate-100">
                     <h2 className="text-xl font-bold text-[#000d42]">{initialData ? 'Editar cita' : 'Nueva cita'}</h2>
                     <button
@@ -213,10 +242,77 @@ export default function CreateAppointmentModal({
                             onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056fc]"
                         >
-                            <option value="virtual">Virtual (Zoom/Meet/Teams)</option>
-                            <option value="presencial">Presencial</option>
-                            <option value="llamada">Llamada Telefónica</option>
+                            {APPOINTMENT_TYPES.map((type) => (
+                                <option key={type.id} value={type.id}>{type.label}</option>
+                            ))}
                         </select>
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="block text-sm font-medium text-slate-700">
+                            Participantes
+                        </label>
+
+                        {/* Selected Participants Chips */}
+                        <div className="flex flex-wrap gap-2 mb-2">
+                            {participants.map((p) => (
+                                <div
+                                    key={p.id}
+                                    className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200"
+                                >
+                                    <span className="text-sm font-medium text-slate-700">{p.full_name}</span>
+                                    {p.id !== profile?.id && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setParticipants(participants.filter(item => item.id !== p.id))}
+                                            className="text-slate-400 hover:text-red-500 transition"
+                                        >
+                                            <LucideX className="h-3.5 w-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value)
+                                    setShowResults(true)
+                                }}
+                                onFocus={() => setShowResults(true)}
+                                placeholder="Añadir participante por nombre o email..."
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056fc]"
+                            />
+
+                            {showResults && searchTerm && (
+                                <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {agents
+                                        .filter(agent =>
+                                            !participants.some(p => p.id === agent.id) &&
+                                            (agent.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                agent.email.toLowerCase().includes(searchTerm.toLowerCase()))
+                                        )
+                                        .map((agent) => (
+                                            <button
+                                                key={agent.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setParticipants([...participants, agent])
+                                                    setSearchTerm('')
+                                                    setShowResults(false)
+                                                }}
+                                                className="w-full text-left px-4 py-2 hover:bg-slate-50 transition flex flex-col"
+                                            >
+                                                <span className="font-medium text-slate-700">{agent.full_name}</span>
+                                                <span className="text-xs text-slate-500">{agent.email}</span>
+                                            </button>
+                                        ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {formData.type === 'virtual' && (

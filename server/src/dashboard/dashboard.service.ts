@@ -18,16 +18,49 @@ export class DashboardService {
 
     private async createNotification(supabase: SupabaseClient, userId: string, type: string, message: string, link: string = '#') {
         try {
-            await supabase.from('notifications').insert({
+            console.log(`[NOTIFY_FLOW] Creating notification for user ${userId}: ${message}`);
+            const { error } = await supabase.from('notifications').insert({
                 user_id: userId,
                 type,
                 message,
                 link,
                 is_read: false
             });
+            if (error) console.error(`[NOTIFY_FLOW] Supabase error creating notification:`, error);
+            else console.log(`[NOTIFY_FLOW] Notification created successfully for ${userId}`);
         } catch (error) {
-            console.error('Error creating notification:', error);
+            console.error('[NOTIFY_FLOW] Catch error creating notification:', error);
         }
+    }
+
+    private async notifyManagers(supabase: SupabaseClient, type: string, message: string, link: string = '#') {
+        try {
+            const { data: managers } = await supabase
+                .from('profiles')
+                .select('id')
+                .or('role.eq.ADMIN,role.eq.MANAGER');
+
+            if (managers) {
+                await Promise.all(managers.map(m =>
+                    this.createNotification(supabase, m.id, type, message, link)
+                ));
+            }
+        } catch (error) {
+            console.error('Error notifying managers:', error);
+        }
+    }
+
+    async updateNotificationInterval(token: string, userId: string, intervalMinutes: number) {
+        const supabase = this.getClient(token);
+        const { data, error } = await supabase
+            .from('profiles')
+            .update({ notification_interval: intervalMinutes })
+            .eq('id', userId)
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
     }
 
     async getAgents(token: string) {
@@ -45,14 +78,41 @@ export class DashboardService {
 
     async getAppointments(token: string, userId: string, filters?: { from?: string; to?: string; status?: string }) {
         const supabase = this.getClient(token);
+
+        // 1. Get IDs of appointments where user is a participant
+        const { data: participations } = await supabase
+            .from('appointment_participants')
+            .select('appointment_id')
+            .eq('user_id', userId);
+
+        const participantAppIds = (participations || []).map(p => p.appointment_id);
+        const orFilter = participantAppIds.length > 0
+            ? `agent_id.eq.${userId},id.in.(${participantAppIds.join(',')})`
+            : `agent_id.eq.${userId}`;
+
         let query = supabase
             .from('appointments')
             .select(`
-                *,
+                id,
+                title,
+                description,
+                appointment_date,
+                appointment_time,
+                appointment_type,
+                meeting_link,
+                location,
+                notes,
+                status,
+                agent_id,
+                client_id,
                 client:clients(id, company_name, contact_name, phone, email),
-                agent:profiles(id, email)
+                agent:profiles!agent_id(id, email, full_name),
+                participants:appointment_participants(
+                    user_id,
+                    user:profiles(id, full_name, email)
+                )
             `)
-            .eq('agent_id', userId)
+            .or(orFilter)
             .order('appointment_date', { ascending: true })
             .order('appointment_time', { ascending: true });
 
@@ -75,6 +135,18 @@ export class DashboardService {
     async getUpcomingAppointments(token: string, userId: string, limit: number = 5) {
         try {
             const supabase = this.getClient(token);
+
+            // 1. Get IDs of appointments where user is a participant
+            const { data: participations } = await supabase
+                .from('appointment_participants')
+                .select('appointment_id')
+                .eq('user_id', userId);
+
+            const participantAppIds = (participations || []).map(p => p.appointment_id);
+            const orFilter = participantAppIds.length > 0
+                ? `agent_id.eq.${userId},id.in.(${participantAppIds.join(',')})`
+                : `agent_id.eq.${userId}`;
+
             const today = new Intl.DateTimeFormat('en-CA', {
                 timeZone: 'America/Guatemala',
                 year: 'numeric',
@@ -85,10 +157,25 @@ export class DashboardService {
             const { data, error } = await supabase
                 .from('appointments')
                 .select(`
-                    *,
-                    client:clients(id, company_name, contact_name, phone, email)
+                    id,
+                    title,
+                    description,
+                    appointment_date,
+                    appointment_time,
+                    appointment_type,
+                    meeting_link,
+                    location,
+                    status,
+                    agent_id,
+                    client_id,
+                    client:clients(id, company_name, contact_name, phone, email),
+                    agent:profiles!agent_id(id, full_name),
+                    participants:appointment_participants(
+                        user_id,
+                        user:profiles(id, full_name, email)
+                    )
                 `)
-                .eq('agent_id', userId)
+                .or(orFilter)
                 .in('status', ['pendiente', 'confirmada'])
                 .gte('appointment_date', today)
                 .order('appointment_date', { ascending: true })
@@ -109,26 +196,47 @@ export class DashboardService {
             .from('appointments')
             .insert({
                 agent_id: userId,
-                client_id: payload.clientId,
+                client_id: payload.client_id || payload.clientId,
                 title: payload.title,
                 description: payload.description,
-                appointment_date: payload.date,
-                appointment_time: payload.time,
-                appointment_type: payload.type || 'virtual',
-                meeting_link: payload.meetingLink,
+                appointment_date: payload.appointment_date || payload.date,
+                appointment_time: payload.appointment_time || payload.time,
+                appointment_type: payload.appointment_type || payload.type || 'virtual',
+                meeting_link: payload.meeting_link || payload.meetingLink,
                 location: payload.location,
                 notes: payload.notes,
                 status: 'pendiente',
             })
             .select(`
-                *,
-                client:clients(id, company_name, contact_name)
+                id,
+                title,
+                agent:profiles!agent_id(id, full_name)
             `)
             .single();
 
         if (error) throw new Error(error.message);
 
-        await this.createNotification(supabase, userId, 'APPOINTMENT_CREATED', `Nueva cita: ${payload.title}`, '/dashboard/citas');
+        // Add participants (including the creator)
+        const participantIds = Array.from(new Set([userId, ...(payload.participants || [])]));
+        const participantRows = participantIds.map(pid => ({
+            appointment_id: data.id,
+            user_id: pid
+        }));
+
+        await supabase.from('appointment_participants').insert(participantRows);
+
+        // Fetch agent name for notifications
+        const agentName = (Array.isArray(data.agent) ? data.agent[0] : data.agent)?.full_name || 'Un agente';
+
+        // Notify all participants (except creator, who gets a generic notification)
+        const notifications = participantIds.map(pid => {
+            const msg = pid === userId
+                ? `Has agendado una cita: ${data.title}`
+                : `[Participante] ${agentName} te ha incluido en una cita: ${data.title}`;
+            return this.createNotification(supabase, pid, 'APPOINTMENT_CREATED', msg, '/dashboard/citas');
+        });
+
+        await Promise.all(notifications);
 
         return data;
     }
@@ -149,15 +257,57 @@ export class DashboardService {
         if (payload.meeting_link !== undefined) updateData.meeting_link = payload.meeting_link;
         if (payload.location !== undefined) updateData.location = payload.location;
         if (payload.notes !== undefined) updateData.notes = payload.notes;
+        if (payload.status !== undefined) updateData.status = payload.status;
 
         const { data, error } = await supabase
             .from('appointments')
             .update(updateData)
             .eq('id', id)
-            .select()
+            .select(`
+                id,
+                title,
+                agent_id,
+                agent:profiles!agent_id(full_name)
+            `)
             .single();
 
         if (error) throw new Error(error.message);
+
+        if (payload.participants !== undefined) {
+            // Remove old ones
+            await supabase.from('appointment_participants').delete().eq('appointment_id', id);
+
+            // Add new ones (including owner)
+            const participantIds = Array.from(new Set([data.agent_id, ...(payload.participants || [])]));
+            const participantRows = participantIds.map(pid => ({
+                appointment_id: id,
+                user_id: pid
+            }));
+            await supabase.from('appointment_participants').insert(participantRows);
+        }
+
+        // Notify ALL current participants (whether they changed or not)
+        console.log(`[NOTIFY_FLOW] Fetching participants for appointment ${id} to notify...`);
+        const { data: currentParticipants, error: partError } = await supabase
+            .from('appointment_participants')
+            .select('user_id')
+            .eq('appointment_id', id);
+
+        if (partError) {
+            console.error(`[NOTIFY_FLOW] Error fetching participants for notification:`, partError);
+        }
+
+        if (currentParticipants && currentParticipants.length > 0) {
+            console.log(`[NOTIFY_FLOW] Found ${currentParticipants.length} participants to notify.`);
+            const msg = `Cita "${data.title}" actualizada`;
+            const notifications = currentParticipants.map(p =>
+                this.createNotification(supabase, p.user_id, 'APPOINTMENT_UPDATE', msg, '/dashboard/citas')
+            );
+            await Promise.all(notifications);
+        } else {
+            console.warn(`[NOTIFY_FLOW] No participants found for appointment ${id}.`);
+        }
+
         return data;
     }
 
@@ -175,10 +325,31 @@ export class DashboardService {
             .from('appointments')
             .update(updateData)
             .eq('id', id)
-            .select()
+            .select(`
+                id,
+                title,
+                status,
+                agent_id,
+                agent:profiles!agent_id(id, full_name)
+            `)
             .single();
 
         if (error) throw new Error(error.message);
+
+        // Notify all participants
+        const msg = `Cita "${data.title}" actualizada a: ${status.toUpperCase()}`;
+        const { data: participants } = await supabase
+            .from('appointment_participants')
+            .select('user_id')
+            .eq('appointment_id', id);
+
+        if (participants) {
+            const notifications = participants.map(p =>
+                this.createNotification(supabase, p.user_id, 'APPOINTMENT_UPDATE', msg, '/dashboard/citas')
+            );
+            await Promise.all(notifications);
+        }
+
         return data;
     }
 
@@ -429,10 +600,17 @@ export class DashboardService {
             .from('clients')
             .update(updateData)
             .eq('id', id)
-            .select()
+            .select('*, agent:profiles!assigned_agent_id(full_name)')
             .single();
 
         if (error) throw new Error(error.message);
+
+        // Notify managers of significant changes (e.g., status or assignment)
+        if (payload.status || payload.assigned_agent_id) {
+            const message = `Cliente "${data.company_name}" actualizado (Estado: ${data.status})`;
+            await this.notifyManagers(supabase, 'CLIENT_UPDATE', `[${data.agent?.full_name || 'Agente'}] ${message}`, `/dashboard/clients?id=${id}`);
+        }
+
         return data;
     }
 
@@ -443,12 +621,14 @@ export class DashboardService {
             .from('deals')
             .update({ status: newStatus })
             .eq('id', dealId)
-            .select()
+            .select('*, agent:profiles!assigned_agent_id(full_name)')
             .maybeSingle();
 
         if (error) throw new Error(error.message);
 
-        await this.createNotification(supabase, userId, 'DEAL_MOVED', `Negociación movida a ${newStatus}`, '/dashboard/kanban');
+        const message = `Negociación "${data.title}" movida a ${newStatus}`;
+        await this.createNotification(supabase, userId, 'DEAL_MOVED', message, '/dashboard/kanban');
+        await this.notifyManagers(supabase, 'DEAL_MOVED', `[${data.agent?.full_name || 'Agente'}] ${message}`, '/dashboard/kanban');
 
         if (newStatus === 'CERRADO_GANADO') {
             await this.calculateAndCreateCommission(supabase, userId, dealId);
@@ -549,7 +729,11 @@ export class DashboardService {
 
         if (error) throw new Error(error.message);
 
+        // Fetch agent name for notification
+        const { data: agent } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+
         await this.createNotification(supabase, userId, 'DEAL_CREATED', `Nueva negociación: ${payload.title}`, '/dashboard/kanban');
+        await this.notifyManagers(supabase, 'DEAL_CREATED', `[${agent?.full_name || 'Agente'}] Nueva negociación: ${payload.title}`, '/dashboard/kanban');
 
         return data;
     }
@@ -570,9 +754,15 @@ export class DashboardService {
             .from('deals')
             .update(updateData)
             .eq('id', id)
-            .select()
+            .select('*, agent:profiles!assigned_agent_id(full_name)')
             .single();
+
         if (error) throw new Error(error.message);
+
+        // Notify managers
+        const message = `Negociación "${data.title}" actualizada`;
+        await this.notifyManagers(supabase, 'DEAL_UPDATE', `[${data.agent?.full_name || 'Agente'}] ${message}`, '/dashboard/kanban');
+
         return data;
     }
 
@@ -643,7 +833,7 @@ export class DashboardService {
                 is_completed: true,
                 completed_at: new Date(),
             })
-            .select()
+            .select('*, client:clients(company_name), agent:profiles!agent_id(full_name)')
             .single();
 
         if (error) throw new Error(error.message);
@@ -652,6 +842,14 @@ export class DashboardService {
             .from('clients')
             .update({ last_interaction_at: new Date() })
             .eq('id', payload.clientId);
+
+        // Notify managers
+        await this.notifyManagers(
+            supabase,
+            'INTERACTION_CREATED',
+            `[${data.agent?.full_name || 'Agente'}] Nueva interacción con "${data.client?.company_name || 'Cliente'}": ${payload.category}`,
+            `/dashboard/clients?id=${payload.clientId}`
+        );
 
         return data;
     }
@@ -701,27 +899,122 @@ export class DashboardService {
 
         await this.checkAndReleaseExpiredClients(supabase, userId);
 
-        const tomorrow = new Date();
+        // 0. Get current time in America/Guatemala
+        const getGTTime = () => {
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/Guatemala',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+            }).formatToParts(new Date());
+            const m = new Map(parts.map(p => [p.type, p.value]));
+            return new Date(`${m.get('year')}-${m.get('month')}-${m.get('day')}T${m.get('hour')}:${m.get('minute')}:${m.get('second')}`);
+        };
+
+        const guatemalaNow = getGTTime();
+        const todayStr = guatemalaNow.toISOString().split('T')[0];
+
+        // Fetch user profile for notification settings
+        let intervalMinutes = 30;
+        console.log(`[NOTIFY_FLOW] Checking system notifications for user ${userId} at ${guatemalaNow.toISOString()}`);
+        try {
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('notification_interval')
+                .eq('id', userId)
+                .single();
+
+            if (!error && profile?.notification_interval) {
+                intervalMinutes = profile.notification_interval;
+            }
+        } catch (error) {
+            console.warn('Notification interval fetch failed (column might be missing):', error.message);
+        }
+
+        // 1. Get IDs where user is participant
+        const { data: participations } = await supabase
+            .from('appointment_participants')
+            .select('appointment_id')
+            .eq('user_id', userId);
+
+        const participantAppIds = (participations || []).map(p => p.appointment_id);
+        const orFilter = participantAppIds.length > 0
+            ? `agent_id.eq.${userId},id.in.(${participantAppIds.join(',')})`
+            : `agent_id.eq.${userId}`;
+
+        // 1. Appointments for tomorrow (Daily summary)
+        const tomorrow = new Date(guatemalaNow);
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-        const { data: appointments } = await supabase
+        const { data: tomorrowApps } = await supabase
             .from('appointments')
-            .select('title, appointment_time')
-            .eq('agent_id', userId)
+            .select(`
+                title, 
+                appointment_time,
+                participants:appointment_participants(user_id)
+            `)
+            .or(orFilter)
             .eq('appointment_date', tomorrowStr)
-            .eq('status', 'pendiente');
+            .in('status', ['pendiente', 'confirmada']);
 
-        if (appointments) {
-            for (const app of appointments) {
-                await this.createNotification(
-                    supabase,
-                    userId,
-                    'AGENDA_REMINDER',
-                    `Recordatorio: Tu cita "${app.title}" es mañana a las ${app.appointment_time}`,
-                    '/dashboard/citas'
-                );
-                notifications.push(`Agenda: ${app.title}`);
+        if (tomorrowApps) {
+            for (const app of tomorrowApps) {
+                const msg = `Recordatorio: Tu cita "${app.title}" es mañana a las ${app.appointment_time}`;
+                const { count } = await supabase
+                    .from('notifications')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', userId)
+                    .eq('type', 'AGENDA_REMINDER')
+                    .ilike('message', `%${app.title}%`)
+                    .gte('created_at', todayStr);
+
+                if (count === 0) {
+                    await this.createNotification(supabase, userId, 'AGENDA_REMINDER', msg, '/dashboard/citas');
+                    notifications.push(`Agenda Mañana: ${app.title}`);
+                }
+            }
+        }
+
+        // 2. Appointments starting SOON (Custom interval)
+        const soon = new Date(guatemalaNow.getTime() + intervalMinutes * 60000);
+
+        const { data: soonApps } = await supabase
+            .from('appointments')
+            .select(`
+                id, 
+                title, 
+                appointment_time,
+                participants:appointment_participants(user_id)
+            `)
+            .or(orFilter)
+            .eq('appointment_date', todayStr)
+            .in('status', ['pendiente', 'confirmada']);
+
+        if (soonApps) {
+            for (const app of soonApps) {
+                const [appH, appM] = app.appointment_time.split(':').map(Number);
+                const appDate = new Date(guatemalaNow);
+                appDate.setHours(appH, appM, 0, 0);
+
+                console.log(`[NOTIFY_FLOW] Comparing: ${appDate.toISOString()} vs Now: ${guatemalaNow.toISOString()} (Soon: ${soon.toISOString()})`);
+
+                if (appDate > guatemalaNow && appDate <= soon) {
+                    console.log(`[NOTIFY_FLOW] HIT! appointment ${app.title} is within window.`);
+                    const msg = `¡Alerta! Tu cita "${app.title}" comienza en menos de ${intervalMinutes} minutos (${app.appointment_time})`;
+
+                    const { count } = await supabase
+                        .from('notifications')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', userId)
+                        .eq('type', 'AGENDA_REMINDER_SOON')
+                        .ilike('message', `%${app.title}%`)
+                        .gte('created_at', todayStr);
+
+                    if (count === 0) {
+                        await this.createNotification(supabase, userId, 'AGENDA_REMINDER_SOON', msg, '/dashboard/citas');
+                        notifications.push(`Agenda Pronto: ${app.title}`);
+                    }
+                }
             }
         }
 
@@ -764,13 +1057,13 @@ export class DashboardService {
         const nextWeek = new Date();
         nextWeek.setDate(nextWeek.getDate() + 7);
         const nextWeekStr = nextWeek.toISOString();
-        const todayStr = new Date().toISOString();
+        const currentStr = new Date().toISOString();
 
         const { data: expiringClients } = await supabase
             .from('clients')
             .select('id, company_name, assignment_expires_at')
             .eq('assigned_agent_id', userId)
-            .gte('assignment_expires_at', todayStr)
+            .gte('assignment_expires_at', currentStr)
             .lte('assignment_expires_at', nextWeekStr);
 
         if (expiringClients) {
@@ -797,38 +1090,41 @@ export class DashboardService {
             }
         }
 
-    async getBootstrapData(token: string, userId: string) {
-            try {
-                const [
-                    stats,
-                    clients,
-                    kanban,
-                    appointments,
-                    history,
-                    activities,
-                    agents
-                ] = await Promise.all([
-                    this.getUserStats(token, userId),
-                    this.getClients(token, '', true, userId),
-                    this.getKanbanBoard(token, userId),
-                    this.getUpcomingAppointments(token, userId, 20),
-                    this.getHistory(token),
-                    this.getRecentActivities(token),
-                    this.getAgents(token)
-                ]);
+        return { notifications };
+    }
 
-                return {
-                    stats,
-                    clients,
-                    kanban,
-                    appointments,
-                    history,
-                    activities,
-                    agents
-                };
-            } catch (error) {
-                console.error('Error in getBootstrapData:', error);
-                throw error;
-            }
+    async getBootstrapData(token: string, userId: string) {
+        try {
+            const [
+                stats,
+                clients,
+                kanban,
+                appointments,
+                history,
+                activities,
+                agents
+            ] = await Promise.all([
+                this.getUserStats(token, userId),
+                this.getClients(token, '', true, userId),
+                this.getKanbanBoard(token, userId),
+                this.getUpcomingAppointments(token, userId, 20),
+                this.getHistory(token),
+                this.getRecentActivities(token),
+                this.getAgents(token)
+            ]);
+
+            return {
+                stats,
+                clients,
+                kanban,
+                appointments,
+                history,
+                activities,
+                agents
+            };
+        } catch (error) {
+            console.error('Error in getBootstrapData:', error);
+            throw error;
         }
     }
+}

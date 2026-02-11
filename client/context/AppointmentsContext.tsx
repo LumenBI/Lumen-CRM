@@ -11,6 +11,7 @@ interface AppointmentsContextType {
     refreshAppointments: () => Promise<void>
     createAppointment: (appointment: Partial<Appointment>) => Promise<void>
     updateAppointment: (id: string, updates: Partial<Appointment>) => Promise<void>
+    updateAppointmentStatus: (id: string, status: string) => Promise<void>
     deleteAppointment: (id: string) => Promise<void>
 }
 
@@ -66,6 +67,18 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
         }
     }, [appointmentsApi, fetchAppointments])
 
+    const updateAppointmentStatus = useCallback(async (id: string, status: string) => {
+        try {
+            setAppointments((prev: Appointment[]) => prev.map((a: Appointment) => a.id === id ? { ...a, status } as Appointment : a))
+            await appointmentsApi.updateStatus(id, status)
+            fetchAppointments()
+        } catch (error) {
+            console.error('Error updating appointment status:', error)
+            fetchAppointments()
+            throw error
+        }
+    }, [appointmentsApi, fetchAppointments])
+
     const deleteAppointment = useCallback(async (id: string) => {
         try {
             setAppointments((prev: Appointment[]) => prev.filter((a: Appointment) => a.id !== id))
@@ -84,8 +97,9 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
         refreshAppointments: fetchAppointments,
         createAppointment,
         updateAppointment,
+        updateAppointmentStatus,
         deleteAppointment
-    }), [appointments, loading, fetchAppointments, createAppointment, updateAppointment, deleteAppointment])
+    }), [appointments, loading, fetchAppointments, createAppointment, updateAppointment, updateAppointmentStatus, deleteAppointment])
 
     return (
         <AppointmentsContext.Provider value={value}>

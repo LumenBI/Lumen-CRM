@@ -2,7 +2,7 @@
 
 import { LucidePencil, LucideTrash2, LucideArrowRightCircle } from 'lucide-react'
 import type { Deal } from '@/types'
-import { KANBAN_COLUMNS } from '@/context/DealsContext'
+import { getStageLabel, getStageBadgeColor } from '@/constants/stages'
 import { TEXTS } from '@/constants/text'
 
 type DealsListViewProps = {
@@ -12,23 +12,6 @@ type DealsListViewProps = {
 }
 
 export default function DealsListView({ deals, onEdit, onMove }: DealsListViewProps) {
-    const getStageLabel = (stageId: string) => {
-        return KANBAN_COLUMNS.find(c => c.id === stageId)?.title || stageId
-    }
-
-    const getStageColor = (stageId: string) => {
-        switch (stageId) {
-            case 'PENDING': return 'bg-gray-100 text-gray-600'
-            case 'CONTACTADO': return 'bg-blue-100 text-blue-600'
-            case 'CITA': return 'bg-purple-100 text-purple-600'
-            case 'PROCESO_COTIZACION': return 'bg-orange-100 text-orange-600'
-            case 'COTIZACION_ENVIADA': return 'bg-yellow-100 text-yellow-700'
-            case 'CERRADO_GANADO': return 'bg-green-100 text-green-600'
-            case 'CERRADO_PERDIDO': return 'bg-red-100 text-red-600'
-            default: return 'bg-gray-50 text-gray-500'
-        }
-    }
-
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden animate-in fade-in duration-300">
             <div className="overflow-x-auto">
@@ -71,7 +54,7 @@ export default function DealsListView({ deals, onEdit, onMove }: DealsListViewPr
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStageColor(deal.status)}`}>
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStageBadgeColor(deal.status)}`}>
                                             {getStageLabel(deal.status)}
                                         </span>
                                     </td>

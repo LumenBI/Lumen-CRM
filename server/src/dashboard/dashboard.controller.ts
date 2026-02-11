@@ -133,16 +133,16 @@ export class DashboardController {
     return this.dashboardService.getRecentActivities(token);
   }
 
-  @Post('interactions')
-  async addInteraction(@Req() req, @Body() payload: any) {
-    const token = this.extractToken(req);
-    return this.dashboardService.addInteraction(token, req.user.userId, payload);
-  }
-
   @Delete('interactions/:id')
   async deleteInteraction(@Req() req, @Param('id') id: string) {
     const token = this.extractToken(req);
     return this.dashboardService.deleteInteraction(token, id);
+  }
+
+  @Patch('profile/notifications')
+  async updateNotificationSettings(@Req() req, @Body('interval') interval: number) {
+    const token = this.extractToken(req);
+    return this.dashboardService.updateNotificationInterval(token, req.user.userId, interval);
   }
 
   @Get('bootstrap')

@@ -10,6 +10,7 @@ import { UserModal } from '@/components/admin/user-modal';
 import { useAgents, type Agent as User } from '@/context/AgentsContext';
 import { toast } from 'sonner'
 import { TEXTS } from '@/constants/text'
+import { USER_STATUS_MAP } from '@/constants/users'
 
 export default function UsersPage() {
     const { agents: users, loading, refreshAgents } = useAgents();
@@ -138,16 +139,15 @@ export default function UsersPage() {
                                                 </span>
                                             </td>
                                             <td className="px-8 py-6">
-                                                <span className={`inline-flex items-center px-4 py-2 rounded-full font-bold text-xs shadow-md ${user.status === 'ACTIVE' ? 'bg-gradient-to-r from-emerald-100 to-green-100 text-green-700' :
-                                                    user.status === 'PENDING' ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700' :
-                                                        'bg-gradient-to-r from-red-100 to-red-200 text-red-700'
-                                                    }`}>
-                                                    <span className={`w-2 h-2 rounded-full mr-2 ${user.status === 'ACTIVE' ? 'bg-green-500 animate-pulse' :
-                                                        user.status === 'PENDING' ? 'bg-amber-500' :
-                                                            'bg-red-500'
-                                                        }`}></span>
-                                                    {user.status === 'ACTIVE' ? 'Activo' : user.status === 'PENDING' ? 'Pendiente' : 'Inactivo'}
-                                                </span>
+                                                {(() => {
+                                                    const statusConfig = USER_STATUS_MAP[user.status || '']
+                                                    return (
+                                                        <span className={`inline-flex items-center px-4 py-2 rounded-full font-bold text-xs shadow-md ${statusConfig?.badgeColor || 'bg-gray-100 text-gray-700'}`}>
+                                                            <span className={`w-2 h-2 rounded-full mr-2 ${statusConfig?.dotColor || 'bg-gray-500'}`}></span>
+                                                            {statusConfig?.label || user.status}
+                                                        </span>
+                                                    )
+                                                })()}
                                             </td>
                                             <td className="px-8 py-6 text-right">
                                                 {user.status !== 'PENDING' && (

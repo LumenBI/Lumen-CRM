@@ -9,6 +9,7 @@ export const TEXTS = {
     CLIENTS_TITLE: 'Clientes',
     USERS_TITLE: 'Usuarios',
     NEW_ACTIVITY_TITLE: 'Nueva actividad',
+    REPORTS_TITLE: 'Reportes y analíticas',
 
     // Actions
     NEW_CLIENT: 'Nuevo cliente',
@@ -54,11 +55,40 @@ export const TEXTS = {
     CONFIRM: 'Confirmar',
 }
 
+import {
+    LucideLayoutDashboard,
+    LucideKanban,
+    LucideCalendar,
+    LucideUsers,
+    LucideBarChart3,
+    LucideSettings,
+} from 'lucide-react'
+
+export interface MenuItem {
+    name: string
+    href: string
+    icon: typeof LucideLayoutDashboard
+}
+
+export const MENU_ITEMS: MenuItem[] = [
+    { name: 'Resumen', href: '/dashboard', icon: LucideLayoutDashboard },
+    { name: 'Ventas', href: '/dashboard/kanban', icon: LucideKanban },
+    { name: 'Agenda', href: '/dashboard/citas', icon: LucideCalendar },
+    { name: 'Clientes', href: '/dashboard/clients', icon: LucideUsers },
+    { name: 'Reportes', href: '/dashboard/reports', icon: LucideBarChart3 },
+]
+
+export const SYSTEM_ITEMS: MenuItem[] = [
+    { name: 'Usuarios', href: '/dashboard/users', icon: LucideSettings },
+    { name: 'Configuración', href: '/dashboard/settings', icon: LucideSettings },
+]
+
 export const NAVIGATION_LABELS = {
     SUMMARY: 'Resumen',
     SALES: 'Ventas',
     CALENDAR: 'Agenda',
     CLIENTS: 'Clientes',
-    ADMINISTRATION: 'Administración',
     USERS: 'Usuarios',
+    REPORTS: 'Reportes',
+    SETTINGS: 'Configuración',
 }

@@ -3,19 +3,15 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-    LucideLayoutDashboard,
-    LucideKanban,
-    LucideCalendar,
-    LucideUsers,
-    LucideSettings,
     LucideLogOut,
-    LucideZap
+    LucideZap,
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import NotificationBell from '@/components/notifications/NotificationBell'
 import { Toaster } from '@/components/ui/sonner'
 import TopNav from '@/components/layout/TopNav'
+import { MENU_ITEMS, SYSTEM_ITEMS } from '@/constants/text'
 
 import { UserProvider } from '@/context/UserContext'
 import { DataProvider } from '@/context/DataContext'
@@ -34,16 +30,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         router.push('/')
     }
 
-    const menuItems = [
-        { name: 'Resumen', href: '/dashboard', icon: LucideLayoutDashboard },
-        { name: 'Ventas', href: '/dashboard/kanban', icon: LucideKanban },
-        { name: 'Agenda', href: '/dashboard/citas', icon: LucideCalendar },
-        { name: 'Clientes', href: '/dashboard/clients', icon: LucideUsers },
-    ]
-
-    const systemItems = [
-        { name: 'Usuarios', href: '/dashboard/users', icon: LucideSettings },
-    ]
+    const menuItems = MENU_ITEMS
+    const systemItems = SYSTEM_ITEMS
 
 
     return (

@@ -4,26 +4,20 @@ import { createContext, useContext, useEffect, useState, useCallback, useMemo } 
 import { useData } from '@/context/DataContext'
 import { useApi } from '@/hooks/useApi'
 import type { Deal } from '@/types'
+import { STAGES } from '@/constants/stages'
 
 export type KanbanBoard = {
     [key: string]: Deal[]
 }
 
-export const KANBAN_COLUMNS = [
-    { id: 'PENDING', title: 'No contactado' },
-    { id: 'CONTACTADO', title: 'Contactado' },
-    { id: 'CITA', title: 'Cita / Reunión' },
-    { id: 'PROCESO_COTIZACION', title: 'Cotizando' },
-    { id: 'COTIZACION_ENVIADA', title: 'Cot. Enviada' },
-    { id: 'CERRADO_GANADO', title: 'Ganado' },
-    { id: 'CERRADO_PERDIDO', title: 'Perdido' },
-]
+// Re-export for backwards compatibility
+export const KANBAN_COLUMNS = STAGES.map(s => ({ id: s.id, title: s.title }))
 
 interface DealsContextType {
     board: KanbanBoard | null
     loading: boolean
     refreshBoard: () => Promise<void>
-    moveDeal: (dealId: string, newStatus: string, interactionData?: { interactionType: string, summary: string, nextStep?: string }) => Promise<void>
+    moveDeal: (dealId: string, newStatus: Deal['status'], interactionData?: { interactionType: string, summary: string, nextStep?: string }) => Promise<void>
 }
 
 const DealsContext = createContext<DealsContextType | undefined>(undefined)
@@ -78,7 +72,7 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
         }
     }, [bootstrapBoard, dataLoading, fetchBoard])
 
-    const moveDeal = useCallback(async (dealId: string, newStatus: string, interactionData?: { interactionType: string, summary: string, nextStep?: string }) => {
+    const moveDeal = useCallback(async (dealId: string, newStatus: Deal['status'], interactionData?: { interactionType: string, summary: string, nextStep?: string }) => {
         if (!board) return
 
         const previousBoard = { ...board }

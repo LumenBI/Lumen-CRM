@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import UpcomingAppointmentsWidget from '@/components/UpcomingAppointmentsWidget'
+import UpcomingAppointmentsWidget from '@/components/appointments/UpcomingAppointmentsWidget'
 import { TEXTS } from '@/constants/text'
 import RecentActivityWidget from '@/components/RecentActivityWidget'
 import PerformanceChartWidget from '@/components/PerformanceChartWidget'

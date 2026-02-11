@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import CreateAppointmentModal from '@/components/CreateAppointmentModal'
-import AppointmentDetailsModal from '@/components/AppointmentDetailsModal'
+import CreateAppointmentModal from '@/components/appointments/CreateAppointmentModal'
+import AppointmentDetailsModal from '@/components/appointments/AppointmentDetailsModal'
 import CalendarView from '@/components/calendar/CalendarView'
 import { useAppointments } from '@/context/AppointmentsContext'
 import { getTypeIcon, getStatusBadge, formatAppointmentDate } from '@/utils/appointmentUtils'
 import type { Appointment } from '@/types'
 import { TEXTS } from '@/constants/text'
+import { APPOINTMENT_STATUSES, getTypeLabel } from '@/constants/appointments'
 import {
     LucideCalendar,
     LucidePlus,
@@ -22,7 +23,7 @@ import {
 import ContextMenu from '@/components/ContextMenu'
 
 export default function AppointmentsPage() {
-    const { appointments, loading, refreshAppointments, updateAppointment } = useAppointments()
+    const { appointments, loading, refreshAppointments, updateAppointment, updateAppointmentStatus } = useAppointments()
     const [filter, setFilter] = useState<'all' | 'pendiente' | 'confirmada' | 'completada'>('all')
     const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar')
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -73,11 +74,11 @@ export default function AppointmentsPage() {
         }
     }
 
-    const updateAppointmentStatus = async (appointmentId: string, status: 'completada' | 'cancelada') => {
+    const handleUpdateStatus = async (appointmentId: string, status: 'completada' | 'cancelada') => {
         if (status === 'cancelada' && !confirm('¿Estás seguro de que deseas cancelar esta cita?')) return
 
         try {
-            await updateAppointment(appointmentId, { status })
+            await updateAppointmentStatus(appointmentId, status)
         } catch (error) {
             console.error(`Error updating appointment to ${status}:`, error)
         }
@@ -141,21 +142,28 @@ export default function AppointmentsPage() {
             </div>
 
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {['all', 'pendiente', 'confirmada', 'completada'].map((status) => (
+                <button
+                    onClick={() => setFilter('all' as any)}
+                    className={`px-4 py-2 rounded-xl whitespace-nowrap transition text-sm font-medium border ${filter === 'all'
+                        ? 'bg-[#0056fc] text-white border-[#0056fc]'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                        }`}
+                >
+                    Todas
+                </button>
+                {APPOINTMENT_STATUSES.map((status) => (
                     <button
-                        key={status}
-                        onClick={() => setFilter(status as any)}
-                        className={`px-4 py-2 rounded-xl whitespace-nowrap transition text-sm font-medium border ${filter === status
+                        key={status.id}
+                        onClick={() => setFilter(status.id as any)}
+                        className={`px-4 py-2 rounded-xl whitespace-nowrap transition text-sm font-medium border ${filter === status.id
                             ? 'bg-[#0056fc] text-white border-[#0056fc]'
                             : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                             }`}
                     >
-                        {status === 'all' ? 'Todas' : status.charAt(0).toUpperCase() + status.slice(1)}
-                        {status !== 'all' && (
-                            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${filter === status ? 'bg-white/20' : 'bg-slate-100 text-slate-600'}`}>
-                                {appointments.filter(a => a.status === status).length}
-                            </span>
-                        )}
+                        {status.label}
+                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${filter === status.id ? 'bg-white/20' : 'bg-slate-100 text-slate-600'}`}>
+                            {appointments.filter(a => a.status === status.id).length}
+                        </span>
                     </button>
                 ))}
             </div>
@@ -245,7 +253,7 @@ export default function AppointmentsPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600`}>
-                                                        {appointment.appointment_type === 'virtual' ? 'Virtual' : 'Presencial'}
+                                                        {getTypeLabel(appointment.appointment_type)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -340,14 +348,14 @@ export default function AppointmentsPage() {
                         {
                             label: 'Marcar Completada',
                             icon: LucideCheckCircle,
-                            action: () => { if (contextAppointment) updateAppointmentStatus(contextAppointment.id, 'completada') },
+                            action: () => { if (contextAppointment) handleUpdateStatus(contextAppointment.id, 'completada') },
                             className: 'text-green-600 hover:bg-green-50',
                             disabled: contextAppointment?.status === 'completada'
                         },
                         {
                             label: 'Cancelar Cita',
                             icon: LucideXCircle,
-                            action: () => { if (contextAppointment) updateAppointmentStatus(contextAppointment.id, 'cancelada') },
+                            action: () => { if (contextAppointment) handleUpdateStatus(contextAppointment.id, 'cancelada') },
                             className: 'text-red-600 hover:bg-red-50',
                             disabled: contextAppointment?.status === 'cancelada'
                         }

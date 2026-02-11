@@ -8,19 +8,12 @@ import {
     Building2,
     CalendarClock,
     Plus,
-    ClipboardList,
-    PhoneCall,
-    Briefcase,
-    CheckCircle2,
-    XCircle,
-    FileText,
-    Container,
-    Plane,
     Eye,
     Pencil,
     ArrowRightCircle,
     List,
-    LayoutGrid
+    LayoutGrid,
+    PhoneCall
 } from 'lucide-react'
 import ClientModal from '@/components/ClientModal'
 import NewDealModal from '@/components/kanban/NewDealModal'
@@ -32,12 +25,8 @@ import type { Deal } from '@/types'
 import { toast } from 'sonner'
 import { TEXTS } from '@/constants/text'
 import DealsListView from '@/components/kanban/DealsListView'
-
-const TYPE_ICONS = {
-    FCL: Container,
-    LCL: Briefcase,
-    AEREO: Plane
-}
+import { STAGE_MAP } from '@/constants/stages'
+import { SHIPPING_TYPES, SHIPPING_TYPE_MAP } from '@/constants/shipping'
 
 export default function KanbanPage() {
     const { board, loading, refreshBoard, moveDeal } = useDeals()
@@ -211,24 +200,15 @@ export default function KanbanPage() {
                         >
                             Ver todos
                         </button>
-                        <button
-                            onClick={() => setFilterType('FCL')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === 'FCL' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
-                        >
-                            FCL
-                        </button>
-                        <button
-                            onClick={() => setFilterType('LCL')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === 'LCL' ? 'bg-orange-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
-                        >
-                            LCL
-                        </button>
-                        <button
-                            onClick={() => setFilterType('AEREO')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === 'AEREO' ? 'bg-purple-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
-                        >
-                            Aéreo
-                        </button>
+                        {SHIPPING_TYPES.map(st => (
+                            <button
+                                key={st.id}
+                                onClick={() => setFilterType(st.id)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === st.id ? `${st.filterColor} text-white shadow-md` : 'text-gray-500 hover:bg-gray-100'}`}
+                            >
+                                {st.label}
+                            </button>
+                        ))}
                     </div>
 
                     <button
@@ -251,30 +231,23 @@ export default function KanbanPage() {
 
                                 return (
                                     <div key={column.id} className="w-80 flex-shrink-0 flex flex-col h-full max-h-[calc(100vh-12rem)]">
-                                        <div className={`p-4 rounded-t-xl mb-0 border-b-4 ${column.id === 'PENDING' ? 'bg-gray-500 border-gray-600 text-white' :
-                                            column.id === 'CONTACTADO' ? 'bg-slate-600 border-slate-700 text-white' :
-                                                column.id === 'CITA' ? 'bg-blue-600 border-blue-700 text-white' :
-                                                    column.id === 'PROCESO_COTIZACION' ? 'bg-orange-500 border-orange-600 text-white' :
-                                                        column.id === 'COTIZACION_ENVIADA' ? 'bg-purple-600 border-purple-700 text-white' :
-                                                            column.id === 'CERRADO_GANADO' ? 'bg-green-600 border-green-700 text-white' :
-                                                                'bg-red-500 border-red-600 text-white'
-                                            } shadow-sm`}>
-                                            <div className="flex items-center justify-between mb-1">
-                                                <div className="flex items-center gap-2 font-bold uppercase tracking-wide text-xs">
-                                                    {column.id === 'PENDING' && <ClipboardList size={14} />}
-                                                    {column.id === 'CONTACTADO' && <ClipboardList size={14} />}
-                                                    {column.id === 'CITA' && <PhoneCall size={14} />}
-                                                    {column.id === 'PROCESO_COTIZACION' && <Briefcase size={14} />}
-                                                    {column.id === 'COTIZACION_ENVIADA' && <FileText size={14} />}
-                                                    {column.id === 'CERRADO_GANADO' && <CheckCircle2 size={14} />}
-                                                    {column.id === 'CERRADO_PERDIDO' && <XCircle size={14} />}
-                                                    {column.title}
+                                        {(() => {
+                                            const stageConfig = STAGE_MAP[column.id]
+                                            const StageIcon = stageConfig?.icon
+                                            return (
+                                                <div className={`p-4 rounded-t-xl mb-0 border-b-4 ${stageConfig ? `${stageConfig.headerBg} ${stageConfig.headerBorder} text-white` : 'bg-gray-500 border-gray-600 text-white'} shadow-sm`}>
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <div className="flex items-center gap-2 font-bold uppercase tracking-wide text-xs">
+                                                            {StageIcon && <StageIcon size={14} />}
+                                                            {column.title}
+                                                        </div>
+                                                        <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs font-bold">
+                                                            {columnDeals.length}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs font-bold">
-                                                    {columnDeals.length}
-                                                </span>
-                                            </div>
-                                        </div>
+                                            )
+                                        })()}
 
                                         <Droppable droppableId={column.id}>
                                             {(provided, snapshot) => (
@@ -286,8 +259,6 @@ export default function KanbanPage() {
                                                 >
                                                     <div className="space-y-3">
                                                         {columnDeals.map((deal, index) => {
-                                                            const Icon = TYPE_ICONS[deal.type as keyof typeof TYPE_ICONS] || Briefcase
-
                                                             return (
                                                                 <Draggable key={deal.id} draggableId={deal.id} index={index}>
                                                                     {(provided, snapshot) => (
@@ -309,13 +280,16 @@ export default function KanbanPage() {
                                                                             </div>
 
                                                                             <div className="mb-3">
-                                                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${deal.type === 'FCL' ? 'bg-blue-50 text-blue-700' :
-                                                                                    deal.type === 'LCL' ? 'bg-orange-50 text-orange-700' :
-                                                                                        'bg-purple-50 text-purple-700'
-                                                                                    }`}>
-                                                                                    <Icon size={10} />
-                                                                                    {deal.type}
-                                                                                </span>
+                                                                                {(() => {
+                                                                                    const shipConfig = SHIPPING_TYPE_MAP[deal.type]
+                                                                                    const ShipIcon = shipConfig?.icon
+                                                                                    return (
+                                                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${shipConfig?.badgeColor || 'bg-gray-50 text-gray-700'}`}>
+                                                                                            {ShipIcon && <ShipIcon size={10} />}
+                                                                                            {shipConfig?.label || deal.type}
+                                                                                        </span>
+                                                                                    )
+                                                                                })()}
                                                                             </div>
 
                                                                             <h4 className="font-bold text-gray-800 text-sm mb-1 line-clamp-2 leading-relaxed">

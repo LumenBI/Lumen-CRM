@@ -6,30 +6,26 @@ import {
     LucidePhone,
     LucideClock,
 } from 'lucide-react'
+import { APPOINTMENT_TYPES, APPOINTMENT_STATUS_MAP } from '@/constants/appointments'
+
+const TYPE_ICON_COMPONENTS: Record<string, typeof LucideVideo> = {
+    LucideVideo,
+    LucideMapPin,
+    LucidePhone,
+}
 
 export function getTypeIcon(type: string, size: 'sm' | 'md' = 'sm') {
     const sizeClass = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'
-
-    switch (type) {
-        case 'virtual':
-            return <LucideVideo className={`${sizeClass} text-blue-500`} />
-        case 'presencial':
-            return <LucideMapPin className={`${sizeClass} text-purple-500`} />
-        case 'llamada':
-            return <LucidePhone className={`${sizeClass} text-green-500`} />
-        default:
-            return <LucideClock className={`${sizeClass} text-gray-500`} />
-    }
+    const typeConfig = APPOINTMENT_TYPES.find(t => t.id === type)
+    const Icon = typeConfig ? TYPE_ICON_COMPONENTS[typeConfig.iconName] || LucideClock : LucideClock
+    const colorMap: Record<string, string> = { virtual: 'text-blue-500', presencial: 'text-purple-500', llamada: 'text-green-500' }
+    return <Icon className={`${sizeClass} ${colorMap[type] || 'text-gray-500'}`} />
 }
 
 export function getStatusBadge(status: string): { className: string; label: string } {
-    const config: Record<string, { className: string; label: string }> = {
-        pendiente: { className: 'bg-orange-100 text-orange-700', label: 'Pendiente' },
-        confirmada: { className: 'bg-green-100 text-green-700', label: 'Confirmada' },
-        completada: { className: 'bg-slate-100 text-slate-600', label: 'Completada' },
-        cancelada: { className: 'bg-red-100 text-red-700', label: 'Cancelada' },
-    }
-    return config[status] || config.pendiente
+    const config = APPOINTMENT_STATUS_MAP[status]
+    if (config) return { className: config.badgeColor, label: config.label }
+    return { className: 'bg-orange-100 text-orange-700', label: 'Pendiente' }
 }
 
 export function formatAppointmentDate(dateStr: string): string {

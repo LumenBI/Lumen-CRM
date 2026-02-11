@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { getTypeIcon } from '@/utils/appointmentUtils'
+import { getTypeLabel } from '@/constants/appointments'
 
 interface AppointmentDetailsModalProps {
     isOpen: boolean
@@ -33,7 +34,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, appointment, 
                         </div>
                         <div>
                             <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">
-                                {appointment.appointment_type}
+                                {getTypeLabel(appointment.appointment_type)}
                             </span>
                             <h2 className="text-lg font-bold text-[#000d42] line-clamp-1">
                                 {appointment.title}
@@ -70,7 +71,37 @@ export default function AppointmentDetailsModal({ isOpen, onClose, appointment, 
                         </div>
                     </div>
 
-                    <div className="flex gap-3 items-start">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="flex gap-3 items-start">
+                            <div className="mt-1">
+                                <LucideUser className="h-5 w-5 text-slate-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-500">Agente Responsable</p>
+                                <p className="font-bold text-[#000d42]">{appointment.agent?.full_name || 'Asignado'}</p>
+                            </div>
+                        </div>
+
+                        {appointment.participants && appointment.participants.length > 0 && (
+                            <div className="col-span-1 sm:col-span-2 space-y-2">
+                                <p className="text-sm font-medium text-slate-500">Participantes</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {appointment.participants.map((p: any) => (
+                                        <div key={p.user?.id || p.id} className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                                            <div className="bg-white p-1 rounded-full shadow-sm">
+                                                <LucideUser className="h-3 w-3 text-slate-400" />
+                                            </div>
+                                            <span className="text-sm font-medium text-slate-700">
+                                                {p.user?.full_name || p.full_name}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-3 items-start border-t border-slate-50 pt-4">
                         <div className="mt-1">
                             <LucideUser className="h-5 w-5 text-slate-400" />
                         </div>
