@@ -9,10 +9,6 @@ interface KpiCardProps {
     color: string
 }
 
-/**
- * Reusable KPI/summary card. Extracted from dashboard/page.tsx inline definition.
- * Also replaces the 3 inline summary cards in users/page.tsx.
- */
 export default function KpiCard({ title, value, change, trend, icon, color }: KpiCardProps) {
     return (
         <div className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:scale-105">

@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { LucideCalendar } from 'lucide-react'
-import { useAppointments } from '@/context/AppointmentsContext'
+import { useData } from '@/context/DataContext'
 import { getTypeIcon } from '@/utils/appointmentUtils'
 
 export default function UpcomingAppointmentsWidget() {
-    const { appointments, loading } = useAppointments()
+    const { appointments, loading } = useData()
 
     const upcomingAppointments = useMemo(() => {
         if (!appointments) return []
@@ -29,7 +29,7 @@ export default function UpcomingAppointmentsWidget() {
         return (
             <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-[#000d42]">Próximas Citas</h3>
+                    <h3 className="text-lg font-bold text-[#000d42]">Próximas citas</h3>
                     <LucideCalendar className="h-5 w-5 text-[#0056fc]" />
                 </div>
                 <div className="space-y-3">
@@ -50,7 +50,7 @@ export default function UpcomingAppointmentsWidget() {
     return (
         <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-[#000d42]">Próximas Citas</h3>
+                <h3 className="text-lg font-bold text-[#000d42]">Próximas citas</h3>
                 <Link
                     href="/dashboard/citas"
                     className="text-sm text-[#0056fc] hover:underline flex items-center gap-1"

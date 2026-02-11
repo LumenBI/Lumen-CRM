@@ -7,10 +7,6 @@ interface SearchBarProps {
     className?: string
 }
 
-/**
- * Reusable search input with icon, replacing duplicated search bars
- * across clients and users pages.
- */
 export default function SearchBar({ value, onChange, placeholder = 'Buscar...', className = '' }: SearchBarProps) {
     return (
         <div className={`bg-white rounded-xl shadow-md p-6 ${className}`}>

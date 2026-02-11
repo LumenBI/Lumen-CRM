@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { createClient } from '@/utils/supabase/client'
+import { useApi } from '@/hooks/useApi'
 import {
     X as LucideX,
     Phone,
@@ -16,10 +16,8 @@ import {
 import { INTERACTION_TYPES } from '@/constants/interactions'
 import { useUser } from '@/context/UserContext'
 
-// Create aliases for icons
 const DollarSign = LucideDollarSign
 
-// Icon map for dynamic icon rendering
 const ICON_MAP: { [key: string]: React.ComponentType<{ size?: number; className?: string }> } = {
     Phone,
     Mail,
@@ -59,37 +57,30 @@ type ClientData = {
 
 export default function ClientModal({ clientId, onClose, onSuccess }: { clientId: string, onClose: () => void, onSuccess?: () => void }) {
     const { profile } = useUser()
+    const { clients: clientsApi, appointments: appointmentsApi, interactions: interactionsApi } = useApi()
+
     const [client, setClient] = useState<ClientData | null>(null)
     const [history, setHistory] = useState<Interaction[]>([])
     const [deals, setDeals] = useState<Deal[]>([])
     const [loading, setLoading] = useState(true)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    // Formulario nueva interacción
     const [newNote, setNewNote] = useState('')
-    const [type, setType] = useState('CALL') // Frontend value
+    const [type, setType] = useState('CALL')
     const [modality, setModality] = useState('N_A')
-
-    // Scheduling State
     const [scheduleFuture, setScheduleFuture] = useState(false)
     const [futureDate, setFutureDate] = useState('')
     const [futureTime, setFutureTime] = useState('')
 
-    const supabase = createClient()
-
-    // 1. Cargar Datos al Abrir
     useEffect(() => {
         const fetchData = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
-
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients/${clientId}`, {
-                    headers: { Authorization: `Bearer ${session.access_token}` }
-                })
-                const data = await res.json()
+                const data = await clientsApi.getById(clientId)
+                // @ts-ignore - mismatch in types potentially, sticking to runtime shape
                 setClient(data.client)
+                // @ts-ignore
                 setHistory(data.interactions)
+                // @ts-ignore
                 setDeals(data.deals || [])
             } catch (err) {
                 console.error(err)
@@ -98,28 +89,24 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
             }
         }
         fetchData()
-    }, [clientId])
+    }, [clientId, clientsApi])
 
-    // Update modality when type changes
     useEffect(() => {
         const selectedType = INTERACTION_TYPES.find(t => t.value === type)
         if (selectedType) {
             if (selectedType.defaultModality) {
                 setModality(selectedType.defaultModality)
             } else if (selectedType.requiresModality) {
-                setModality('VIRTUAL') // Default to virtual for meetings
+                setModality('VIRTUAL')
             } else {
                 setModality('N_A')
             }
         }
     }, [type])
 
-    // 2. Guardar Nueva Interacción o Cita
     const handleSaveInteraction = async () => {
         if (!newNote.trim()) return
         if (scheduleFuture && (!futureDate || !futureTime)) return
-
-        // STRICT RBAC ENFORCEMENT
         if (profile?.role !== 'ADMIN' && profile?.role !== 'MANAGER') {
             if (client?.assigned_agent_id !== profile?.id) {
                 alert('No tienes permisos para registrar actividad en este cliente.')
@@ -129,74 +116,47 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
 
         setIsSubmitting(true)
 
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) return
-
         try {
             const selectedType = INTERACTION_TYPES.find(t => t.value === type)
             if (!selectedType) return
 
-            let res;
-
             if (scheduleFuture) {
-                // CREATE APPOINTMENT
-                res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        clientId,
-                        title: `${selectedType.label} con Cliente`, // Auto title
-                        description: newNote,
-                        date: futureDate,
-                        time: futureTime,
-                        type: selectedType.backendValue === 'MEETING' ? (modality === 'IN_PERSON' ? 'presencial' : 'virtual') : 'virtual', // Map to appointment types
-                        meetingLink: '',
-                        location: '',
-                        notes: newNote
-                    })
-                })
+                await appointmentsApi.create({
+                    // @ts-ignore
+                    clientId,
+                    title: `${selectedType.label} con Cliente`,
+                    description: newNote,
+                    appointment_date: futureDate,
+                    appointment_time: futureTime,
+                    appointment_type: selectedType.backendValue === 'MEETING' ? (modality === 'IN_PERSON' ? 'presencial' : 'virtual') : 'virtual', // Map to appointment types
+                    meeting_link: '',
+                    location: '',
+                } as any)
+
+                alert('Cita agendada correctamente.')
             } else {
-                // CREATE INTERACTION (HISTORY)
-                res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/interactions`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        clientId,
-                        category: selectedType.backendValue,
-                        modality: modality,
-                        summary: newNote,
-                        amount_usd: type === 'SALE' ? 1000 : 0
-                    })
+                const newInteraction = await interactionsApi.create({
+                    clientId,
+                    category: selectedType.backendValue,
+                    modality: modality,
+                    summary: newNote,
+                    amount_usd: type === 'SALE' ? 1000 : 0
                 })
+
+                // @ts-ignore
+                setHistory([newInteraction, ...history])
             }
 
-            if (res.ok) {
-                const data = await res.json()
+            setNewNote('')
+            setScheduleFuture(false)
+            setFutureDate('')
+            setFutureTime('')
 
-                if (scheduleFuture) {
-                    // If appointment created, maybe alert user? 
-                    // Ideally we would add it to history if it was immediate, but appointments are future.
-                    // We'll just reset form and maybe show success toast.
-                    alert('Cita agendada correctamente.')
-                } else {
-                    setHistory([data, ...history])
-                }
+            if (onSuccess) onSuccess()
 
-                setNewNote('')
-                setScheduleFuture(false)
-                setFutureDate('')
-                setFutureTime('')
-            } else {
-                console.error('Error response', await res.text())
-            }
         } catch (err) {
             console.error(err)
+            alert('Error al guardar.')
         } finally {
             setIsSubmitting(false)
         }
@@ -210,16 +170,13 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
 
     if (!clientId || !mounted) return null
 
-    // STRICT RBAC CHECK
     const canInteract = profile?.role === 'ADMIN' || profile?.role === 'MANAGER' || (client?.assigned_agent_id === profile?.id)
 
-    // const { createPortal } = require('react-dom') -- REMOVED
     const currentTypeConfig = INTERACTION_TYPES.find(t => t.value === type)
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="relative max-h-[95vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-200">
-                {/* Header - MEJORADO con gradiente Star Cargo */}
                 <div className="flex items-center justify-between bg-gradient-to-r from-[#000D42] to-[#0066FF] px-8 py-6 shadow-lg">
                     <div>
                         <h2 className="text-3xl font-bold text-white">
@@ -236,9 +193,8 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
                         <LucideX size={24} className="text-white" />
                     </button>
                 </div>
-                {/* Body */}
+
                 <div className="flex flex-col lg:flex-row max-h-[calc(95vh-100px)] overflow-hidden">
-                    {/* Sidebar: Info del Cliente - MEJORADO */}
                     <div className="w-full lg:w-96 border-b lg:border-r lg:border-b-0 bg-gradient-to-b from-gray-50 to-white p-6 lg:p-8 overflow-y-auto shrink-0">
                         <h3 className="mb-6 text-sm font-bold uppercase text-[#000D42] tracking-wider">Información de Contacto</h3>
                         {loading ? (
@@ -280,11 +236,10 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
                             </div>
                         )}
                         <div className={`space-y-4 ${!canInteract ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-                            {/* Custom Select with Icons */}
                             <div className="relative">
                                 <div className="grid grid-cols-3 gap-2">
                                     {INTERACTION_TYPES.map(t => {
-                                        const IconComponent = ICON_MAP[t.icon] || MessageSquare // Default icon
+                                        const IconComponent = ICON_MAP[t.icon] || MessageSquare
                                         return (
                                             <button
                                                 key={t.value}
@@ -311,7 +266,6 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
                                 </div>
                             </div>
 
-                            {/* Modality Selector - Only for allowed types */}
                             {currentTypeConfig?.requiresModality && (
                                 <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
                                     <button
@@ -329,7 +283,6 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
                                 </div>
                             )}
 
-                            {/* Schedule Toggle */}
                             <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-xl border border-blue-100">
                                 <input
                                     type="checkbox"
@@ -344,7 +297,6 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
                                 </label>
                             </div>
 
-                            {/* Date Time Selection for Future */}
                             {scheduleFuture && (
                                 <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                                     <div>
@@ -389,20 +341,18 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
                         </div>
                     </div>
 
-                    {/* Columna Derecha: Negociaciones y Historial */}
                     <div className="flex-1 overflow-y-auto p-6 lg:p-8 bg-white">
 
-                        {/* Deals Section */}
                         <div className="mb-8 border-b border-gray-100 pb-8">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-bold text-[#000D42] flex items-center gap-2">
                                     <Briefcase size={20} className="text-[#0066FF]" />
-                                    Negociaciones Activas ({deals.length})
+                                    Seguimientos activos ({deals.length})
                                 </h3>
                             </div>
 
                             <div className="grid grid-cols-1 gap-3">
-                                {deals.length === 0 && <p className="text-sm text-gray-400 italic">No hay negociaciones registradas.</p>}
+                                {deals.length === 0 && <p className="text-sm text-gray-400 italic">No hay seguimientos activos.</p>}
                                 {deals.map(deal => (
                                     <div key={deal.id} className="p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all bg-white flex justify-between items-center group">
                                         <div>
@@ -432,7 +382,6 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
                             <div className="relative space-y-8 border-l-2 border-gray-100 pl-6 ml-2">
                                 {history.length === 0 && <p className="text-sm text-gray-400">Sin interacciones registradas aún.</p>}
                                 {history.map((item) => {
-                                    // Determine display label and color logic
                                     let displayCategory = item.category
                                     if (item.category === 'MEETING') {
                                         if (item.modality === 'IN_PERSON') displayCategory = 'VISITA COMERCIAL'

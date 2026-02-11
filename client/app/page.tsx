@@ -187,7 +187,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-400 font-bold uppercase tracking-wide">Cobertura Global</p>
-                    <p className="text-base-900 font-bold text-lg">Rastreo en Tiempo Real</p>
+                    <p className="text-base-900 font-bold text-lg">Rastreo en tiempo real</p>
                     <div className="w-full h-1 bg-gray-100 mt-3 rounded-full overflow-hidden">
                       <motion.div
                         className="h-full bg-blue-500 rounded-full"

@@ -72,7 +72,6 @@ export default function StageChangeModal({
             ></div>
 
             <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                {/* Header */}
                 <div className="bg-gradient-to-r from-[#000D42] to-[#0066FF] p-6 text-white">
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="text-xl font-bold">Registrar Avance</h3>
@@ -93,7 +92,6 @@ export default function StageChangeModal({
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Interaction Type Selector */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                             ¿Cómo fue el contacto?
@@ -115,7 +113,6 @@ export default function StageChangeModal({
                         </div>
                     </div>
 
-                    {/* Summary Input */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Resumen de la interacción
@@ -128,7 +125,6 @@ export default function StageChangeModal({
                         />
                     </div>
 
-                    {/* Next Step Input (Optional) */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Próximo paso (Opcional)
@@ -142,7 +138,6 @@ export default function StageChangeModal({
                         />
                     </div>
 
-                    {/* Actions */}
                     <div className="pt-2">
                         <button
                             onClick={handleSubmit}

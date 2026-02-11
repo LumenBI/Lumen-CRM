@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { LucideX, LucideLoader2, LucideSearch, LucideCheck, LucideDollarSign, LucideBriefcase, LucideContainer, LucidePlane } from 'lucide-react'
-import { useAuthFetch } from '@/hooks/useAuthFetch'
+import { useApi } from '@/hooks/useApi'
 import { useClients } from '@/context/ClientsContext'
 import ModalPortal from '@/components/ui/ModalPortal'
 import type { Client } from '@/types'
+import { TEXTS } from '@/constants/text'
 
 type NewDealModalProps = {
     onClose: () => void
@@ -29,17 +30,16 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
         type: 'FCL'
     })
 
-    const { authFetch } = useAuthFetch()
-    const { searchClients } = useClients()
+    const { deals: dealsApi } = useApi()
+    const { searchClients, allClients } = useClients()
 
-    // Client-side search using context cache
     useEffect(() => {
-        if (searchTerm.length > 1 && !selectedClient) {
-            setSearchResults(searchClients(searchTerm))
+        if (searchTerm.trim() === '') {
+            setSearchResults(allClients)
         } else {
-            setSearchResults([])
+            setSearchResults(searchClients(searchTerm))
         }
-    }, [searchTerm, selectedClient, searchClients])
+    }, [searchTerm, selectedClient, searchClients, allClients])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -47,21 +47,15 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
         setLoading(true)
 
         try {
-            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    client_id: selectedClient.id,
-                    title: dealForm.title,
-                    value: parseFloat(dealForm.value) || 0,
-                    profit: parseFloat(dealForm.profit) || 0,
-                    currency: dealForm.currency,
-                    type: dealForm.type,
-                    status: 'CONTACTADO'
-                })
+            await dealsApi.create({
+                client_id: selectedClient.id,
+                title: dealForm.title,
+                value: parseFloat(dealForm.value) || 0,
+                profit: parseFloat(dealForm.profit) || 0,
+                currency: dealForm.currency,
+                type: dealForm.type,
+                status: 'PENDING'
             })
-
-            if (!res.ok) throw new Error('Error creando negociación')
 
             onSuccess()
             onClose()
@@ -81,7 +75,7 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
                 <div className="flex items-center justify-between border-b bg-gray-50 px-6 py-4">
                     <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                         <LucideBriefcase className="text-blue-600" />
-                        Nueva negociación
+                        {TEXTS.NEW_DEAL}
                     </h2>
                     <button onClick={onClose} className="rounded-full p-1 hover:bg-gray-200 transaction-colors">
                         <LucideX className="text-gray-500" size={20} />
@@ -91,14 +85,14 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
 
                     <div className="space-y-4">
-                        <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Cliente</label>
+                        <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">{TEXTS.CLIENTS_TITLE}</label>
 
                         {!selectedClient ? (
                             <div className="relative">
                                 <LucideSearch className="absolute left-3 top-3 text-gray-400" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Buscar empresa..."
+                                    placeholder={TEXTS.SEARCH_CLIENT}
                                     className="w-full rounded-xl border border-gray-200 pl-10 p-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -245,7 +239,7 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
                             className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             {loading && <LucideLoader2 className="animate-spin" size={18} />}
-                            Crear negociación
+                            Crear seguimiento
                         </button>
                     </div>
 

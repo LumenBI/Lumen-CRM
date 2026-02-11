@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { X, Save, Loader2, Building2, User, Mail, Phone, Calendar, UserCheck } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
-import { useAuthFetch } from '@/hooks/useAuthFetch'
+import { useClients } from '@/context/ClientsContext'
+import { useApi } from '@/hooks/useApi'
 import { ORIGIN_OPTIONS } from '@/constants/interactions'
 import ModalPortal from '@/components/ui/ModalPortal'
 import type { Client } from '@/types'
-
 import { useAgents } from '@/context/AgentsContext'
 
 interface EditClientModalProps {
@@ -30,7 +30,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
     const [duration, setDuration] = useState('3')
     const [customDate, setCustomDate] = useState('')
 
-    const { authFetch } = useAuthFetch()
+    const { updateClient } = useClients()
     const { profile } = useUser()
     const { agents } = useAgents()
 
@@ -44,6 +44,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
             assigned_agent_id: client.assigned_agent_id || '',
         })
     }, [client])
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -68,16 +69,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                 assignment_expires_at: expiresAt.toISOString()
             }
 
-            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients/${client.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-
-            if (!res.ok) {
-                const error = await res.json()
-                throw new Error(error.message || 'Error actualizando cliente')
-            }
+            await updateClient(client.id, payload)
 
             onSuccess()
             onClose()
@@ -92,11 +84,10 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
     return (
         <ModalPortal>
             <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-                {/* Header */}
                 <div className="bg-gradient-to-r from-[#000D42] to-[#0066FF] px-6 py-4 flex items-center justify-between shrink-0">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
                         <Building2 size={24} className="text-blue-200" />
-                        Editar Cliente
+                        Editar cliente
                     </h2>
                     <button
                         onClick={onClose}
@@ -165,13 +156,11 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                                 </div>
                             </div>
 
-                            {/* RIGHT COLUMN: Assignment - ONLY FOR ADMIN OR MANAGER */}
                             {profile && (profile.role === 'ADMIN' || profile.role === 'MANAGER') && (
                                 <div className="space-y-4 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                                     <h3 className="text-sm font-bold text-[#0066FF] uppercase tracking-wider border-b border-blue-100 pb-2 mb-4 flex items-center gap-2">
                                         <UserCheck size={16} /> Asignación y Vigencia
                                     </h3>
-                                    {/* ... content continues ... */}
 
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Agente Asignado</label>
@@ -250,7 +239,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                             className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
                         >
                             {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                            Guardar Cambios
+                            Guardar cambios
                         </button>
                     </div>
 

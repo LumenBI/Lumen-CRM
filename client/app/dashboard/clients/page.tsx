@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Building2, User, Phone, Mail, Trash2, Pencil } from 'lucide-react';
+import { Plus, Building2, User, Phone, Mail, Trash2, Pencil, UserPlus } from 'lucide-react';
 import { useAuthFetch } from '@/hooks/useAuthFetch';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchBar from '@/components/ui/SearchBar';
@@ -12,6 +12,8 @@ import AlertModal, { AlertType } from '@/components/ui/AlertModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import type { Client } from '@/types';
 import { useClients } from '@/context/ClientsContext';
+import { toast } from 'sonner'
+import { TEXTS, NAVIGATION_LABELS } from '@/constants/text'
 
 export default function ClientsPage() {
     const { allClients, searchAllClients, loading, refreshClients } = useClients();
@@ -45,7 +47,6 @@ export default function ClientsPage() {
 
     const { authFetch } = useAuthFetch();
 
-    // The clients displayed are derived from the global cache via search
     const displayedClients = searchTerm ? searchAllClients(searchTerm) : allClients;
 
     const handleDeleteClick = (e: React.MouseEvent, id: string) => {
@@ -72,7 +73,6 @@ export default function ClientsPage() {
                 throw new Error(errorData.message || 'Error al eliminar cliente');
             }
 
-            // The cache will update via real-time, but manual refresh is safer after delete
             refreshClients();
             setConfirmState({ isOpen: false, clientId: null });
 
@@ -99,13 +99,12 @@ export default function ClientsPage() {
     return (
         <div className="p-8 space-y-6">
             <PageHeader
-                title="Cartera de Clientes"
-                subtitle="Directorio completo de empresas y contactos"
-                actionLabel="Nuevo Cliente"
-                actionIcon={<Plus className="h-5 w-5" />}
+                title={TEXTS.CLIENTS_TITLE}
+                subtitle="Gestiona tu base de datos de clientes"
+                actionLabel={TEXTS.NEW_CLIENT}
+                actionIcon={<UserPlus size={20} />}
                 onAction={() => setIsCreateModalOpen(true)}
             />
-
             <SearchBar
                 value={searchTerm}
                 onChange={setSearchTerm}
@@ -181,14 +180,14 @@ export default function ClientsPage() {
                                             <button
                                                 onClick={(e) => handleEditClick(e, client)}
                                                 className="inline-flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white hover:bg-blue-500 rounded-xl transition-all hover:scale-110 shadow-sm hover:shadow-md"
-                                                title="Editar Cliente"
+                                                title={TEXTS.EDIT_CLIENT}
                                             >
                                                 <Pencil size={18} />
                                             </button>
                                             <button
                                                 onClick={(e) => handleDeleteClick(e, client.id)}
                                                 className="inline-flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white hover:bg-red-500 rounded-xl transition-all hover:scale-110 shadow-sm hover:shadow-md"
-                                                title="Eliminar Cliente"
+                                                title={TEXTS.DELETE_CLIENT}
                                             >
                                                 <Trash2 size={18} />
                                             </button>

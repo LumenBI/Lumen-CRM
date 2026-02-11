@@ -26,7 +26,6 @@ export default function AppointmentDetailsModal({ isOpen, onClose, appointment, 
     return (
         <ModalPortal onBackdropClick={onClose} backdropClassName="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-                {/* Header with Type Color/Icon */}
                 <div className="bg-slate-50 px-6 py-4 flex items-center justify-between border-b border-slate-100">
                     <div className="flex items-center gap-3">
                         <div className="bg-white p-2 rounded-lg shadow-sm border border-slate-100">
@@ -49,9 +48,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, appointment, 
                     </button>
                 </div>
 
-                {/* Body */}
                 <div className="p-6 space-y-6">
-                    {/* Date & Time */}
                     <div className="flex gap-4">
                         <div className="flex-1 bg-blue-50/50 p-3 rounded-xl border border-blue-100/50">
                             <div className="flex items-center gap-2 mb-1 text-blue-700">
@@ -73,7 +70,6 @@ export default function AppointmentDetailsModal({ isOpen, onClose, appointment, 
                         </div>
                     </div>
 
-                    {/* Client Info */}
                     <div className="flex gap-3 items-start">
                         <div className="mt-1">
                             <LucideUser className="h-5 w-5 text-slate-400" />
@@ -85,7 +81,6 @@ export default function AppointmentDetailsModal({ isOpen, onClose, appointment, 
                         </div>
                     </div>
 
-                    {/* Location / Link */}
                     {(appointment.location || appointment.meeting_link) && (
                         <div className="flex gap-3 items-start">
                             <div className="mt-1">
@@ -114,7 +109,6 @@ export default function AppointmentDetailsModal({ isOpen, onClose, appointment, 
                         </div>
                     )}
 
-                    {/* Description */}
                     {appointment.description && (
                         <div className="flex gap-3 items-start">
                             <div className="mt-1">
@@ -130,7 +124,6 @@ export default function AppointmentDetailsModal({ isOpen, onClose, appointment, 
                     )}
                 </div>
 
-                {/* Footer */}
                 <div className="bg-slate-50 p-6 pt-4 flex gap-3">
                     <button
                         onClick={onClose}

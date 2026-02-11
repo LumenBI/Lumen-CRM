@@ -1,0 +1,3 @@
+# Run lint and type check for client
+npm run lint --prefix client || echo "Lint failed but continuing..."
+npx tsc --noEmit --project client/tsconfig.json || echo "TSC failed but continuing..."

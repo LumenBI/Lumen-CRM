@@ -21,7 +21,6 @@ export default function NotificationBell() {
     const dropdownRef = useRef<HTMLDivElement>(null)
     const supabase = createClient()
 
-    // 1. Fetch Initial & Subscribe
     useEffect(() => {
         let channel: any
 
@@ -29,21 +28,19 @@ export default function NotificationBell() {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) return
 
-            // Fetch unread
             const { data } = await supabase
                 .from('notifications')
                 .select('*')
                 .eq('user_id', session.user.id)
                 .eq('is_read', false)
                 .order('created_at', { ascending: false })
-                .limit(10) // Only show latest 10 unread in dropdown
+                .limit(10)
 
             if (data) {
                 setNotifications(data)
                 setUnreadCount(data.length)
             }
 
-            // Realtime Subscription
             channel = supabase
                 .channel('notifications-changes')
                 .on(
@@ -58,7 +55,6 @@ export default function NotificationBell() {
                         const newNotif = payload.new as Notification
                         setNotifications(prev => [newNotif, ...prev])
                         setUnreadCount(prev => prev + 1)
-                        // Play sound?
                     }
                 )
                 .subscribe()
@@ -71,7 +67,6 @@ export default function NotificationBell() {
         }
     }, [])
 
-    // Close on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -83,7 +78,6 @@ export default function NotificationBell() {
     }, [])
 
     const handleMarkAsRead = async (id: string) => {
-        // Optimistic
         setNotifications(prev => prev.filter(n => n.id !== id))
         setUnreadCount(prev => Math.max(0, prev - 1))
 

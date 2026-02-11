@@ -7,6 +7,7 @@ import CalendarView from '@/components/calendar/CalendarView'
 import { useAppointments } from '@/context/AppointmentsContext'
 import { getTypeIcon, getStatusBadge, formatAppointmentDate } from '@/utils/appointmentUtils'
 import type { Appointment } from '@/types'
+import { TEXTS } from '@/constants/text'
 import {
     LucideCalendar,
     LucidePlus,
@@ -15,7 +16,8 @@ import {
     LucideEye,
     LucidePencil,
     LucideCheckCircle,
-    LucideXCircle
+    LucideXCircle,
+    LucideClock
 } from 'lucide-react'
 import ContextMenu from '@/components/ContextMenu'
 
@@ -71,7 +73,6 @@ export default function AppointmentsPage() {
         }
     }
 
-    /** Merged handler for both complete and cancel actions (were near-identical) */
     const updateAppointmentStatus = async (appointmentId: string, status: 'completada' | 'cancelada') => {
         if (status === 'cancelada' && !confirm('¿Estás seguro de que deseas cancelar esta cita?')) return
 
@@ -81,6 +82,8 @@ export default function AppointmentsPage() {
             console.error(`Error updating appointment to ${status}:`, error)
         }
     }
+
+    const contextAppointment = getContextAppointment()
 
     if (loading) {
         return (
@@ -93,19 +96,14 @@ export default function AppointmentsPage() {
         )
     }
 
-    // Cache the context appointment once for use in context menu items
-    const contextAppointment = getContextAppointment()
-
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#000d42]">Agenda de Citas</h1>
+                    <h1 className="text-2xl font-bold text-[#000d42]">{TEXTS.CALENDAR_TITLE}</h1>
                     <p className="text-slate-500">Gestiona tus reuniones y llamadas programadas</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    {/* View Toggle */}
                     <div className="bg-white border border-slate-200 p-1 rounded-xl flex items-center shadow-sm">
                         <button
                             onClick={() => setViewMode('calendar')}
@@ -130,16 +128,18 @@ export default function AppointmentsPage() {
                     </div>
 
                     <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 bg-[#0056fc] text-white px-4 py-2.5 rounded-xl hover:bg-blue-600 transition shadow-lg hover:shadow-xl hover:scale-105"
+                        onClick={() => {
+                            setEditingAppointment(null)
+                            setIsModalOpen(true)
+                        }}
+                        className="flex items-center gap-2 bg-[#ff5e1e] text-white px-4 py-2 rounded-lg hover:bg-[#e04d13] transition-colors"
                     >
-                        <LucidePlus className="h-5 w-5" />
-                        <span className="hidden sm:inline">Nueva Cita</span>
+                        <LucidePlus size={20} />
+                        {TEXTS.NEW_APPOINTMENT}
                     </button>
                 </div>
             </div>
 
-            {/* Filters */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 {['all', 'pendiente', 'confirmada', 'completada'].map((status) => (
                     <button
@@ -160,7 +160,6 @@ export default function AppointmentsPage() {
                 ))}
             </div>
 
-            {/* Content Area */}
             {viewMode === 'calendar' ? (
                 <div className="animate-in fade-in duration-300">
                     <CalendarView
@@ -238,26 +237,34 @@ export default function AppointmentsPage() {
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
                                                         <span className="font-semibold text-slate-700">{formatAppointmentDate(appointment.appointment_date)}</span>
-                                                        <span className="text-xs text-slate-400 font-medium">{appointment.appointment_time.slice(0, 5)}</span>
+                                                        <div className="flex items-center gap-1 text-xs text-slate-400 font-medium">
+                                                            <LucideClock size={12} />
+                                                            <span>{appointment.appointment_time.slice(0, 5)}</span>
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2 text-slate-600">
-                                                        {getTypeIcon(appointment.appointment_type)}
-                                                        <span className="text-sm capitalize font-medium">{appointment.appointment_type}</span>
-                                                    </div>
+                                                    <span className={`px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600`}>
+                                                        {appointment.appointment_type === 'virtual' ? 'Virtual' : 'Presencial'}
+                                                    </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <p className="text-sm text-slate-700 font-medium">{appointment.title}</p>
+                                                    <span className="text-sm text-slate-700 font-medium">{appointment.title}</span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${badge.className}`}>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${badge.className}`}>
                                                         {badge.label}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <button className="text-slate-400 hover:text-[#0056fc] transition p-2 hover:bg-blue-50 rounded-lg">
-                                                        <span className="material-symbols-outlined text-[20px]">edit</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingAppointment(appointment)
+                                                            setIsModalOpen(true)
+                                                        }}
+                                                        className="text-slate-400 hover:text-[#0056fc] transition-colors"
+                                                    >
+                                                        <LucidePencil size={18} />
                                                     </button>
                                                 </td>
                                             </tr>

@@ -7,13 +7,6 @@ import {
     LucideClock,
 } from 'lucide-react'
 
-/**
- * Returns the appropriate icon for an appointment type.
- * Consolidates duplicated getTypeIcon from:
- * - AppointmentDetailsModal.tsx
- * - UpcomingAppointmentsWidget.tsx
- * - citas/page.tsx
- */
 export function getTypeIcon(type: string, size: 'sm' | 'md' = 'sm') {
     const sizeClass = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'
 
@@ -29,10 +22,6 @@ export function getTypeIcon(type: string, size: 'sm' | 'md' = 'sm') {
     }
 }
 
-/**
- * Returns status badge styling and label for an appointment status.
- * Consolidates from citas/page.tsx.
- */
 export function getStatusBadge(status: string): { className: string; label: string } {
     const config: Record<string, { className: string; label: string }> = {
         pendiente: { className: 'bg-orange-100 text-orange-700', label: 'Pendiente' },
@@ -43,12 +32,6 @@ export function getStatusBadge(status: string): { className: string; label: stri
     return config[status] || config.pendiente
 }
 
-/**
- * Formats a date string (YYYY-MM-DD) to a Spanish locale short format.
- * Consolidates duplicated formatDate from:
- * - citas/page.tsx
- * - UpcomingAppointmentsWidget.tsx
- */
 export function formatAppointmentDate(dateStr: string): string {
     if (!dateStr) return ''
     const [year, month, day] = dateStr.split('-').map(Number)

@@ -9,15 +9,6 @@ interface ModalPortalProps {
     backdropClassName?: string
 }
 
-/**
- * Reusable portal wrapper that eliminates the repeated mount/portal/backdrop
- * boilerplate from 9 modal components.
- *
- * Handles:
- * - Client-side mount check (SSR safe)
- * - createPortal to document.body
- * - Backdrop overlay with blur + animation
- */
 export default function ModalPortal({ children, onBackdropClick, backdropClassName }: ModalPortalProps) {
     const [mounted, setMounted] = useState(false)
 

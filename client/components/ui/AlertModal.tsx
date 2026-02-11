@@ -53,7 +53,6 @@ export default function AlertModal({ isOpen, onClose, title, message, type = 'in
     const config = TYPE_CONFIG[type];
     const Icon = config.icon;
 
-    // Portal logic
     const [mounted, setMounted] = React.useState(false)
     React.useEffect(() => {
         setMounted(true)
@@ -64,13 +63,11 @@ export default function AlertModal({ isOpen, onClose, title, message, type = 'in
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
-            {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-[#000D42]/60 backdrop-blur-sm animate-in fade-in duration-200"
                 onClick={onClose}
             ></div>
 
-            {/* Modal */}
             <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <div className="p-6 text-center">
                     <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${config.bg}`}>

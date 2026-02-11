@@ -50,7 +50,7 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
     }
 
     const year = currentDate.getFullYear()
-    const month = currentDate.getMonth() // 0-indexed
+    const month = currentDate.getMonth()
 
     const daysInMonth = getDaysInMonth(year, month)
     const firstDay = getFirstDayOfMonth(year, month)
@@ -65,7 +65,6 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
 
     const todayStr = new Date().toISOString().split('T')[0]
 
-    // Helpers for rendering
     const getTypeIcon = (type: string) => {
         switch (type) {
             case 'virtual': return <LucideVideo className="h-3 w-3" />
@@ -84,14 +83,12 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
         }
     }
 
-    // Grid Generation
     const blanks = Array(firstDay).fill(null)
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
     const totalSlots = [...blanks, ...days]
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden text-[#000d42]">
-            {/* Calendar Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-100">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     {MONTHS[month]} <span className="text-slate-400 font-normal">{year}</span>
@@ -109,7 +106,6 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
                 </div>
             </div>
 
-            {/* Weekdays Header */}
             <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50">
                 {DAYS.map(day => (
                     <div key={day} className="py-2 text-center text-xs font-semibold uppercase text-slate-500 tracking-wider">
@@ -118,13 +114,10 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
                 ))}
             </div>
 
-            {/* Calendar Grid */}
             <div className="grid grid-cols-7 auto-rows-[minmax(120px,auto)] divide-x divide-slate-100 divide-y">
                 {totalSlots.map((day, index) => {
                     if (!day) return <div key={`blank-${index}`} className="bg-slate-50/50" />
 
-                    // Format date string YYYY-MM-DD for comparison
-                    // Note: month is 0-indexed, so month + 1. PadStart to ensure 2 digits.
                     const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                     const isToday = dateString === todayStr
 
@@ -140,7 +133,7 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
                                 }
                             }}
                             onDragOver={(e) => {
-                                e.preventDefault() // Allow dropping
+                                e.preventDefault()
                                 e.currentTarget.classList.add('bg-blue-50', 'ring-2', 'ring-blue-200', 'ring-inset')
                             }}
                             onDragLeave={(e) => {

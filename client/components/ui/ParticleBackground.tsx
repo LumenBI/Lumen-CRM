@@ -24,11 +24,10 @@ export default function ParticleBackground() {
         let height = canvas.height = window.innerHeight
 
         const particles: Particle[] = []
-        const particleCount = Math.min(Math.floor((width * height) / 15000), 100) // Density control
+        const particleCount = Math.min(Math.floor((width * height) / 15000), 100)
         const connectionDistance = 150
         const moveSpeed = 0.5
 
-        // Initialize particles
         for (let i = 0; i < particleCount; i++) {
             particles.push({
                 x: Math.random() * width,
@@ -43,22 +42,18 @@ export default function ParticleBackground() {
             if (!canvas || !ctx) return
             ctx.clearRect(0, 0, width, height)
 
-            // Update and draw particles
             particles.forEach((p, i) => {
                 p.x += p.vx
                 p.y += p.vy
 
-                // Bounce off edges
                 if (p.x < 0 || p.x > width) p.vx *= -1
                 if (p.y < 0 || p.y > height) p.vy *= -1
 
-                // Draw particle
                 ctx.beginPath()
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-                ctx.fillStyle = 'rgba(0, 86, 252, 0.2)' // Star Cargo Blue, low opacity
+                ctx.fillStyle = 'rgba(0, 86, 252, 0.2)'
                 ctx.fill()
 
-                // Connect particles
                 for (let j = i + 1; j < particles.length; j++) {
                     const p2 = particles[j]
                     const dx = p.x - p2.x

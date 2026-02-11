@@ -127,6 +127,12 @@ export class DashboardController {
 
   // ==================== INTERACTIONS ====================
 
+  @Get('activities')
+  async getActivities(@Req() req) {
+    const token = this.extractToken(req);
+    return this.dashboardService.getRecentActivities(token);
+  }
+
   @Post('interactions')
   async addInteraction(@Req() req, @Body() payload: any) {
     const token = this.extractToken(req);
@@ -137,6 +143,13 @@ export class DashboardController {
   async deleteInteraction(@Req() req, @Param('id') id: string) {
     const token = this.extractToken(req);
     return this.dashboardService.deleteInteraction(token, id);
+  }
+
+  @Get('bootstrap')
+  async getBootstrap(@Req() req) {
+    const token = this.extractToken(req);
+    const userId = req.user.userId;
+    return this.dashboardService.getBootstrapData(token, userId);
   }
 
   // ==================== DEALS ====================

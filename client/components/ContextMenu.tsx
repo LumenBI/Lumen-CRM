@@ -31,8 +31,6 @@ export default function ContextMenu({ x, y, title, onClose, items }: ContextMenu
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [onClose])
 
-    // Basic positioning logic to prevent overflow would go here
-    // For now, simple absolute positioning
     const style = {
         top: y,
         left: x,

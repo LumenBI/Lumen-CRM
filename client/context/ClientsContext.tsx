@@ -1,21 +1,19 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
-import { createClient } from '@/utils/supabase/client'
+import { createClient as createSupabaseClient } from '@/utils/supabase/client'
 import { useUser } from '@/context/UserContext'
+import { useApi } from '@/hooks/useApi'
 import type { Client } from '@/types'
 
 interface ClientsContextType {
-    /** All clients — for read-only views (Clients page) */
     allClients: Client[]
-    /** Clients assigned to the current user — for action contexts (modals) */
     myClients: Client[]
-    /** Client-side search over myClients */
     searchClients: (query: string) => Client[]
-    /** Client-side search over allClients */
     searchAllClients: (query: string) => Client[]
-    /** Manual refresh */
     refreshClients: () => Promise<void>
+    createClient: (clientData: Partial<Client>) => Promise<Client>
+    updateClient: (id: string, clientData: Partial<Client>) => Promise<Client>
     loading: boolean
 }
 
@@ -25,33 +23,24 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
     const [allClients, setAllClients] = useState<Client[]>([])
     const [loading, setLoading] = useState(true)
     const { profile } = useUser()
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
+
+    const { clients: clientsApi } = useApi()
 
     const fetchClients = useCallback(async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
-
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients`, {
-                headers: { Authorization: `Bearer ${session.access_token}` }
-            })
-            if (res.ok) {
-                const data = await res.json()
-                setAllClients(data)
-            }
+            const data = await clientsApi.getAll()
+            setAllClients(data)
         } catch (error) {
             console.error('Error fetching clients:', error)
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [clientsApi])
 
-    // Initial fetch
     useEffect(() => {
         fetchClients()
     }, [fetchClients])
-
-    // Supabase real-time subscription
     useEffect(() => {
         const channel = supabase
             .channel('clients-realtime')
@@ -73,7 +62,6 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
         }
     }, [])
 
-    // Least privilege: filter by assigned_agent_id for non-admin roles
     const myClients = useMemo(() => {
         if (!profile) return []
         if (['ADMIN', 'MANAGER'].includes(profile.role.toUpperCase())) {
@@ -100,14 +88,54 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
         )
     }, [allClients])
 
+    const createClient = useCallback(async (clientData: Partial<Client>) => {
+        const tempId = `temp-${Date.now()}`
+        const tempClient = {
+            ...clientData,
+            id: tempId,
+            created_at: new Date().toISOString(),
+            company_name: clientData.company_name || 'Nueva Empresa',
+            contact_name: clientData.contact_name || 'Nuevo Contacto',
+            assigned_agent_id: clientData.assigned_agent_id || profile?.id
+        } as Client
+
+        setAllClients(prev => [...prev, tempClient])
+
+        try {
+            const newClient = await clientsApi.create(clientData)
+            setAllClients(prev => prev.map(c => c.id === tempId ? newClient : c))
+            return newClient
+        } catch (error) {
+            setAllClients(prev => prev.filter(c => c.id !== tempId))
+            throw error
+        }
+    }, [clientsApi, profile])
+
+    const updateClient = useCallback(async (id: string, clientData: Partial<Client>) => {
+        const previousClients = [...allClients]
+
+        setAllClients(prev => prev.map(c => c.id === id ? { ...c, ...clientData } : c))
+
+        try {
+            const updatedClient = await clientsApi.update(id, clientData)
+            return updatedClient
+
+        } catch (error) {
+            setAllClients(previousClients)
+            throw error
+        }
+    }, [clientsApi, allClients])
+
     const value = useMemo(() => ({
         allClients,
         myClients,
         searchClients,
         searchAllClients,
         refreshClients: fetchClients,
+        createClient,
+        updateClient,
         loading,
-    }), [allClients, myClients, searchClients, searchAllClients, fetchClients, loading])
+    }), [allClients, myClients, searchClients, searchAllClients, fetchClients, createClient, updateClient, loading])
 
     return (
         <ClientsContext.Provider value={value}>

@@ -9,10 +9,6 @@ interface PageHeaderProps {
     children?: ReactNode
 }
 
-/**
- * Reusable gradient page header used across clients, kanban, and users pages.
- * Supports an optional action button and a children slot (e.g., for filter buttons).
- */
 export default function PageHeader({ title, subtitle, actionLabel, actionIcon, onAction, children }: PageHeaderProps) {
     return (
         <div className="bg-gradient-to-r from-[#000D42] to-[#0066FF] rounded-2xl p-8 shadow-xl">

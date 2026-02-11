@@ -8,6 +8,8 @@ import SearchBar from '@/components/ui/SearchBar';
 import KpiCard from '@/components/ui/KpiCard';
 import { UserModal } from '@/components/admin/user-modal';
 import { useAgents, type Agent as User } from '@/context/AgentsContext';
+import { toast } from 'sonner'
+import { TEXTS } from '@/constants/text'
 
 export default function UsersPage() {
     const { agents: users, loading, refreshAgents } = useAgents();
@@ -28,9 +30,6 @@ export default function UsersPage() {
             });
 
             if (!res.ok) throw new Error('Failed to update status');
-
-            // The list will update automatically via Supabase real-time
-            // but we can manually refresh to be sure
             refreshAgents();
         } catch (error) {
             console.error('Error toggling status:', error);
@@ -50,9 +49,9 @@ export default function UsersPage() {
     return (
         <div className="p-8 space-y-6">
             <PageHeader
-                title="Gestión de Usuarios"
+                title={TEXTS.USERS_TITLE}
                 subtitle="Administra el equipo y permisos del sistema"
-                actionLabel="Nuevo Usuario"
+                actionLabel={TEXTS.NEW_USER}
                 actionIcon={<Plus size={20} />}
                 onAction={() => setIsModalOpen(true)}
             />

@@ -1,9 +1,3 @@
-/**
- * Shared type definitions used across multiple components.
- * Consolidates Client type from NewDealModal, NewTrackingModal,
- * EditClientModal, and clients/page.
- */
-
 export interface Client {
     id: string
     company_name: string
@@ -49,4 +43,20 @@ export type Deal = {
         contact_name: string
     }
     updated_at: string
+    expected_close_date?: string
+}
+
+export interface Interaction {
+    id: string
+    clientId: string
+    agent_id: string
+    category: string
+    summary: string
+    modality?: string
+    amount_usd?: number
+    is_completed: boolean
+    created_at: string
+    client?: {
+        company_name: string
+    }
 }

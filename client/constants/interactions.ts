@@ -8,11 +8,13 @@ export const INTERACTION_TYPES = [
 ]
 
 export const STATUS_OPTIONS = [
-    { value: 'PENDING', label: 'Prospecto (No contactado)' },
+    { value: 'PENDING', label: 'No contactado' },
     { value: 'CONTACTED', label: 'Contactado' },
-    { value: 'IN_NEGOTIATION', label: 'En Negociación' },
-    { value: 'CLOSED_WON', label: 'Cerrado Ganado' },
-    { value: 'CLOSED_LOST', label: 'Perdido' },
+    { value: 'CITA', label: 'Cita / Reunión' },
+    { value: 'PROCESO_COTIZACION', label: 'Cotizando' },
+    { value: 'COTIZACION_ENVIADA', label: 'Cotización Enviada' },
+    { value: 'CERRADO_GANADO', label: 'Cerrado Ganado' },
+    { value: 'CERRADO_PERDIDO', label: 'Perdido' },
 ]
 
 export const ORIGIN_OPTIONS = [

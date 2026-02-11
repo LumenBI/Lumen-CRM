@@ -18,14 +18,20 @@ import {
     Plane,
     Eye,
     Pencil,
-    ArrowRightCircle
+    ArrowRightCircle,
+    List,
+    LayoutGrid
 } from 'lucide-react'
 import ClientModal from '@/components/ClientModal'
 import NewDealModal from '@/components/kanban/NewDealModal'
+import EditDealModal from '@/components/kanban/EditDealModal'
 import StageChangeModal from '@/components/kanban/StageChangeModal'
 import ContextMenu from '@/components/ContextMenu'
 import { useDeals, KANBAN_COLUMNS } from '@/context/DealsContext'
 import type { Deal } from '@/types'
+import { toast } from 'sonner'
+import { TEXTS } from '@/constants/text'
+import DealsListView from '@/components/kanban/DealsListView'
 
 const TYPE_ICONS = {
     FCL: Container,
@@ -36,7 +42,9 @@ const TYPE_ICONS = {
 export default function KanbanPage() {
     const { board, loading, refreshBoard, moveDeal } = useDeals()
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
+    const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
 
     const [stageModal, setStageModal] = useState<{
         isOpen: boolean
@@ -97,8 +105,10 @@ export default function KanbanPage() {
         try {
             await moveDeal(stageModal.dealId, newStatus, interactionData)
             setStageModal(prev => ({ ...prev, isOpen: false }))
+            toast.success('Seguimiento actualizado')
         } catch (error) {
-            console.error("Error confirming move:", error)
+            console.error(error)
+            toast.error('Error al mover el seguimiento')
         }
     }
 
@@ -142,134 +152,216 @@ export default function KanbanPage() {
         }
     }
 
-    if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>
-
-    // Augment KANBAN_COLUMNS with UI info
-    const COLUMNS_UI = KANBAN_COLUMNS.map(col => {
-        let uiInfo = { color: 'from-gray-400 to-gray-600', textColor: 'text-white', icon: ClipboardList }
-        switch (col.id) {
-            case 'CONTACTADO': uiInfo = { color: 'from-gray-400 to-gray-600', textColor: 'text-white', icon: ClipboardList }; break;
-            case 'CITA': uiInfo = { color: 'from-blue-400 to-blue-600', textColor: 'text-white', icon: PhoneCall }; break;
-            case 'PROCESO_COTIZACION': uiInfo = { color: 'from-amber-400 to-orange-600', textColor: 'text-white', icon: Briefcase }; break;
-            case 'COTIZACION_ENVIADA': uiInfo = { color: 'from-purple-400 to-purple-600', textColor: 'text-white', icon: FileText }; break;
-            case 'CERRADO_GANADO': uiInfo = { color: 'from-emerald-400 to-green-600', textColor: 'text-white', icon: CheckCircle2 }; break;
-            case 'CERRADO_PERDIDO': uiInfo = { color: 'from-red-400 to-red-600', textColor: 'text-white', icon: XCircle }; break;
-        }
-        return { ...col, ...uiInfo }
+    const allDeals = board ? Object.values(board).flat() : []
+    const filteredDeals = allDeals.filter(deal => {
+        if (filterType === 'ALL') return true
+        return deal.type === filterType
     })
 
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="animate-spin text-blue-600" size={40} />
+                    <p className="text-gray-500 font-medium">Cargando tablero...</p>
+                </div>
+            </div>
+        )
+    }
+
     return (
-        <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 p-8">
-            <div className="mb-8">
-                <PageHeader
-                    title="Flujo de Ventas"
-                    subtitle="Gestiona tus oportunidades comerciales"
-                    actionLabel="Nueva Negociación"
-                    actionIcon={<Plus size={20} />}
-                    onAction={() => setIsCreateModalOpen(true)}
-                >
-                    {/* Filters */}
-                    <div className="mt-6 flex gap-2">
-                        {[
-                            { id: 'ALL', label: 'Todos' },
-                            { id: 'FCL', label: 'FCL' },
-                            { id: 'LCL', label: 'LCL' },
-                            { id: 'AEREO', label: 'Aéreo' },
-                        ].map(type => (
-                            <button
-                                key={type.id}
-                                onClick={() => setFilterType(type.id)}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${filterType === type.id
-                                    ? 'bg-white text-[#0066FF] shadow-md'
-                                    : 'bg-[#000D42]/30 text-blue-100 hover:bg-[#000D42]/50'
-                                    }`}
-                            >
-                                {type.label}
-                            </button>
-                        ))}
+        <div className="space-y-6 h-full flex flex-col">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-[#000d42]">{TEXTS.SALES_FLOW_TITLE}</h1>
+                    <p className="text-slate-500">Gestiona tus oportunidades comerciales</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <div className="bg-white border border-slate-200 p-1 rounded-xl flex items-center shadow-sm">
+                        <button
+                            onClick={() => setViewMode('kanban')}
+                            className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'kanban'
+                                ? 'bg-blue-50 text-[#0056fc]'
+                                : 'text-slate-500 hover:bg-slate-50'
+                                }`}
+                            title="Vista de Tablero"
+                        >
+                            <LayoutGrid size={18} />
+                            <span className="hidden sm:inline">Tablero</span>
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'list'
+                                ? 'bg-blue-50 text-[#0056fc]'
+                                : 'text-slate-500 hover:bg-slate-50'
+                                }`}
+                            title="Vista de Lista"
+                        >
+                            <List size={18} />
+                            <span className="hidden sm:inline">Lista</span>
+                        </button>
                     </div>
-                </PageHeader>
+
+                    <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
+                        <button
+                            onClick={() => setFilterType('ALL')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === 'ALL' ? 'bg-[#000d42] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
+                        >
+                            Ver todos
+                        </button>
+                        <button
+                            onClick={() => setFilterType('FCL')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === 'FCL' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
+                        >
+                            FCL
+                        </button>
+                        <button
+                            onClick={() => setFilterType('LCL')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === 'LCL' ? 'bg-orange-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
+                        >
+                            LCL
+                        </button>
+                        <button
+                            onClick={() => setFilterType('AEREO')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === 'AEREO' ? 'bg-purple-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
+                        >
+                            Aéreo
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="flex items-center gap-2 bg-white text-blue-600 border border-blue-200 px-4 py-2 rounded-xl hover:bg-blue-50 transition-colors font-medium shadow-sm"
+                    >
+                        <Plus size={18} />
+                        {TEXTS.NEW_DEAL}
+                    </button>
+                </div>
             </div>
 
-            <DragDropContext onDragEnd={onDragEnd}>
-                <div className="flex gap-4 h-full pb-4 overflow-x-auto">
-                    {COLUMNS_UI.map((col) => (
-                        <div key={col.id} className="flex h-full flex-col rounded-2xl bg-white shadow-xl min-w-[300px] w-[300px]">
-                            {/* Column Header */}
-                            <div className={`bg-gradient-to-r ${col.color} rounded-t-2xl p-4 shadow-lg sticky top-0 z-10`}>
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <col.icon size={20} className={`shrink-0 ${col.textColor}`} />
-                                        <h3 className={`font-bold text-sm truncate ${col.textColor}`}>{col.title}</h3>
+            {viewMode === 'kanban' ? (
+                <div className="flex-1 overflow-x-auto pb-4">
+                    <DragDropContext onDragEnd={onDragEnd}>
+                        <div className="flex gap-6 min-w-max h-full">
+                            {KANBAN_COLUMNS.map(column => {
+                                const columnDeals = board?.[column.id]?.filter(d => filterType === 'ALL' || d.type === filterType) || []
+                                const totalValue = columnDeals.reduce((sum, deal) => sum + Number(deal.value || 0), 0)
+
+                                return (
+                                    <div key={column.id} className="w-80 flex-shrink-0 flex flex-col h-full max-h-[calc(100vh-12rem)]">
+                                        <div className={`p-4 rounded-t-xl mb-0 border-b-4 ${column.id === 'PENDING' ? 'bg-gray-500 border-gray-600 text-white' :
+                                            column.id === 'CONTACTADO' ? 'bg-slate-600 border-slate-700 text-white' :
+                                                column.id === 'CITA' ? 'bg-blue-600 border-blue-700 text-white' :
+                                                    column.id === 'PROCESO_COTIZACION' ? 'bg-orange-500 border-orange-600 text-white' :
+                                                        column.id === 'COTIZACION_ENVIADA' ? 'bg-purple-600 border-purple-700 text-white' :
+                                                            column.id === 'CERRADO_GANADO' ? 'bg-green-600 border-green-700 text-white' :
+                                                                'bg-red-500 border-red-600 text-white'
+                                            } shadow-sm`}>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center gap-2 font-bold uppercase tracking-wide text-xs">
+                                                    {column.id === 'PENDING' && <ClipboardList size={14} />}
+                                                    {column.id === 'CONTACTADO' && <ClipboardList size={14} />}
+                                                    {column.id === 'CITA' && <PhoneCall size={14} />}
+                                                    {column.id === 'PROCESO_COTIZACION' && <Briefcase size={14} />}
+                                                    {column.id === 'COTIZACION_ENVIADA' && <FileText size={14} />}
+                                                    {column.id === 'CERRADO_GANADO' && <CheckCircle2 size={14} />}
+                                                    {column.id === 'CERRADO_PERDIDO' && <XCircle size={14} />}
+                                                    {column.title}
+                                                </div>
+                                                <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs font-bold">
+                                                    {columnDeals.length}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <Droppable droppableId={column.id}>
+                                            {(provided, snapshot) => (
+                                                <div
+                                                    {...provided.droppableProps}
+                                                    ref={provided.innerRef}
+                                                    className={`flex-1 p-2 bg-gray-50/50 rounded-b-xl border border-gray-100 overflow-y-auto transition-colors ${snapshot.isDraggingOver ? 'bg-blue-50/50 ring-2 ring-blue-100 ring-inset' : ''
+                                                        }`}
+                                                >
+                                                    <div className="space-y-3">
+                                                        {columnDeals.map((deal, index) => {
+                                                            const Icon = TYPE_ICONS[deal.type as keyof typeof TYPE_ICONS] || Briefcase
+
+                                                            return (
+                                                                <Draggable key={deal.id} draggableId={deal.id} index={index}>
+                                                                    {(provided, snapshot) => (
+                                                                        <div
+                                                                            ref={provided.innerRef}
+                                                                            {...provided.draggableProps}
+                                                                            {...provided.dragHandleProps}
+                                                                            onClick={() => {
+                                                                            }}
+                                                                            onContextMenu={(e) => handleContextMenu(e, deal.id)}
+                                                                            className={`bg-white p-4 rounded-xl border shadow-sm group hover:shadow-md transition-all relative ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl ring-2 ring-blue-500 z-50' : 'border-gray-100 hover:border-blue-200'
+                                                                                }`}
+                                                                            style={provided.draggableProps.style}
+                                                                        >
+                                                                            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                <button className="p-1 hover:bg-gray-100 rounded">
+                                                                                    <Pencil size={14} className="text-gray-400" />
+                                                                                </button>
+                                                                            </div>
+
+                                                                            <div className="mb-3">
+                                                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${deal.type === 'FCL' ? 'bg-blue-50 text-blue-700' :
+                                                                                    deal.type === 'LCL' ? 'bg-orange-50 text-orange-700' :
+                                                                                        'bg-purple-50 text-purple-700'
+                                                                                    }`}>
+                                                                                    <Icon size={10} />
+                                                                                    {deal.type}
+                                                                                </span>
+                                                                            </div>
+
+                                                                            <h4 className="font-bold text-gray-800 text-sm mb-1 line-clamp-2 leading-relaxed">
+                                                                                {deal.title}
+                                                                            </h4>
+
+                                                                            <div className="flex items-center gap-2 mb-3">
+                                                                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase">
+                                                                                    {deal.client?.company_name.substring(0, 1)}
+                                                                                </div>
+                                                                                <span className="text-xs text-gray-500 font-medium truncate max-w-[180px]">
+                                                                                    {deal.client?.company_name}
+                                                                                </span>
+                                                                            </div>
+
+                                                                            <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                                                                                <span className="text-sm font-bold text-gray-900">
+                                                                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: deal.currency, maximumFractionDigits: 0 }).format(deal.value)}
+                                                                                </span>
+                                                                                {deal.expected_close_date && (
+                                                                                    <div className="flex items-center gap-1 text-[10px] font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded-full">
+                                                                                        <CalendarClock size={12} />
+                                                                                        {new Date(deal.expected_close_date).toLocaleDateString()}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </Draggable>
+                                                            )
+                                                        })}
+                                                        {provided.placeholder}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </Droppable>
                                     </div>
-                                    <span className="shrink-0 rounded-full bg-white/30 backdrop-blur-sm px-2 py-1 text-xs font-bold text-white shadow-md">
-                                        {board && board[col.id]?.length}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <Droppable droppableId={col.id}>
-                                {(provided, snapshot) => (
-                                    <div
-                                        {...provided.droppableProps}
-                                        ref={provided.innerRef}
-                                        className={`flex-1 overflow-y-auto p-3 ${snapshot.isDraggingOver ? 'bg-blue-50/50' : ''} transition-colors scrollbar-thin scrollbar-thumb-gray-200`}
-                                    >
-                                        {board && board[col.id]?.filter(d => filterType === 'ALL' || d.type === filterType).map((deal, index) => {
-                                            const TypeIcon = TYPE_ICONS[deal.type as keyof typeof TYPE_ICONS] || Briefcase
-                                            return (
-                                                <Draggable key={deal.id} draggableId={deal.id} index={index}>
-                                                    {(provided, snapshot) => (
-                                                        <div
-                                                            ref={provided.innerRef}
-                                                            {...provided.draggableProps}
-                                                            {...provided.dragHandleProps}
-                                                            className={`group mb-3 cursor-grab active:cursor-grabbing select-none rounded-xl bg-white p-4 shadow-md hover:shadow-xl transition-all border-l-4 ${col.id === 'CERRADO_GANADO' ? 'border-green-500' :
-                                                                col.id === 'CERRADO_PERDIDO' ? 'border-red-500' :
-                                                                    'border-[#0066FF]'
-                                                                } ${snapshot.isDragging ? 'shadow-2xl ring-4 ring-blue-300 scale-105 rotate-2' : 'hover:scale-[1.02]'}`}
-                                                            onClick={() => setSelectedClientId(deal.client.id)}
-                                                            onContextMenu={(e) => handleContextMenu(e, deal.id)}
-                                                        >
-                                                            <div className="flex justify-between items-start mb-2">
-                                                                <h4 className="font-bold text-gray-800 text-sm line-clamp-2 leading-tight group-hover:text-[#0066FF] transition-colors">
-                                                                    {deal.title}
-                                                                </h4>
-                                                                <span className="shrink-0 p-1 bg-gray-100 rounded-lg text-gray-500">
-                                                                    <TypeIcon size={14} />
-                                                                </span>
-                                                            </div>
-
-                                                            <div className="flex items-center gap-2 mb-3">
-                                                                <Building2 size={12} className="text-gray-400" />
-                                                                <span className="text-xs text-gray-500 font-medium truncate">{deal.client.company_name}</span>
-                                                            </div>
-
-                                                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                                                                <span className="text-sm font-bold text-gray-900">
-                                                                    ${deal.value?.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">{deal.currency}</span>
-                                                                </span>
-                                                                <div className="flex items-center gap-1 text-[10px] text-gray-400">
-                                                                    <CalendarClock size={12} />
-                                                                    <span>{new Date(deal.updated_at).toLocaleDateString()}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </Draggable>
-                                            )
-                                        })}
-                                        {provided.placeholder}
-                                    </div>
-                                )}
-                            </Droppable>
+                                )
+                            })}
                         </div>
-                    ))}
+                    </DragDropContext>
                 </div>
-            </DragDropContext>
+            ) : (
+                <DealsListView deals={filteredDeals} onEdit={() => { }} onMove={() => { }} />
+            )}
 
-            {/* MODALS */}
             {selectedClientId && (
                 <ClientModal
                     clientId={selectedClientId}
@@ -282,6 +374,8 @@ export default function KanbanPage() {
                     onClose={() => setIsCreateModalOpen(false)}
                     onSuccess={() => {
                         refreshBoard()
+                        setIsCreateModalOpen(false)
+                        toast.success('Seguimiento creado exitosamente')
                     }}
                 />
             )}
@@ -299,11 +393,10 @@ export default function KanbanPage() {
                 <ContextMenu
                     x={contextMenu.x}
                     y={contextMenu.y}
-                    title={getContextDeal()?.title}
-                    onClose={() => setContextMenu({ ...contextMenu, isOpen: false })}
+                    onClose={() => setContextMenu(prev => ({ ...prev, isOpen: false }))}
                     items={[
                         {
-                            label: 'Ver Detalles',
+                            label: 'Ver detalles',
                             icon: Eye,
                             action: () => {
                                 const deal = getContextDeal()
@@ -311,12 +404,15 @@ export default function KanbanPage() {
                             }
                         },
                         {
-                            label: 'Editar Negociación',
+                            label: 'Editar',
                             icon: Pencil,
-                            action: () => alert('Funcionalidad de Edición Rápida en desarrollo. Por favor edita desde "Ver Detalles".')
+                            action: () => {
+                                const deal = getContextDeal()
+                                if (deal) setEditingDeal(deal)
+                            }
                         },
                         {
-                            label: 'Mover Siguiente',
+                            label: 'Mover',
                             icon: ArrowRightCircle,
                             action: () => {
                                 const deal = getContextDeal()
@@ -324,7 +420,7 @@ export default function KanbanPage() {
                             }
                         },
                         {
-                            label: 'Contactar Cliente',
+                            label: 'Contactar cliente',
                             icon: PhoneCall,
                             action: () => {
                                 const deal = getContextDeal()
@@ -332,6 +428,17 @@ export default function KanbanPage() {
                             }
                         }
                     ]}
+                />
+            )}
+
+            {editingDeal && (
+                <EditDealModal
+                    deal={editingDeal}
+                    onClose={() => setEditingDeal(null)}
+                    onSuccess={() => {
+                        refreshBoard()
+                        setEditingDeal(null)
+                    }}
                 />
             )}
         </div >

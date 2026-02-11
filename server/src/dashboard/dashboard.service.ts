@@ -308,7 +308,20 @@ export class DashboardService {
         const { data, error } = await scopedSupabase
             .from('view_daily_kpis')
             .select('*')
-            .order('report_date', { ascending: false });
+            .order('report_date', { ascending: false })
+            .limit(30);
+
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
+    async getRecentActivities(token: string) {
+        const supabase = this.getClient(token);
+        const { data, error } = await supabase
+            .from('interactions')
+            .select('*, client:clients(company_name)')
+            .order('created_at', { ascending: false })
+            .limit(10);
 
         if (error) throw new Error(error.message);
         return data;
@@ -784,6 +797,38 @@ export class DashboardService {
             }
         }
 
-        return { triggered: notifications };
+    async getBootstrapData(token: string, userId: string) {
+            try {
+                const [
+                    stats,
+                    clients,
+                    kanban,
+                    appointments,
+                    history,
+                    activities,
+                    agents
+                ] = await Promise.all([
+                    this.getUserStats(token, userId),
+                    this.getClients(token, '', true, userId),
+                    this.getKanbanBoard(token, userId),
+                    this.getUpcomingAppointments(token, userId, 20),
+                    this.getHistory(token),
+                    this.getRecentActivities(token),
+                    this.getAgents(token)
+                ]);
+
+                return {
+                    stats,
+                    clients,
+                    kanban,
+                    appointments,
+                    history,
+                    activities,
+                    agents
+                };
+            } catch (error) {
+                console.error('Error in getBootstrapData:', error);
+                throw error;
+            }
+        }
     }
-}

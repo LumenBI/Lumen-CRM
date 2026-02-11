@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { useApi } from '@/hooks/useApi'
 
 export interface Agent {
     id: string
@@ -14,9 +15,7 @@ export interface Agent {
 }
 
 interface AgentsContextType {
-    /** All agents/users */
     agents: Agent[]
-    /** Manual refresh */
     refreshAgents: () => Promise<void>
     loading: boolean
 }
@@ -28,31 +27,23 @@ export function AgentsProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true)
     const supabase = createClient()
 
+    const { users: usersApi } = useApi()
+
     const fetchAgents = useCallback(async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
-
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
-                headers: { Authorization: `Bearer ${session.access_token}` }
-            })
-            if (res.ok) {
-                const data = await res.json()
-                setAgents(data)
-            }
+            const data = await usersApi.getAll()
+            setAgents(data)
         } catch (error) {
             console.error('Error fetching agents:', error)
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [usersApi])
 
-    // Initial fetch
     useEffect(() => {
         fetchAgents()
     }, [fetchAgents])
 
-    // Supabase real-time subscription on profiles table
     useEffect(() => {
         const channel = supabase
             .channel('profiles-realtime')
