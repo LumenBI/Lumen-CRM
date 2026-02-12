@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Using existing Input component
-import { cn } from "@/lib/utils";
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
+import { useApi } from '@/hooks/useApi';
 
 interface Product {
     id: string;
@@ -13,12 +12,13 @@ interface Product {
 
 interface ServiceAutocompleteProps {
     onSelect: (product: Product) => void;
-    token?: string;
+    value?: string;
+    onChange?: (val: string) => void;
 }
 
-export const ServiceAutocomplete: React.FC<ServiceAutocompleteProps> = ({ onSelect, token }) => {
+export const ServiceAutocomplete: React.FC<ServiceAutocompleteProps> = ({ onSelect, value = "", onChange }) => {
+    const api = useApi();
     const [open, setOpen] = useState(false);
-    const [value, setValue] = useState("");
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -38,15 +38,8 @@ export const ServiceAutocomplete: React.FC<ServiceAutocompleteProps> = ({ onSele
     const fetchProducts = async (search: string) => {
         setLoading(true);
         try {
-            // Use environment variable or default to localhost
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-            const res = await fetch(`${apiUrl}/quotes/products?search=${search}`, {
-                headers: { Authorization: token || '' }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setProducts(data);
-            }
+            const data = await api.quotes.getProducts(search);
+            setProducts(data);
         } catch (err) {
             console.error("Failed to fetch products", err);
         } finally {
@@ -56,10 +49,12 @@ export const ServiceAutocomplete: React.FC<ServiceAutocompleteProps> = ({ onSele
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
-        setValue(val);
+        if (onChange) onChange(val);
         if (val.length > 2) {
             fetchProducts(val);
             setOpen(true);
+        } else {
+            setOpen(false);
         }
     };
 
@@ -69,7 +64,7 @@ export const ServiceAutocomplete: React.FC<ServiceAutocompleteProps> = ({ onSele
                 <Input
                     value={value}
                     onChange={handleInputChange}
-                    onFocus={() => { if (products.length > 0) setOpen(true); }}
+                    onFocus={() => { if (value.length > 2 && products.length > 0) setOpen(true); }}
                     placeholder="Search service..."
                     className="w-full"
                 />
@@ -85,7 +80,6 @@ export const ServiceAutocomplete: React.FC<ServiceAutocompleteProps> = ({ onSele
                             className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 flex justify-between items-center"
                             onClick={() => {
                                 onSelect(product);
-                                setValue(product.name);
                                 setOpen(false);
                             }}
                         >

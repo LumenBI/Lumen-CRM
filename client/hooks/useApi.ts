@@ -373,6 +373,11 @@ export const useApi = () => {
                 if (!res.ok) throw new Error('Failed to fetch quote')
                 return res.json()
             },
+            getProducts: async (search: string) => {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/quotes/products?search=${search}`)
+                if (!res.ok) throw new Error('Failed to fetch products')
+                return res.json()
+            },
             updateStatus: async (id: string, status: string, pdfUrl?: string) => {
                 const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/quotes/${id}/status`, {
                     method: 'PUT',

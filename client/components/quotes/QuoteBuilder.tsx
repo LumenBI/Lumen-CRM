@@ -29,10 +29,9 @@ interface QuoteBuilderProps {
     dealId?: string;
     clientName?: string;
     clientEmail?: string;
-    token?: string;
 }
 
-export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, clientEmail, token }) => {
+export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, clientEmail }) => {
     const api = useApi();
     const [currency, setCurrency] = useState('USD');
     const [exchangeRate, setExchangeRate] = useState(520);
@@ -214,20 +213,16 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
                                         <Controller
                                             control={control}
                                             name={`items.${index}.description`}
-                                            render={({ field: { onChange, value } }) => (
+                                            render={({ field }) => (
                                                 <ServiceAutocomplete
+                                                    value={field.value}
+                                                    onChange={field.onChange}
                                                     onSelect={(prod) => {
                                                         setValue(`items.${index}.description`, prod.name); // Correctly set the description
                                                         setValue(`items.${index}.unit_price`, prod.price);
                                                     }}
-                                                    token={token} // Pass token if available
                                                 />
                                             )}
-                                        />
-                                        <Input
-                                            {...register(`items.${index}.description`)}
-                                            className="h-9"
-                                            placeholder="Detalle o nombre del servicio..."
                                         />
                                     </div>
                                 </td>

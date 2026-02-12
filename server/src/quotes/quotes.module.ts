@@ -7,7 +7,7 @@ import { CurrencyModule } from '../currency/currency.module';
 
 @Module({
     imports: [CurrencyModule],
-    controllers: [QuotesController, ProductsController],
+    controllers: [ProductsController, QuotesController],
     providers: [QuotesService, PdfStorageService],
 })
 export class QuotesModule { }

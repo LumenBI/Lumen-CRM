@@ -10,24 +10,44 @@ DECLARE
   new_quote_record jsonb;
 BEGIN
   -- 1. Insert the Quote Header based on the provided JSON
-  INSERT INTO quotes (
-    deal_id,
-    status,
-    currency_code,
-    exchange_rate_snapshot,
-    valid_until,
-    version,
-    quote_number -- Assuming this might be auto-generated or passed, if not passed, DB default handles it
-  ) VALUES (
-    (quote_json->>'deal_id')::uuid,
-    quote_json->>'status',
-    quote_json->>'currency_code',
-    (quote_json->>'exchange_rate_snapshot')::numeric,
-    (quote_json->>'valid_until')::timestamp,
-    COALESCE((quote_json->>'version')::int, 1),
-    quote_json->>'quote_number' -- Optional, depends on schema
-  )
-  RETURNING id INTO new_quote_id;
+  -- We split into two cases to allow identity column or defaults to work when quote_number is not provided.
+  IF quote_json ? 'quote_number' AND (quote_json->>'quote_number') IS NOT NULL THEN
+    INSERT INTO quotes (
+      deal_id,
+      status,
+      currency_code,
+      exchange_rate_snapshot,
+      valid_until,
+      version,
+      quote_number
+    ) VALUES (
+      (quote_json->>'deal_id')::uuid,
+      quote_json->>'status',
+      quote_json->>'currency_code',
+      (quote_json->>'exchange_rate_snapshot')::numeric,
+      (quote_json->>'valid_until')::timestamp,
+      COALESCE((quote_json->>'version')::int, 1),
+      (quote_json->>'quote_number')::integer
+    )
+    RETURNING id INTO new_quote_id;
+  ELSE
+    INSERT INTO quotes (
+      deal_id,
+      status,
+      currency_code,
+      exchange_rate_snapshot,
+      valid_until,
+      version
+    ) VALUES (
+      (quote_json->>'deal_id')::uuid,
+      quote_json->>'status',
+      quote_json->>'currency_code',
+      (quote_json->>'exchange_rate_snapshot')::numeric,
+      (quote_json->>'valid_until')::timestamp,
+      COALESCE((quote_json->>'version')::int, 1)
+    )
+    RETURNING id INTO new_quote_id;
+  END IF;
 
   -- 2. Insert Quote Items
   -- We treat items_json as a JSON array. 
@@ -37,16 +57,14 @@ BEGIN
     description,
     quantity,
     unit_price,
-    tax_rate,
-    total -- specific logic might be needed if total is calculated, but usually it's quantity * unit_price
+    tax_rate
   )
   SELECT
     new_quote_id,
     x->>'description',
     (x->>'quantity')::numeric,
     (x->>'unit_price')::numeric,
-    COALESCE((x->>'tax_rate')::numeric, 0),
-    (x->>'quantity')::numeric * (x->>'unit_price')::numeric -- Simple calculation, or pass it if pre-calculated
+    COALESCE((x->>'tax_rate')::numeric, 0)
   FROM jsonb_array_elements(items_json) AS x;
 
   -- 3. Return the newly created quote (as JSON) to the client
