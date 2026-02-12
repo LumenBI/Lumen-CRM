@@ -39,7 +39,7 @@ const QUICK_ACTIONS = [
 export default function TopNav() {
     const pathname = usePathname()
     const router = useRouter()
-    const { profile } = useUser()
+    const { profile, logout } = useUser()
     const [isUserOpen, setIsUserOpen] = useState(false)
     const [isQuickOpen, setIsQuickOpen] = useState(false)
     const userDropdownRef = useRef<HTMLDivElement>(null)
@@ -48,8 +48,7 @@ export default function TopNav() {
     const { createClient } = useClients()
 
     const handleLogout = async () => {
-        await supabase.auth.signOut()
-        router.push('/')
+        await logout()
     }
 
     useEffect(() => {

@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { User } from '@supabase/supabase-js'
+import { useRouter } from 'next/navigation'
 
 interface UserProfile {
     id: string
@@ -16,6 +17,7 @@ interface UserContextType {
     profile: UserProfile | null
     loading: boolean
     refreshProfile: () => Promise<void>
+    logout: () => Promise<void>
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
@@ -25,6 +27,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const [profile, setProfile] = useState<UserProfile | null>(null)
     const [loading, setLoading] = useState(true)
     const supabase = createClient()
+    const router = useRouter()
 
     const fetchProfile = async () => {
         try {
@@ -55,12 +58,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
+    const logout = async () => {
+        try {
+            await supabase.auth.signOut()
+            setUser(null)
+            setProfile(null)
+            localStorage.clear()
+            sessionStorage.clear()
+            router.refresh()
+            router.push('/')
+        } catch (error) {
+            console.error('Error during logout:', error)
+        }
+    }
+
     useEffect(() => {
         fetchProfile()
     }, [])
 
     return (
-        <UserContext.Provider value={{ user, profile, loading, refreshProfile: fetchProfile }}>
+        <UserContext.Provider value={{ user, profile, loading, refreshProfile: fetchProfile, logout }}>
             {children}
         </UserContext.Provider>
     )

@@ -142,6 +142,12 @@ export class DashboardController {
     return this.clientsService.getRecentActivities(token);
   }
 
+  @Post('interactions')
+  async createInteraction(@Req() req, @Body() payload: any) {
+    const token = this.extractToken(req);
+    return this.clientsService.addInteraction(token, req.user.userId, payload);
+  }
+
   @Delete('interactions/:id')
   async deleteInteraction(@Req() req, @Param('id') id: string) {
     const token = this.extractToken(req);
