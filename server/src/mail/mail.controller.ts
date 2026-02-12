@@ -127,21 +127,24 @@ export class MailController {
             const references = headers?.find(h => h.name?.toLowerCase() === 'references')?.value || '';
 
             const attachments = [];
+            let bodyText = '';
+            let bodyHtml = '';
 
-            // Helper to extract body and find attachments
-            const parseParts = (payload: any): string => {
-                let body = '';
-
-                // Root text content (unlikely in complex messages with attachments)
+            const parseParts = (payload: any) => {
+                // Check if this part is a body content
                 if (payload.mimeType === 'text/plain' && payload.body?.data && !payload.filename) {
-                    body = Buffer.from(payload.body.data, 'base64').toString('utf-8');
+                    bodyText += Buffer.from(payload.body.data, 'base64').toString('utf-8');
+                }
+                if (payload.mimeType === 'text/html' && payload.body?.data && !payload.filename) {
+                    bodyHtml += Buffer.from(payload.body.data, 'base64').toString('utf-8');
                 }
 
-                // Check for attachment or inline metadata
-                if (payload.filename && payload.body?.attachmentId) {
+                // Check for attachments (with or without filename, as long as it has attachmentId)
+                const isAttachment = payload.filename || (payload.body?.attachmentId);
+                if (isAttachment && payload.body?.attachmentId) {
                     attachments.push({
                         id: payload.body.attachmentId,
-                        filename: payload.filename,
+                        filename: payload.filename || 'unnamed-attachment',
                         mimeType: payload.mimeType,
                         size: payload.body.size,
                         contentId: payload.headers?.find(h => h.name?.toLowerCase() === 'content-id')?.value
@@ -150,25 +153,21 @@ export class MailController {
 
                 if (payload.parts) {
                     for (const part of payload.parts) {
-                        const partBody = parseParts(part);
-                        // Prefer plain text body if found
-                        if (partBody && part.mimeType === 'text/plain') {
-                            body = partBody;
-                        } else if (partBody && !body) {
-                            body = partBody;
-                        }
+                        parseParts(part);
                     }
                 }
-
-                // Fallback for parts with data directly
-                if (!body && payload.body?.data && payload.mimeType === 'text/plain') {
-                    body = Buffer.from(payload.body.data, 'base64').toString('utf-8');
-                }
-
-                return body;
             };
 
-            const body = parseParts(msg.payload);
+            parseParts(msg.payload);
+
+            // Logic to choose which body to return
+            // If text/plain contains "[imagen" or looks like a placeholder, and html is present, we might want to flag it
+            // For now, we return plain text as primary, but if it's empty we use html snippet
+            let finalBody = bodyText;
+            if (!finalBody && bodyHtml) {
+                // Basic HTML to text conversion for preview/display
+                finalBody = bodyHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            }
 
             return {
                 id: msg.id,
@@ -180,7 +179,7 @@ export class MailController {
                 to: headers?.find(h => h.name === 'To')?.value || '',
                 date: headers?.find(h => h.name === 'Date')?.value || '',
                 snippet: msg.snippet,
-                body: body,
+                body: finalBody,
                 attachments: attachments
             };
         } catch (error) {

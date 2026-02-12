@@ -205,10 +205,10 @@ export default function MailPage() {
 
         let attachmentNote = ''
         if (messageDetail.attachments.length > 0) {
-            attachmentNote = `\n[Nota: Este mensaje contenía ${messageDetail.attachments.length} archivos adjuntos que no se han incluido automáticamente]`
+            attachmentNote = `\n\n[IMPORTANTE: Este mensaje original contenía ${messageDetail.attachments.length} archivos adjuntos. Por seguridad, el sistema no los incluye automáticamente en el reenvío. Por favor, descárgalos y adjúntalos manualmente si los necesitas.]`
         }
 
-        const quotedBody = `\n\n--- Mensaje reenviado ---\nDe: ${messageDetail.from}\nFecha: ${messageDetail.date}\nAsunto: ${messageDetail.subject}\nPara: ${messageDetail.to}${attachmentNote}\n\n${messageDetail.body || messageDetail.snippet}`
+        const quotedBody = `\n\n--- Mensaje reenviado ---${attachmentNote}\nDe: ${messageDetail.from}\nFecha: ${messageDetail.date}\nAsunto: ${messageDetail.subject}\nPara: ${messageDetail.to}\n\n${messageDetail.body || messageDetail.snippet}`
         setMessage(quotedBody)
         setOpenCompose(true)
     }
@@ -488,69 +488,69 @@ export default function MailPage() {
                             initial={{ scale: 0.9, opacity: 0, y: 60 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 60 }}
-                            className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100"
+                            className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden border border-slate-100"
                         >
-                            <div className="flex justify-between items-center px-8 py-6 border-b border-slate-50">
+                            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-50 bg-slate-50/30">
                                 <div>
-                                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                                        {replyThreadId ? 'Responder' : 'Redactar Mensaje'}
+                                    <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                                        {replyThreadId ? 'Responder' : 'Redactar'}
                                     </h2>
-                                    <p className="text-[10px] font-black text-slate-300 mt-1 uppercase tracking-[0.4em]">Star Cargo Service S.A.</p>
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Star Cargo Service S.A.</p>
                                 </div>
                                 <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => setOpenCompose(false)}
-                                    className="rounded-2xl hover:bg-slate-50 h-10 w-10"
+                                    className="rounded-xl hover:bg-slate-100 h-8 w-8"
                                 >
-                                    <X className="h-5 w-5 text-slate-400" />
+                                    <X className="h-4 w-4 text-slate-400" />
                                 </Button>
                             </div>
-                            <div className="p-8 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Destinatario</label>
+                            <div className="p-6 space-y-4 overflow-y-auto max-h-[50vh] custom-scrollbar">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Para</label>
                                     <Input
                                         placeholder="correo@cliente.com"
                                         value={to}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTo(e.target.value)}
-                                        className="h-12 rounded-xl bg-slate-50/50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-100 transition-all font-bold px-5 text-slate-800 text-sm"
+                                        className="h-10 rounded-lg bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-200 transition-all font-bold px-4 text-slate-800 text-xs"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asunto</label>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Asunto</label>
                                     <Input
-                                        placeholder="Técnico, Logística..."
+                                        placeholder="Asunto del correo..."
                                         value={subject}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSubject(e.target.value)}
-                                        className="h-12 rounded-xl bg-slate-50/50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-100 transition-all font-bold px-5 text-slate-800 text-sm"
+                                        className="h-10 rounded-lg bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-200 transition-all font-bold px-4 text-slate-800 text-xs"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mensaje</label>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Mensaje</label>
                                     <Textarea
-                                        placeholder="Escribe el mensaje..."
-                                        rows={8}
+                                        placeholder="Escribe aquí..."
+                                        rows={6}
                                         value={message}
                                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
-                                        className="rounded-2xl bg-slate-50/50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-100 transition-all font-medium p-6 resize-none text-slate-700 text-sm min-h-[150px]"
+                                        className="rounded-xl bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-200 transition-all font-medium p-4 resize-none text-slate-700 text-xs min-h-[120px]"
                                     />
                                 </div>
                             </div>
-                            <div className="p-8 bg-slate-50/50 flex gap-4">
+                            <div className="p-6 bg-slate-50/50 flex gap-3">
                                 <Button
                                     onClick={() => setOpenCompose(false)}
                                     variant="ghost"
-                                    className="flex-1 h-12 rounded-xl font-bold text-slate-400 hover:text-slate-900 active:scale-95 transition-all text-sm"
+                                    className="flex-1 h-10 rounded-lg font-bold text-slate-400 hover:text-slate-900 transition-all text-xs"
                                 >
                                     Descartar
                                 </Button>
                                 <Button
                                     onClick={handleSend}
                                     disabled={sending}
-                                    className="flex-[2] h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-lg shadow-blue-100 font-bold text-sm active:scale-95 transition-all"
+                                    className="flex-[1.5] h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-md shadow-blue-100 font-bold text-xs transition-all"
                                 >
                                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                                    Enviar Mensaje
+                                    Enviar
                                 </Button>
                             </div>
                         </motion.div>
