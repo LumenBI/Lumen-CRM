@@ -1,1 +1,21 @@
-node_modules
+# Dependencies
+node_modules/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Environment Files
+.env
+*.local
+
+# Build outputs
+dist/
+.next/
+build/
+bin/
+obj/

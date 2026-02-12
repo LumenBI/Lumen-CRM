@@ -231,7 +231,11 @@ export const useApi = () => {
 
             update: async (id: string, data: Partial<Appointment>) => {
                 try {
+<<<<<<< HEAD
+
+=======
                     console.log('Updating appointment:', id, data)
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
                     AppointmentSchema.partial().parse(data)
 
                     const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${id}`, {
@@ -339,6 +343,123 @@ export const useApi = () => {
                 if (!res.ok) throw new Error('Failed to fetch bootstrap data')
                 return res.json()
             }
+<<<<<<< HEAD
+        },
+
+        quotes: {
+            create: async (data: any) => {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/quotes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                })
+                if (!res.ok) throw new Error('Failed to create quote')
+                toast.success('Cotización creada')
+                return res.json()
+            },
+            getByDeal: async (dealId: string) => {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/quotes/deal/${dealId}`)
+                if (!res.ok) throw new Error('Failed to fetch quotes')
+                return res.json()
+            },
+            getById: async (id: string) => {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/quotes/${id}`)
+                if (!res.ok) throw new Error('Failed to fetch quote')
+                return res.json()
+            },
+            updateStatus: async (id: string, status: string, pdfUrl?: string) => {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/quotes/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, pdfUrl })
+                })
+                if (!res.ok) throw new Error('Failed to update quote status')
+                return res.json()
+            }
+        },
+
+        mail: {
+            sendQuote: async (data: { to: string; subject: string; message: string; pdfBase64: string; filename: string }) => {
+                const { data: { session } } = await (await import('@/utils/supabase/client')).createClient().auth.getSession()
+                const providerToken = session?.provider_token
+
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/mail/send-quote`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-google-token': providerToken || ''
+                    },
+                    body: JSON.stringify(data)
+                })
+                if (!res.ok) throw new Error('Failed to send email')
+                toast.success('Correo enviado')
+                return res.json()
+            },
+            getInbox: async (pageToken?: string, maxResults: number = 50) => {
+                const { data: { session } } = await (await import('@/utils/supabase/client')).createClient().auth.getSession()
+                const providerToken = session?.provider_token
+
+                const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/mail/inbox`)
+                if (pageToken) url.searchParams.append('pageToken', pageToken)
+                url.searchParams.append('maxResults', maxResults.toString())
+
+                const res = await authFetch(url.toString(), {
+                    headers: {
+                        'x-google-token': providerToken || ''
+                    },
+                })
+                if (!res.ok) throw new Error('Failed to fetch inbox')
+                return res.json()
+            },
+            send: async (data: {
+                to: string;
+                subject: string;
+                message: string;
+                threadId?: string;
+                inReplyTo?: string;
+                references?: string;
+            }) => {
+                const { data: { session } } = await (await import('@/utils/supabase/client')).createClient().auth.getSession()
+                const providerToken = session?.provider_token
+
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/mail/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-google-token': providerToken || ''
+                    },
+                    body: JSON.stringify(data)
+                })
+                if (!res.ok) throw new Error('Failed to send email')
+                toast.success('Correo enviado')
+                return res.json()
+            },
+            getMessage: async (id: string) => {
+                const { data: { session } } = await (await import('@/utils/supabase/client')).createClient().auth.getSession()
+                const providerToken = session?.provider_token
+
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/mail/message/${id}`, {
+                    headers: {
+                        'x-google-token': providerToken || ''
+                    },
+                })
+                if (!res.ok) throw new Error('Failed to fetch message details')
+                return res.json()
+            },
+            getAttachment: async (messageId: string, attachmentId: string) => {
+                const { data: { session } } = await (await import('@/utils/supabase/client')).createClient().auth.getSession()
+                const providerToken = session?.provider_token
+
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/mail/attachment/${messageId}/${attachmentId}`, {
+                    headers: {
+                        'x-google-token': providerToken || ''
+                    },
+                })
+                if (!res.ok) throw new Error('Failed to fetch attachment')
+                return res.json()
+            }
+=======
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
         }
     }), [authFetch])
 

@@ -1,5 +1,28 @@
 'use client'
 
+<<<<<<< HEAD
+import { useState, Suspense, useEffect } from 'react'
+import { createClient } from '@/utils/supabase/client'
+import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useSearchParams } from 'next/navigation'
+
+function LoginForm() {
+    const [loading, setLoading] = useState(false)
+    const [errorMessage, setErrorMessage] = useState<string | null>(null)
+    const supabase = createClient()
+    const searchParams = useSearchParams()
+
+    useEffect(() => {
+        const error = searchParams.get('error')
+        const error_description = searchParams.get('error_description')
+        if (error) {
+            setErrorMessage(error_description || 'Ha ocurrido un error durante el inicio de sesión.')
+        }
+    }, [searchParams])
+=======
 import { useState, Suspense } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Loader2, ArrowLeft } from 'lucide-react'
@@ -10,6 +33,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 function LoginForm() {
     const [loading, setLoading] = useState(false)
     const supabase = createClient()
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
 
     const handleGoogleLogin = async () => {
         setLoading(true)
@@ -17,7 +41,15 @@ function LoginForm() {
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/callback`,
+<<<<<<< HEAD
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                    scope: 'openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly'
+                },
+=======
                 queryParams: { access_type: 'offline', prompt: 'consent' },
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
             },
         })
         if (error) setLoading(false)
@@ -50,6 +82,23 @@ function LoginForm() {
                 <p className="text-gray-400 mt-2 text-sm font-medium">Inicie sesión para gestionar sus envíos</p>
             </div>
 
+<<<<<<< HEAD
+            <AnimatePresence>
+                {errorMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 flex items-start gap-3"
+                    >
+                        <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                        <p className="text-sm text-red-600 font-medium text-left">{errorMessage}</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+=======
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
             <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
