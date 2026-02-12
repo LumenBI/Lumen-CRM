@@ -43,16 +43,20 @@ export const QuoteView: React.FC<QuoteViewProps> = ({ quoteId, clientEmail }) =>
             reader.onloadend = async () => {
                 const base64data = (reader.result as string).split(',')[1];
 
+                const messageWithRef = `Adjunto encontrará la cotización solicitada.\n\nReferencia: Cotización #${quote.quote_number}`;
                 await api.mail.sendQuote({
                     to: clientEmail,
                     subject: `Cotización #${quote.quote_number} - Star Cargo`,
-                    message: 'Adjunto encontrará la cotización solicitada.',
+                    message: messageWithRef,
                     pdfBase64: base64data,
                     filename: `Cotizacion-${quote.quote_number}.pdf`
                 });
 
                 await api.quotes.updateStatus(quote.id, 'SENT');
-                toast.success('Cotización enviada exitosamente');
+                if (quote.deal_id) {
+                    await api.deals.move(quote.deal_id, 'COTIZACION_ENVIADA');
+                }
+                toast.success('Cotización enviada. El seguimiento pasó a "Cotización enviada".');
                 setSending(false);
             };
         } catch (error) {

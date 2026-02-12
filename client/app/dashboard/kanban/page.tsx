@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import PageHeader from '@/components/ui/PageHeader'
 import {
@@ -18,7 +19,7 @@ import {
 import ClientModal from '@/components/ClientModal'
 import NewDealModal from '@/components/kanban/NewDealModal'
 import EditDealModal from '@/components/kanban/EditDealModal'
-import StageChangeModal from '@/components/kanban/StageChangeModal'
+import StageChangeModal, { STAGE_ID_COTIZANDO } from '@/components/kanban/StageChangeModal'
 import ContextMenu from '@/components/ContextMenu'
 import { useDeals, KANBAN_COLUMNS } from '@/context/DealsContext'
 import { useApi } from '@/hooks/useApi'
@@ -30,6 +31,7 @@ import { STAGE_MAP } from '@/constants/stages'
 import { SHIPPING_TYPES, SHIPPING_TYPE_MAP } from '@/constants/shipping'
 
 export default function KanbanPage() {
+    const router = useRouter()
     const { board, loading, refreshBoard, moveDeal } = useDeals()
     const { deals: dealsApi } = useApi()
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
@@ -40,17 +42,21 @@ export default function KanbanPage() {
     const [stageModal, setStageModal] = useState<{
         isOpen: boolean
         dealId: string | null
+        deal: Deal | null
         dealTitle: string
         fromStage: string
         toStage: string
+        toStageId: string
         pendingSource?: any
         pendingDest?: any
     }>({
         isOpen: false,
         dealId: null,
+        deal: null,
         dealTitle: '',
         fromStage: '',
-        toStage: ''
+        toStage: '',
+        toStageId: ''
     })
 
     const [contextMenu, setContextMenu] = useState<{
@@ -76,27 +82,43 @@ export default function KanbanPage() {
 
         const deal = board?.[source.droppableId]?.find(d => d.id === draggableId)
         if (!deal) return
-
+        const toStageId = destination.droppableId
         setStageModal({
             isOpen: true,
             dealId: deal.id,
+            deal,
             dealTitle: deal.title,
             fromStage: KANBAN_COLUMNS.find(c => c.id === source.droppableId)?.title || source.droppableId,
-            toStage: KANBAN_COLUMNS.find(c => c.id === destination.droppableId)?.title || destination.droppableId,
+            toStage: KANBAN_COLUMNS.find(c => c.id === toStageId)?.title || toStageId,
+            toStageId,
             pendingSource: source,
             pendingDest: destination
         })
     }
 
-    const handleConfirmMove = async (interactionData: { interactionType: string, summary: string, nextStep?: string }) => {
+    const handleConfirmMove = async (
+        interactionData: { interactionType: string, summary: string, nextStep?: string },
+        options?: { prepareQuote?: boolean }
+    ) => {
         if (!stageModal.dealId || !stageModal.pendingDest || !board) return
 
         const newStatus = stageModal.pendingDest.droppableId
+        const deal = stageModal.deal
+        const shouldOpenQuotes = options?.prepareQuote === true && newStatus === STAGE_ID_COTIZANDO && deal
 
         try {
             await moveDeal(stageModal.dealId, newStatus, interactionData)
             setStageModal(prev => ({ ...prev, isOpen: false }))
             toast.success('Seguimiento actualizado')
+            if (shouldOpenQuotes) {
+                const params = new URLSearchParams({
+                    dealId: deal.id,
+                    clientName: (deal.client as { company_name?: string })?.company_name || deal.title || ''
+                })
+                const email = (deal.client as { email?: string })?.email
+                if (email) params.set('clientEmail', email)
+                router.push(`/dashboard/quotes?${params.toString()}`)
+            }
         } catch (error) {
             console.error(error)
             toast.error('Error al mover el seguimiento')
@@ -132,9 +154,11 @@ export default function KanbanPage() {
             setStageModal({
                 isOpen: true,
                 dealId: deal.id,
+                deal,
                 dealTitle: deal.title,
                 fromStage: KANBAN_COLUMNS[currentIndex].title,
                 toStage: nextStage.title,
+                toStageId: nextStage.id,
                 pendingSource: { droppableId: currentStageId },
                 pendingDest: { droppableId: nextStage.id, index: 0 }
             })
@@ -379,6 +403,7 @@ export default function KanbanPage() {
                 dealTitle={stageModal.dealTitle}
                 fromStage={stageModal.fromStage}
                 toStage={stageModal.toStage}
+                toStageId={stageModal.toStageId}
             />
 
             {contextMenu.isOpen && getContextDeal() && (

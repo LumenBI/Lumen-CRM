@@ -4,11 +4,12 @@ import React, { useState } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash, Save, Send } from "lucide-react";
+import { Plus, Trash, Save, Send, Loader2 } from "lucide-react";
 import { ServiceAutocomplete } from './ServiceAutocomplete';
 import { CurrencySelector } from './CurrencySelector';
 import { QuotePreviewModal } from './QuotePreviewModal';
 import { toast } from "sonner";
+import { useApi } from '@/hooks/useApi';
 
 interface QuoteItem {
     description: string;
@@ -27,16 +28,21 @@ interface QuoteFormValues {
 interface QuoteBuilderProps {
     dealId?: string;
     clientName?: string;
+    clientEmail?: string;
     token?: string;
 }
 
-export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, token }) => {
+export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, clientEmail, token }) => {
+    const api = useApi();
     const [currency, setCurrency] = useState('USD');
     const [exchangeRate, setExchangeRate] = useState(520);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [createdQuote, setCreatedQuote] = useState<{ id: string; quote_number: number } | null>(null);
+    const [creating, setCreating] = useState(false);
 
     const { register, control, handleSubmit, watch, setValue } = useForm<QuoteFormValues>({
         defaultValues: {
+            deal_id: dealId ?? '',
             currency: 'USD',
             valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             items: [{ description: '', quantity: 1, unit_price: 0, tax_rate: 0 }]
@@ -50,25 +56,109 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
 
     const watchItems = watch("items");
     const subtotal = watchItems.reduce((acc, item) => acc + ((item.quantity || 0) * (item.unit_price || 0)), 0);
+    const validUntil = watch('valid_until');
+
+    const hasValidItems = watchItems?.some((i: QuoteItem) => (i.description ?? '').trim() !== '');
 
     const onSubmit = async (data: QuoteFormValues) => {
-        toast.success("Borrador guardado localmente (Simulación)");
+        if (dealId) {
+            try {
+                setCreating(true);
+                const quote = await api.quotes.create({
+                    deal_id: dealId,
+                    currency_code: currency,
+                    valid_until: data.valid_until,
+                    items: data.items.map((it) => ({
+                        description: it.description,
+                        quantity: it.quantity ?? 1,
+                        unit_price: it.unit_price ?? 0,
+                        tax_rate: it.tax_rate ?? 0
+                    }))
+                });
+                setCreatedQuote({ id: quote.id, quote_number: quote.quote_number });
+                toast.success('Cotización guardada');
+            } catch (e) {
+                console.error(e);
+                toast.error('Error al guardar la cotización');
+            } finally {
+                setCreating(false);
+            }
+        } else {
+            toast.info('Guardar borrador disponible cuando la cotización está vinculada a un seguimiento.');
+        }
     };
 
-    const handleOpenPreview = () => {
-        setIsModalOpen(true);
+    const handleOpenPreview = async () => {
+        if (!hasValidItems) {
+            toast.error('Agrega al menos un ítem con descripción.');
+            return;
+        }
+        if (dealId) {
+            try {
+                setCreating(true);
+                const payload = {
+                    deal_id: dealId,
+                    currency_code: currency,
+                    valid_until: validUntil,
+                    items: watchItems.map((it: QuoteItem) => ({
+                        description: it.description ?? '',
+                        quantity: it.quantity ?? 1,
+                        unit_price: it.unit_price ?? 0,
+                        tax_rate: it.tax_rate ?? 0
+                    }))
+                };
+                const quote = await api.quotes.create(payload);
+                setCreatedQuote({ id: quote.id, quote_number: quote.quote_number });
+                setIsModalOpen(true);
+            } catch (e) {
+                console.error(e);
+                toast.error('Error al crear la cotización');
+            } finally {
+                setCreating(false);
+            }
+        } else {
+            setCreatedQuote(null);
+            setIsModalOpen(true);
+        }
     };
 
     const handleConfirmSend = async (emailBody: string, pdfBlob: Blob) => {
+        const quoteNumber = createdQuote?.quote_number ?? 'DRAFT';
+        const quoteId = createdQuote?.id;
+        if (!clientEmail) {
+            toast.error('Falta el correo del cliente. Abre la cotización desde el Kanban con el cliente seleccionado.');
+            return;
+        }
         try {
-            console.log("Sending quote...", emailBody);
-            toast.promise(new Promise(resolve => setTimeout(resolve, 2000)), {
-                loading: 'Enviando cotización...',
-                success: 'Cotización enviada exitosamente',
-                error: 'Error al enviar'
-            });
+            const reader = new FileReader();
+            reader.readAsDataURL(pdfBlob);
+            reader.onloadend = async () => {
+                try {
+                    const base64data = (reader.result as string)?.split(',')[1];
+                    if (!base64data) throw new Error('No se pudo generar el PDF');
+                    await api.mail.sendQuote({
+                        to: clientEmail,
+                        subject: `Cotización #${quoteNumber} - Star Cargo`,
+                        message: emailBody + (quoteNumber !== 'DRAFT' ? `\n\nReferencia: Cotización #${quoteNumber}` : ''),
+                        pdfBase64: base64data,
+                        filename: `Cotizacion-${quoteNumber}.pdf`
+                    });
+                    if (quoteId) {
+                        await api.quotes.updateStatus(quoteId, 'SENT');
+                    }
+                    if (dealId && quoteId) {
+                        await api.deals.move(dealId, 'COTIZACION_ENVIADA');
+                    }
+                    toast.success('Cotización enviada. El seguimiento pasó a "Cotización enviada".');
+                    setIsModalOpen(false);
+                } catch (err) {
+                    console.error(err);
+                    toast.error('Error al enviar la cotización');
+                }
+            };
         } catch (error) {
-            toast.error("Error al enviar la cotización");
+            console.error(error);
+            toast.error('Error al enviar la cotización');
         }
     };
 
@@ -83,8 +173,9 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
                     <Button variant="outline" onClick={handleSubmit(onSubmit)}>
                         <Save className="mr-2 h-4 w-4" /> Guardar Borrador
                     </Button>
-                    <Button onClick={handleOpenPreview} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                        <Send className="mr-2 h-4 w-4" /> Previsualizar y Enviar
+                    <Button onClick={handleOpenPreview} disabled={creating} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                        {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                        Previsualizar y Enviar
                     </Button>
                 </div>
             </div>
@@ -178,10 +269,10 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
                 open={isModalOpen}
                 onOpenChange={setIsModalOpen}
                 data={{
-                    quote_number: 'DRAFT',
+                    quote_number: createdQuote?.quote_number ?? 'DRAFT',
                     client_name: clientName,
                     date: new Date().toISOString().split('T')[0],
-                    valid_until: watch('valid_until'),
+                    valid_until: validUntil,
                     currency: currency,
                     items: watchItems,
                     total_amount: subtotal

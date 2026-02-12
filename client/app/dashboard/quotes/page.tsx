@@ -8,11 +8,13 @@ function QuotesContent() {
     const searchParams = useSearchParams();
     const dealId = searchParams.get('dealId') || undefined;
     const clientName = searchParams.get('clientName') || 'N/A';
+    const clientEmail = searchParams.get('clientEmail') || undefined;
 
     return (
         <QuoteBuilder
             dealId={dealId}
             clientName={clientName}
+            clientEmail={clientEmail}
         />
     );
 }

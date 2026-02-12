@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea"; // Assuming this exists
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, BrainCircuit, CheckCircle, AlertTriangle, X } from "lucide-react";
 import { pdf } from '@react-pdf/renderer';
 import { QuotePDF } from './QuotePDF';
 import dynamic from 'next/dynamic';
 import { createPortal } from 'react-dom';
+import { useApi } from '@/hooks/useApi';
 
 // Dynamic import for PDFViewer to avoid SSR issues
 const PDFViewerComponent = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PDFViewer), {
@@ -21,6 +22,7 @@ interface QuotePreviewModalProps {
 }
 
 export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOpenChange, data, onConfirm }) => {
+    const api = useApi();
     const [step, setStep] = useState<'ai' | 'review'>('ai');
     const [aiDraft, setAiDraft] = useState("");
     const [loading, setLoading] = useState(false);
@@ -38,18 +40,20 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
         setLoading(true);
         setAnalyzingPrices(true);
         try {
-            // CALL AI ENDPOINT HERE
-            // For now, simulate AI response
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            setAiDraft(`Estimado ${data.client_name || 'Cliente'},\n\nAdjunto encontrará la cotización formal #${data.quote_number || 'xxx'} para el servicio solicitado.\n\nQuedamos atentos a sus comentarios.\n\nSaludos,\nStar Cargo Team`);
-
-            // Simulating price check
-            // if (data.items.some(i => i.unit_price < 100)) { setPriceAlert("Posible error: Precios muy bajos detectados."); }
-
+            const draft = await api.ai.smartDraft({
+                quote_number: data.quote_number?.toString() ?? 'BORRADOR',
+                client_name: data.client_name ?? 'Cliente',
+                items: (data.items ?? []).map((i: { description?: string }) => ({ description: i.description ?? '' })),
+                valid_until: data.valid_until,
+                currency: data.currency
+            });
+            setAiDraft(draft || `Estimado ${data.client_name || 'Cliente'},\n\nAdjunto encontrará la cotización #${data.quote_number ?? 'xxx'}.\n\nSaludos,\nStar Cargo.`);
+            if (data.items?.some((i: { unit_price?: number }) => Number(i?.unit_price) < 100)) {
+                setPriceAlert("Posible error: Precios muy bajos detectados.");
+            }
         } catch (e) {
             console.error(e);
-            setAiDraft("No se pudo generar el borrador automático.");
+            setAiDraft(`Estimado ${data.client_name || 'Cliente'},\n\nAdjunto encontrará la cotización formal #${data.quote_number || 'xxx'} para el servicio solicitado.\n\nQuedamos atentos a sus comentarios.\n\nSaludos,\nStar Cargo Team`);
         } finally {
             setLoading(false);
             setAnalyzingPrices(false);

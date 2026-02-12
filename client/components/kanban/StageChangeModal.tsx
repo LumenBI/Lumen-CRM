@@ -11,13 +11,16 @@ import {
     CalendarPlus
 } from 'lucide-react'
 
+export const STAGE_ID_COTIZANDO = 'PROCESO_COTIZACION'
+
 interface StageChangeModalProps {
     isOpen: boolean
     onClose: () => void
-    onConfirm: (data: { interactionType: string, summary: string, nextStep?: string }) => void
+    onConfirm: (data: { interactionType: string, summary: string, nextStep?: string }, options?: { prepareQuote?: boolean }) => void
     dealTitle: string
     fromStage: string
     toStage: string
+    toStageId?: string
     loading?: boolean
 }
 
@@ -39,6 +42,7 @@ export default function StageChangeModal({
     dealTitle,
     fromStage,
     toStage,
+    toStageId,
     loading = false
 }: StageChangeModalProps) {
     const [interactionType, setInteractionType] = useState<InteractionType>('CALL')
@@ -53,13 +57,12 @@ export default function StageChangeModal({
 
     if (!isOpen) return null
 
-    const handleSubmit = () => {
+    const isMovingToCotizando = toStageId === STAGE_ID_COTIZANDO
+    const interactionData = { interactionType, summary, nextStep }
+
+    const handleSubmit = (prepareQuote?: boolean) => {
         if (!summary.trim()) return
-        onConfirm({
-            interactionType,
-            summary,
-            nextStep
-        })
+        onConfirm(interactionData, isMovingToCotizando ? { prepareQuote } : undefined)
     }
 
     if (!mounted) return null
@@ -138,21 +141,46 @@ export default function StageChangeModal({
                         />
                     </div>
 
-                    <div className="pt-2">
-                        <button
-                            onClick={handleSubmit}
-                            disabled={!summary.trim() || loading}
-                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#0066FF] to-[#0052CC] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
-                        >
-                            {loading ? (
-                                'Guardando...'
-                            ) : (
-                                <>
-                                    <CheckCircle2 size={20} />
-                                    Confirmar Movimiento
-                                </>
-                            )}
-                        </button>
+                    <div className="pt-2 space-y-2">
+                        {isMovingToCotizando ? (
+                            <>
+                                <p className="text-sm font-medium text-gray-600 text-center">¿Deseas preparar una cotización ahora?</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={() => handleSubmit(false)}
+                                        disabled={!summary.trim() || loading}
+                                        className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 font-semibold py-3 rounded-xl border border-slate-200 hover:bg-slate-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        No, solo mover
+                                    </button>
+                                    <button
+                                        onClick={() => handleSubmit(true)}
+                                        disabled={!summary.trim() || loading}
+                                        className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#0066FF] to-[#0052CC] text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loading ? 'Guardando...' : (
+                                            <>
+                                                <CheckCircle2 size={18} />
+                                                Mover y preparar cotización
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <button
+                                onClick={() => handleSubmit()}
+                                disabled={!summary.trim() || loading}
+                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#0066FF] to-[#0052CC] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                            >
+                                {loading ? 'Guardando...' : (
+                                    <>
+                                        <CheckCircle2 size={20} />
+                                        Confirmar Movimiento
+                                    </>
+                                )}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

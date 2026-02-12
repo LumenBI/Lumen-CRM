@@ -384,6 +384,19 @@ export const useApi = () => {
             }
         },
 
+        ai: {
+            smartDraft: async (data: { quote_number?: string; client_name?: string; items: { description: string }[]; valid_until?: string; currency?: string }) => {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/smart-draft`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                })
+                if (!res.ok) throw new Error('Failed to generate draft')
+                const json = await res.json()
+                return json.draft as string
+            }
+        },
+
         mail: {
             sendQuote: async (data: { to: string; subject: string; message: string; pdfBase64: string; filename: string }) => {
                 const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/mail/send-quote`, {
