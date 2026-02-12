@@ -162,14 +162,8 @@ export class AppointmentsService {
         const agentName = (Array.isArray(data.agent) ? data.agent[0] : data.agent)?.full_name || 'Un agente';
 
         // Notify all participants (except creator, who gets a generic notification)
-        const notifications = participantIds.map(pid => {
-            const msg = pid === userId
-                ? `Has agendado una cita: ${data.title}`
-                : `[Participante] ${agentName} te ha incluido en una cita: ${data.title}`;
-            return this.notificationsService.createNotification(supabase, pid, 'APPOINTMENT_CREATED', msg, '/dashboard/citas');
-        });
-
-        await Promise.all(notifications);
+        await this.notificationsService.createNotification(supabase, userId, 'APPOINTMENT_CREATED', 'Has agendado una nueva cita.', '/dashboard/citas');
+        await this.notificationsService.notifyManagers(supabase, 'APPOINTMENT_CREATED', `[${agentName}] ha agendado una nueva cita con "${payload.client_id || 'Cliente'}"`, '/dashboard/citas');
 
         return data;
     }

@@ -96,7 +96,7 @@ export class ClientsService {
 
         // Notify managers of significant changes (e.g., status or assignment)
         if (payload.status || payload.assigned_agent_id) {
-            const message = `Cliente "${data.company_name}" actualizado (Estado: ${data.status})`;
+            const message = `ha actualizado el cliente "${data.company_name}" (Estado: ${data.status})`;
             await this.notificationsService.notifyManagers(supabase, 'CLIENT_UPDATE', `[${data.agent?.full_name || 'Agente'}] ${message}`, `/dashboard/clients?id=${id}`);
         }
 
@@ -173,7 +173,7 @@ export class ClientsService {
         await this.notificationsService.notifyManagers(
             supabase,
             'INTERACTION_CREATED',
-            `[${data.agent?.full_name || 'Agente'}] Nueva interacción con "${data.client?.company_name || 'Cliente'}": ${payload.category}`,
+            `[${data.agent?.full_name || 'Agente'}] ha registrado una nueva interacción con "${data.client?.company_name || 'Cliente'}": ${payload.category}`,
             `/dashboard/clients?id=${payload.clientId}`
         );
 

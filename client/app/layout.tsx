@@ -15,7 +15,7 @@ const mulish = Mulish({
 export const metadata: Metadata = {
   title: "Star CRM | Star Cargo",
   description: "Sistema de Gestión Logística Inteligente - Gestiona prospectos, citas y oportunidades de venta",
-  keywords: "CRM, Star Cargo, gestión de clientes, ventas, logística",
+  keywords: "CRM, Star Cargo, gestión de clientes, ventas, seguimientos, logística",
   icons: {
     icon: "/logos/star-logo-w.png",
     shortcut: "/logos/star-logo-w.png",

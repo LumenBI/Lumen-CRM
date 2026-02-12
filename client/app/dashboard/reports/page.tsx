@@ -120,7 +120,7 @@ export default function ReportsPage() {
                                 <Legend />
                                 <Line type="monotone" dataKey="interactions" name="Interacciones" stroke="#3b82f6" strokeWidth={2} dot={false} />
                                 <Line type="monotone" dataKey="appointments" name="Citas" stroke="#8b5cf6" strokeWidth={2} dot={false} />
-                                <Line type="monotone" dataKey="sales" name="Ventas" stroke="#22c55e" strokeWidth={2} dot={false} />
+                                <Line type="monotone" dataKey="sales" name="Seguimientos" stroke="#22c55e" strokeWidth={2} dot={false} />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
@@ -130,7 +130,7 @@ export default function ReportsPage() {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
                         <LucidePieChart size={20} />
-                        Embudo de Ventas (Actual)
+                        Embudo de Seguimientos (Actual)
                     </h2>
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -158,7 +158,7 @@ export default function ReportsPage() {
                                 <th className="px-6 py-3">Mes</th>
                                 <th className="px-6 py-3 text-center">Interacciones</th>
                                 <th className="px-6 py-3 text-center">Citas</th>
-                                <th className="px-6 py-3 text-center">Ventas</th>
+                                <th className="px-6 py-3 text-center">Seguimientos</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">

@@ -100,7 +100,7 @@ export function UserModal({ isOpen, onClose, onUserCreated }: UserModalProps) {
                                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                                     className="sr-only"
                                 />
-                                <span className="font-semibold text-sm">Ventas</span>
+                                <span className="font-semibold text-sm">Seguimientos</span>
                                 <span className="text-xs opacity-70 mt-1">Acceso limitado</span>
                             </label>
 

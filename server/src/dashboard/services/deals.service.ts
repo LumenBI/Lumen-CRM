@@ -44,8 +44,8 @@ export class DealsService {
 
         if (error) throw new Error(error.message);
 
-        const message = `Negociación "${data.title}" movida a ${newStatus}`;
-        await this.notificationsService.createNotification(supabase, userId, 'DEAL_MOVED', message, '/dashboard/kanban');
+        const message = `ha movido la negociación "${data.title}" a la etapa ${newStatus.replace('_', ' ')}`;
+        await this.notificationsService.createNotification(supabase, userId, 'DEAL_MOVED', `Has movido la negociación "${data.title}" a ${newStatus.replace('_', ' ')}`, '/dashboard/kanban');
         await this.notificationsService.notifyManagers(supabase, 'DEAL_MOVED', `[${data.agent?.full_name || 'Agente'}] ${message}`, '/dashboard/kanban');
 
         if (newStatus === 'CERRADO_GANADO') {
@@ -148,8 +148,8 @@ export class DealsService {
         // Fetch agent name for notification
         const { data: agent } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
 
-        await this.notificationsService.createNotification(supabase, userId, 'DEAL_CREATED', `Nueva negociación: ${payload.title}`, '/dashboard/kanban');
-        await this.notificationsService.notifyManagers(supabase, 'DEAL_CREATED', `[${agent?.full_name || 'Agente'}] Nueva negociación: ${payload.title}`, '/dashboard/kanban');
+        await this.notificationsService.createNotification(supabase, userId, 'DEAL_CREATED', `Has creado una nueva negociación: ${payload.title}`, '/dashboard/kanban');
+        await this.notificationsService.notifyManagers(supabase, 'DEAL_CREATED', `[${agent?.full_name || 'Agente'}] ha creado una nueva negociación: ${payload.title}`, '/dashboard/kanban');
 
         return data;
     }
@@ -176,7 +176,8 @@ export class DealsService {
         if (error) throw new Error(error.message);
 
         // Notify managers
-        const message = `Negociación "${data.title}" actualizada`;
+        // Notify managers
+        const message = `ha actualizado la negociación "${data.title}"`;
         await this.notificationsService.notifyManagers(supabase, 'DEAL_UPDATE', `[${data.agent?.full_name || 'Agente'}] ${message}`, '/dashboard/kanban');
 
         return data;

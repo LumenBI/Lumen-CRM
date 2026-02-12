@@ -88,7 +88,7 @@ export default function StageChangeModal({
                         <ArrowRight size={16} />
                         <span className="font-bold text-white">{toStage}</span>
                     </div>
-                    <p className="mt-2 text-sm opacity-90">Negociación: <strong>{dealTitle}</strong></p>
+                    <p className="mt-2 text-sm opacity-90">Seguimiento: <strong>{dealTitle}</strong></p>
                 </div>
 
                 <div className="p-6 space-y-6">

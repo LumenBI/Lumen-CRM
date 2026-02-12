@@ -147,7 +147,7 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
 
                     <div className="space-y-4">
                         <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1 block">Título de la negociación</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1 block">Título del seguimiento</label>
                             <input
                                 required
                                 className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"

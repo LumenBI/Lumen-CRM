@@ -133,49 +133,49 @@ export default function ClientsPage() {
                                     className="group hover:bg-blue-50/50 transition-all cursor-pointer border-b border-gray-100 hover:shadow-md hover:scale-[1.01] "
                                     onClick={() => setSelectedClientId(client.id)}
                                 >
-                                    <td className="px-8 py-6">
+                                    <td className="px-8 py-6 w-[35%]">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0066FF] to-[#0052CC] flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0066FF] to-[#0052CC] flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
                                                 <Building2 size={24} />
                                             </div>
-                                            <div>
-                                                <p className="font-bold text-lg text-[#000D42] group-hover:text-[#0066FF] transition-colors">{client.company_name}</p>
+                                            <div className="overflow-hidden">
+                                                <p className="font-bold text-lg text-[#000D42] group-hover:text-[#0066FF] transition-colors truncate">{client.company_name}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
+                                    <td className="px-8 py-6 w-[25%]">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
                                                 <User size={18} className="text-purple-600" />
                                             </div>
-                                            <span className="text-gray-800 font-medium">{client.contact_name || 'N/A'}</span>
+                                            <span className="text-gray-800 font-medium truncate">{client.contact_name || 'N/A'}</span>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${client.origin === 'APP COBUS' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                                    <td className="px-8 py-6 w-[15%]">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${client.origin === 'APP COBUS' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
                                             client.origin === 'WEB' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
                                                 'bg-gray-100 text-gray-600 border border-gray-200'
                                             }`}>
                                             {client.origin || 'MANUAL'}
                                         </span>
                                     </td>
-                                    <td className="px-8 py-6">
+                                    <td className="px-8 py-6 w-[25%]">
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-3 text-sm">
-                                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
                                                     <Mail size={16} className="text-blue-600" />
                                                 </div>
-                                                <span className="text-gray-700">{client.email}</span>
+                                                <span className="text-gray-700 truncate">{client.email}</span>
                                             </div>
                                             <div className="flex items-center gap-3 text-sm">
-                                                <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                                                <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
                                                     <Phone size={16} className="text-green-600" />
                                                 </div>
-                                                <span className="text-gray-700">{client.phone || 'N/A'}</span>
+                                                <span className="text-gray-700 truncate">{client.phone || 'N/A'}</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 text-right">
+                                    <td className="px-8 py-6 text-right w-[150px]">
                                         <div className="flex items-center justify-end gap-2">
                                             <button
                                                 onClick={(e) => handleEditClick(e, client)}

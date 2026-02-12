@@ -161,7 +161,20 @@ export default function NotificationBell() {
                                         <span className="text-[10px] uppercase font-bold tracking-wider">Leída</span>
                                     </div>
                                     <Link href={notif.link || '#'} onClick={() => notif.link && handleMarkAsRead(notif.id)}>
-                                        <p className="text-sm font-semibold text-gray-800 pr-6">{notif.message}</p>
+                                        <p className="text-sm font-semibold text-gray-800 pr-6">
+                                            {(() => {
+                                                const match = notif.message.match(/^\[(.*?)\]\s*(.*)$/);
+                                                if (match) {
+                                                    return (
+                                                        <>
+                                                            <span className="text-[#0066FF] font-bold">{match[1]}</span>
+                                                            {' '}{match[2]}
+                                                        </>
+                                                    );
+                                                }
+                                                return notif.message;
+                                            })()}
+                                        </p>
                                         <p className="text-xs text-gray-500 mt-1">
                                             {new Date(notif.created_at).toLocaleDateString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                                         </p>

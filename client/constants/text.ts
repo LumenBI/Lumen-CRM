@@ -41,7 +41,7 @@ export const TEXTS = {
     NEW_PROSPECTS: 'Nuevos clientes',
     INTERACTIONS: 'Interacciones',
     COMMERCIAL_VISITS: 'Visitas comerciales',
-    CLOSED_SALES: 'Ventas cerradas',
+    CLOSED_SALES: 'Seguimientos cerrados',
     RECENT_ACTIVITY: 'Actividad reciente',
     UPCOMING_APPOINTMENTS: 'Próximas citas',
     PERFORMANCE_CHART: 'Gráfico de rendimiento',
@@ -73,7 +73,7 @@ export interface MenuItem {
 
 export const MENU_ITEMS: MenuItem[] = [
     { name: 'Resumen', href: '/dashboard', icon: LucideLayoutDashboard },
-    { name: 'Ventas', href: '/dashboard/kanban', icon: LucideKanban },
+    { name: 'Seguimientos', href: '/dashboard/kanban', icon: LucideKanban },
     { name: 'Agenda', href: '/dashboard/citas', icon: LucideCalendar },
     { name: 'Clientes', href: '/dashboard/clients', icon: LucideUsers },
     { name: 'Buzón', href: '/dashboard/mail', icon: LucideMail },
@@ -87,7 +87,7 @@ export const SYSTEM_ITEMS: MenuItem[] = [
 
 export const NAVIGATION_LABELS = {
     SUMMARY: 'Resumen',
-    SALES: 'Ventas',
+    SALES: 'Seguimientos',
     CALENDAR: 'Agenda',
     CLIENTS: 'Clientes',
     USERS: 'Usuarios',
