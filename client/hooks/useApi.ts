@@ -396,6 +396,12 @@ export const useApi = () => {
                 }
                 return res.json()
             },
+            getThreads: async (email: string) => {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/mail/threads/${email}`)
+                if (!res.ok) throw new Error('Failed to fetch threads')
+                return res.json()
+            },
+
             send: async (data: {
                 to: string;
                 subject: string;
