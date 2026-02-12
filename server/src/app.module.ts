@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { CurrencyModule } from './currency/currency.module';
 import { MailModule } from './mail/mail.module';
 import { QuotesModule } from './quotes/quotes.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { QuotesModule } from './quotes/quotes.module';
     UsersModule,
     CurrencyModule,
     MailModule,
-    QuotesModule
+    QuotesModule,
+    AiModule
   ],
   controllers: [AppController],
   providers: [AppService],

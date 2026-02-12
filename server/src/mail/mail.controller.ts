@@ -255,10 +255,54 @@ export class MailController {
         const auth = this.getAuthClient(token);
         const gmail = google.gmail({ version: 'v1', auth });
 
+        // 1. Thread Search: Find existing thread with this client
+        let threadId: string | undefined;
+        let inReplyTo: string | undefined;
+        let references: string | undefined;
+
+        try {
+            const listRes = await gmail.users.messages.list({
+                userId: 'me',
+                q: `to:${body.to}`,
+                maxResults: 1
+            });
+
+            if (listRes.data.messages && listRes.data.messages.length > 0) {
+                const latestMsgId = listRes.data.messages[0].id;
+                threadId = listRes.data.messages[0].threadId; // Use existing thread
+
+                // Get details to find Message-ID for In-Reply-To
+                const msgDetails = await gmail.users.messages.get({
+                    userId: 'me',
+                    id: latestMsgId,
+                    format: 'metadata',
+                    metadataHeaders: ['Message-ID', 'References']
+                });
+
+                const headers = msgDetails.data.payload?.headers;
+                const existingMessageId = headers?.find(h => h.name?.toLowerCase() === 'message-id')?.value;
+                const existingReferences = headers?.find(h => h.name?.toLowerCase() === 'references')?.value;
+
+                if (existingMessageId) {
+                    inReplyTo = existingMessageId;
+                    references = existingReferences ? `${existingReferences} ${existingMessageId}` : existingMessageId;
+                }
+            }
+        } catch (e) {
+            console.error("Error finding thread:", e);
+            // Non-blocking, fallback to new thread
+        }
+
         const emailLines = [
             `To: ${body.to}`,
             `Subject: ${body.subject}`,
             'Content-Type: multipart/mixed; boundary="foo_bar_baz"',
+        ];
+
+        if (inReplyTo) emailLines.push(`In-Reply-To: ${inReplyTo}`);
+        if (references) emailLines.push(`References: ${references}`);
+
+        emailLines.push(
             '',
             '--foo_bar_baz',
             'Content-Type: text/plain; charset="UTF-8"',
@@ -273,15 +317,24 @@ export class MailController {
             '',
             body.pdfBase64,
             '--foo_bar_baz--'
-        ];
+        );
 
         const raw = Buffer.from(emailLines.join('\r\n')).toString('base64url');
 
         await gmail.users.messages.send({
             userId: 'me',
-            requestBody: { raw }
+            requestBody: {
+                raw,
+                threadId: threadId
+            }
         });
 
-        return { success: true };
+        // IMPORTANT: Here we should ideally return the threadId so the creating service can log it, 
+        // or trigger the status update. 
+        // For "Zero-Trust", the frontend calls this, so it returns success.
+        // The Status Update happens in a separate step or we could inject QuotesService here 
+        // but MailController is generic. Better to keep it generic.
+
+        return { success: true, threadId };
     }
 }

@@ -29,4 +29,23 @@ export class CurrencyService {
         // For now, returning amount as placeholder
         return amount;
     }
+
+    async getExchangeRate(currencyCode: string): Promise<number> {
+        // In a real scenario, this would check the cache or DB.
+        // For now, we fetch from the 'currencies' table or return a default/mock.
+        if (currencyCode === 'USD') return 1;
+
+        const { data, error } = await this.supabase
+            .from('currencies')
+            .select('exchange_rate')
+            .eq('code', currencyCode)
+            .single();
+
+        if (error || !data) {
+            this.logger.warn(`Could not find rate for ${currencyCode}, defaulting to 1`);
+            return 1; // Fallback
+        }
+
+        return data.exchange_rate;
+    }
 }
