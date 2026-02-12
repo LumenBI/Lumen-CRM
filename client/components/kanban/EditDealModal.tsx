@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { LucideX, LucideSave, LucideLoader2 } from 'lucide-react'
+import { LucideX, LucideSave, LucideLoader2, LucideFileText } from 'lucide-react'
+import Link from 'next/link'
 import { useApi } from '@/hooks/useApi'
 import { Deal } from '@/types'
 import { toast } from 'sonner'
@@ -102,6 +103,19 @@ export default function EditDealModal({ deal, onClose, onSuccess }: EditDealModa
                             <option value="LCL">LCL - Carga Suelta</option>
                             <option value="AEREO">Aéreo</option>
                         </select>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 bg-blue-50 rounded-xl border border-blue-100">
+                        <div className="flex items-center gap-2 px-2 text-blue-700 font-medium text-sm">
+                            <LucideFileText size={18} />
+                            Cotización Inteligente
+                        </div>
+                        <Link
+                            href={`/dashboard/quotes?dealId=${deal.id}&clientName=${encodeURIComponent(deal.client?.company_name || '')}`}
+                            className="bg-white px-3 py-1.5 rounded-lg border border-blue-200 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors"
+                        >
+                            Crear Nueva
+                        </Link>
                     </div>
 
                     <div className="flex gap-3 pt-4">

@@ -63,6 +63,7 @@ import {
     LucideBarChart3,
     LucideSettings,
     LucideMail,
+    LucideFileText,
 } from 'lucide-react'
 
 export interface MenuItem {
@@ -78,6 +79,7 @@ export const MENU_ITEMS: MenuItem[] = [
     { name: 'Clientes', href: '/dashboard/clients', icon: LucideUsers },
     { name: 'Buzón', href: '/dashboard/mail', icon: LucideMail },
     { name: 'Reportes', href: '/dashboard/reports', icon: LucideBarChart3 },
+    { name: 'Cotizaciones', href: '/dashboard/quotes', icon: LucideFileText },
 ]
 
 export const SYSTEM_ITEMS: MenuItem[] = [
