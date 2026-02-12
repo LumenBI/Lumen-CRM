@@ -4,8 +4,5 @@
   },
   "scripts": {
     "prepare": "husky"
-  },
-  "dependencies": {
-    "@react-pdf/renderer": "^4.3.2"
   }
 }
