@@ -1,0 +1,27 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { CurrencyModule } from './currency/currency.module';
+import { MailModule } from './mail/mail.module';
+import { QuotesModule } from './quotes/quotes.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
+    AuthModule,
+    DashboardModule,
+    UsersModule,
+    CurrencyModule,
+    MailModule,
+    QuotesModule
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule { }

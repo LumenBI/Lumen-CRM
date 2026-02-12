@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Mulish', sans-serif;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-surface-50 text-base-900 antialiased;
+  }
+}
+
+@layer utilities {
+
+  /* EL CORTE DIAGONAL ORIGINAL DE STAR CARGO */
+  .clip-diagonal {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
+
+  @media (min-width: 1024px) {
+    .clip-diagonal {
+      /* Corte inclinado solo en desktop, como el original */
+      clip-path: polygon(150px 0%, 100% 0%, 100% 100%, 0% 100%);
+    }
+  }
+
+  /* Utilidad para centrado absoluto (estilo Kaizen) */
+  .center-absolute {
+    @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2;
+  }
+}
