@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Mulish } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const mulish = Mulish({
   variable: "--font-mulish",
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body className={`${mulish.variable} font-sans antialiased`}>
         {children}
         <Toaster richColors position="top-right" />
+        <SpeedInsights />
       </body>
     </html>
   );
