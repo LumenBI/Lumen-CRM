@@ -507,6 +507,7 @@ export class DashboardService {
         if (error) throw new Error(error.message);
 
         return {
+            PENDING: deals.filter(d => d.status === 'PENDING'),
             CONTACTADO: deals.filter(d => d.status === 'CONTACTADO'),
             CITA: deals.filter(d => d.status === 'CITA'),
             PROCESO_COTIZACION: deals.filter(d => d.status === 'PROCESO_COTIZACION'),
