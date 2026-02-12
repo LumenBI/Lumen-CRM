@@ -298,11 +298,7 @@ export default function KanbanPage() {
 
                                                                             <div className="flex items-center gap-2 mb-3">
                                                                                 <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase">
-<<<<<<< HEAD
                                                                                     {deal.client?.company_name?.substring(0, 1) || '?'}
-=======
-                                                                                    {deal.client?.company_name.substring(0, 1)}
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
                                                                                 </div>
                                                                                 <span className="text-xs text-gray-500 font-medium truncate max-w-[180px]">
                                                                                     {deal.client?.company_name}
@@ -378,11 +374,7 @@ export default function KanbanPage() {
                             icon: Eye,
                             action: () => {
                                 const deal = getContextDeal()
-<<<<<<< HEAD
                                 if (deal?.client?.id) setSelectedClientId(deal.client.id)
-=======
-                                if (deal) setSelectedClientId(deal.client.id)
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
                             }
                         },
                         {
@@ -406,11 +398,7 @@ export default function KanbanPage() {
                             icon: PhoneCall,
                             action: () => {
                                 const deal = getContextDeal()
-<<<<<<< HEAD
                                 if (deal?.client?.id) setSelectedClientId(deal.client.id)
-=======
-                                if (deal) setSelectedClientId(deal.client.id)
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
                             }
                         }
                     ]}

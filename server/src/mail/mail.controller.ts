@@ -55,8 +55,7 @@ export class MailController {
                 nextPageToken: response.data.nextPageToken
             };
         } catch (error) {
-            console.error('Error fetching inbox:', error);
-            throw new UnauthorizedException('Failed to fetch inbox');
+            throw new UnauthorizedException('Failed to fetch inbox: ' + (error.message || 'Unknown error'));
         }
     }
 

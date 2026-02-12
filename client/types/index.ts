@@ -25,10 +25,7 @@ export interface Appointment {
     status: (typeof APPOINTMENT_STATUS_IDS)[number]
     meeting_link?: string
     location?: string
-<<<<<<< HEAD
     client_id?: string // Added for compatibility with API creation payloads
-=======
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
     client: {
         id: string
         company_name: string
@@ -42,39 +39,25 @@ export type Deal = {
     id: string
     title: string
     value: number
-<<<<<<< HEAD
     profit?: number
     currency: string
     status: (typeof STAGE_IDS)[number]
     type: (typeof SHIPPING_TYPE_IDS)[number]
     client_id?: string
     client?: {
-=======
-    currency: string
-    status: (typeof STAGE_IDS)[number]
-    type: (typeof SHIPPING_TYPE_IDS)[number]
-    client: {
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
         id: string
         company_name: string
         contact_name: string
     }
-<<<<<<< HEAD
     created_at: string // Added to match API response
-=======
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
     updated_at: string
     expected_close_date?: string
 }
 
 export interface Interaction {
     id: string
-<<<<<<< HEAD
     clientId: string // Note: API might return client_id, frontend seems to use clientId or client_id variously.
     client_id?: string
-=======
-    clientId: string
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
     agent_id: string
     category: string
     summary: string
@@ -86,7 +69,6 @@ export interface Interaction {
         company_name: string
     }
 }
-<<<<<<< HEAD
 
 export interface QuoteItem {
     id: string;
@@ -112,5 +94,3 @@ export interface Quote {
     updated_at: string;
     quote_items: QuoteItem[];
 }
-=======
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69

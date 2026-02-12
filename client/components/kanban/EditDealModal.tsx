@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { LucideX, LucideSave, LucideLoader2 } from 'lucide-react'
 import { useApi } from '@/hooks/useApi'
 import { Deal } from '@/types'
@@ -48,11 +48,7 @@ export default function EditDealModal({ deal, onClose, onSuccess }: EditDealModa
                 <div className="flex items-center justify-between p-6 border-b border-slate-100">
                     <div>
                         <h2 className="text-xl font-bold text-[#000d42]">Editar Seguimiento</h2>
-<<<<<<< HEAD
                         <p className="text-sm text-slate-500">{deal.client?.company_name}</p>
-=======
-                        <p className="text-sm text-slate-500">{deal.client.company_name}</p>
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                         <LucideX size={20} className="text-slate-400" />

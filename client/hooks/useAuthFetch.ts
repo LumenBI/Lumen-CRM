@@ -19,14 +19,19 @@ export function useAuthFetch() {
             throw new Error('No active session')
         }
 
+        // Get Google Provider Token if available
+        const providerToken = session.provider_token
+
         return fetch(url, {
             ...options,
             headers: {
                 ...options?.headers,
-                Authorization: `Bearer ${session.access_token}`,
+                'Authorization': `Bearer ${session.access_token}`,
+                // Automatically include Google token if it exists in session
+                ...(providerToken ? { 'x-google-token': providerToken } : {})
             },
         })
-    }, [])
+    }, [supabase])
 
     return { authFetch, supabase }
 }

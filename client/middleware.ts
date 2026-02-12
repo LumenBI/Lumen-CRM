@@ -59,11 +59,8 @@ export async function middleware(request: NextRequest) {
     // 1. Protect /dashboard routes
     if (request.nextUrl.pathname.startsWith('/dashboard')) {
         if (!user) {
-<<<<<<< HEAD
             // Si el error es por token inválido, podemos limpiar la sesión (aunque el redirect ya maneja la UX)
             // Esto evita bucles si el cliente sigue enviando el token inválido
-=======
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
             return NextResponse.redirect(new URL('/login', request.url))
         }
     }

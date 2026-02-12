@@ -62,10 +62,7 @@ import {
     LucideUsers,
     LucideBarChart3,
     LucideSettings,
-<<<<<<< HEAD
     LucideMail,
-=======
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
 } from 'lucide-react'
 
 export interface MenuItem {
@@ -79,10 +76,7 @@ export const MENU_ITEMS: MenuItem[] = [
     { name: 'Ventas', href: '/dashboard/kanban', icon: LucideKanban },
     { name: 'Agenda', href: '/dashboard/citas', icon: LucideCalendar },
     { name: 'Clientes', href: '/dashboard/clients', icon: LucideUsers },
-<<<<<<< HEAD
     { name: 'Buzón', href: '/dashboard/mail', icon: LucideMail },
-=======
->>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
     { name: 'Reportes', href: '/dashboard/reports', icon: LucideBarChart3 },
 ]
 
