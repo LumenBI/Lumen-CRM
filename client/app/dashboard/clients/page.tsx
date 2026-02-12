@@ -12,6 +12,7 @@ import AlertModal, { AlertType } from '@/components/ui/AlertModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import type { Client } from '@/types';
 import { useClients } from '@/context/ClientsContext';
+import { useUser } from '@/context/UserContext';
 import { toast } from 'sonner'
 import { TEXTS, NAVIGATION_LABELS } from '@/constants/text'
 
@@ -46,6 +47,7 @@ export default function ClientsPage() {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const { authFetch } = useAuthFetch();
+    const { profile } = useUser();
 
     const displayedClients = searchTerm ? searchAllClients(searchTerm) : allClients;
 
@@ -119,6 +121,9 @@ export default function ClientsPage() {
                                 <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide uppercase">Cliente</th>
                                 <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide uppercase">Contacto</th>
                                 <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide uppercase">Origen</th>
+                                {(profile?.role === 'ADMIN' || profile?.role === 'MANAGER') && (
+                                    <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide uppercase">Asignado A</th>
+                                )}
                                 <th className="px-8 py-5 text-right text-sm font-bold text-[#000D42] tracking-wide uppercase">Acciones</th>
                             </tr>
                         </thead>
@@ -159,6 +164,16 @@ export default function ClientsPage() {
                                             {client.origin || 'MANUAL'}
                                         </span>
                                     </td>
+                                    {(profile?.role === 'ADMIN' || profile?.role === 'MANAGER') && (
+                                        <td className="px-8 py-6 w-[20%]">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-2 h-2 rounded-full ${client.assigned_agent_id ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                                <span className="text-sm text-gray-700 font-medium truncate">
+                                                    {client.agent?.full_name || 'Sin Asignar'}
+                                                </span>
+                                            </div>
+                                        </td>
+                                    )}
                                     <td className="px-8 py-6 w-[25%]">
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-3 text-sm">
@@ -240,6 +255,17 @@ export default function ClientsPage() {
                     onClose={() => setSelectedClientId(null)}
                     onSuccess={() => {
                         refreshClients();
+                    }}
+                />
+            )}
+
+            {clientToEdit && (
+                <EditClientModal
+                    client={clientToEdit}
+                    onClose={() => setClientToEdit(null)}
+                    onSuccess={() => {
+                        refreshClients();
+                        setClientToEdit(null);
                     }}
                 />
             )}

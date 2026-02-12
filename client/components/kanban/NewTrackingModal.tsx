@@ -15,6 +15,7 @@ import { STAGES } from '@/constants/stages'
 import { useUser } from '@/context/UserContext'
 import { useApi } from '@/hooks/useApi'
 import { useClients } from '@/context/ClientsContext'
+import { useAgents } from '@/context/AgentsContext'
 import ModalPortal from '@/components/ui/ModalPortal'
 import type { Client } from '@/types'
 import { TEXTS } from '@/constants/text'
@@ -39,7 +40,8 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
         contact_name: '',
         email: '',
         phone: '',
-        origin: 'APP COBUS'
+        origin: 'APP COBUS',
+        assigned_agent_id: ''
     })
 
     const [status, setStatus] = useState('PENDING')
@@ -56,6 +58,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
     const { clients: clientsApi, appointments: appointmentsApi, interactions: interactionsApi } = useApi()
     const { searchClients, createClient, allClients } = useClients()
     const { profile } = useUser()
+    const { agents } = useAgents()
 
     useEffect(() => {
         if (mode === 'create') return
@@ -290,6 +293,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                             onChange={e => setClientForm({ ...clientForm, phone: e.target.value })}
                                         />
                                     </div>
+
                                     <div>
                                         <label className="text-xs font-semibold text-gray-500 mb-1 block">Origen del Prospecto</label>
                                         <select
@@ -304,6 +308,21 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                             <option value="REDES">Redes Sociales</option>
                                         </select>
                                     </div>
+                                    {(profile?.role === 'ADMIN' || profile?.role === 'MANAGER') && (
+                                        <div className="md:col-span-2">
+                                            <label className="text-xs font-semibold text-gray-500 mb-1 block">Asignar Agente (Opcional)</label>
+                                            <select
+                                                className="w-full rounded-lg border border-gray-200 p-2 text-sm outline-none focus:border-blue-500 bg-white"
+                                                value={clientForm.assigned_agent_id}
+                                                onChange={e => setClientForm({ ...clientForm, assigned_agent_id: e.target.value })}
+                                            >
+                                                <option value="">-- Sin Asignar --</option>
+                                                {agents.map(agent => (
+                                                    <option key={agent.id} value={agent.id}>{agent.full_name || agent.email}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -435,7 +454,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                         </button>
                     </div>
                 </form>
-            </div>
-        </ModalPortal>
+            </div >
+        </ModalPortal >
     )
 }

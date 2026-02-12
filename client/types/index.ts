@@ -13,6 +13,9 @@ export interface Client {
     created_at?: string
     assigned_agent_id?: string
     assignment_expires_at?: string
+    agent?: {
+        full_name: string
+    }
 }
 
 export interface Appointment {

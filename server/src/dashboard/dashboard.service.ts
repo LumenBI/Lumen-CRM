@@ -495,14 +495,22 @@ export class DashboardService {
 
     async getKanbanBoard(token: string, userId: string) {
         const supabase = this.getClient(token);
-        const { data: deals, error } = await supabase
+        let query = supabase
             .from('deals')
             .select(`
                 *,
                 client:clients!inner(id, company_name, contact_name, phone, email, assigned_agent_id)
             `)
-            .eq('client.assigned_agent_id', userId)
             .order('updated_at', { ascending: false });
+
+        // Get user role to determine visibility
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single();
+
+        if (profile && profile.role !== 'ADMIN' && profile.role !== 'MANAGER') {
+            query = query.eq('assigned_agent_id', userId);
+        }
+
+        const { data: deals, error } = await query;
 
         if (error) throw new Error(error.message);
 
@@ -520,7 +528,7 @@ export class DashboardService {
         const supabase = this.getClient(token);
         let builder = supabase
             .from('clients')
-            .select('id, company_name, contact_name, email, phone, origin, assigned_agent_id, assignment_expires_at')
+            .select('id, company_name, contact_name, email, phone, origin, assigned_agent_id, assignment_expires_at, agent:profiles!assigned_agent_id(full_name)')
             .order('company_name', { ascending: true });
 
         if (mine && userId) {
@@ -556,9 +564,9 @@ export class DashboardService {
                 email: payload.email,
                 origin: payload.origin || 'MANUAL',
                 status: payload.status || 'PENDING',
-                assigned_agent_id: payload.assigned_agent_id || userId,
+                assigned_agent_id: payload.assigned_agent_id || null, // Allow null assignment
                 assignment_expires_at: payload.assignment_expires_at || defaultExpires,
-                assigned_at: new Date()
+                assigned_at: payload.assigned_agent_id ? new Date() : null
             })
             .select()
             .single();

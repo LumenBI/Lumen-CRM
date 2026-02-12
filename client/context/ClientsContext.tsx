@@ -105,7 +105,7 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
             created_at: new Date().toISOString(),
             company_name: clientData.company_name || 'Nueva Empresa',
             contact_name: clientData.contact_name || 'Nuevo Contacto',
-            assigned_agent_id: clientData.assigned_agent_id || profile?.id
+            assigned_agent_id: clientData.assigned_agent_id || null
         } as Client
 
         setAllClients((prev: Client[]) => [...prev, tempClient])
