@@ -52,15 +52,12 @@ export default function NotificationBell() {
                         filter: `user_id=eq.${session.user.id}`
                     },
                     (payload) => {
-                        console.log('[NOTIFY_FRONT] New notification payload received:', payload);
                         const newNotif = payload.new as Notification
                         setNotifications(prev => [newNotif, ...prev])
                         setUnreadCount(prev => prev + 1)
                     }
                 )
-                .subscribe((status) => {
-                    console.log(`[NOTIFY_FRONT] Realtime subscription status: ${status}`);
-                })
+                .subscribe()
         }
 
         setup()
@@ -69,7 +66,6 @@ export default function NotificationBell() {
         const checkReminders = async () => {
             const { data: { session } } = await supabase.auth.getSession()
             if (session) {
-                console.log('[NOTIFY_FRONT] Triggering manual reminder check...');
                 await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/notifications/check`, {
                     headers: { 'Authorization': `Bearer ${session.access_token}` }
                 })

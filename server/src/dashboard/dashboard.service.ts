@@ -18,7 +18,6 @@ export class DashboardService {
 
     private async createNotification(supabase: SupabaseClient, userId: string, type: string, message: string, link: string = '#') {
         try {
-            console.log(`[NOTIFY_FLOW] Creating notification for user ${userId}: ${message}`);
             const { error } = await supabase.from('notifications').insert({
                 user_id: userId,
                 type,
@@ -26,10 +25,9 @@ export class DashboardService {
                 link,
                 is_read: false
             });
-            if (error) console.error(`[NOTIFY_FLOW] Supabase error creating notification:`, error);
-            else console.log(`[NOTIFY_FLOW] Notification created successfully for ${userId}`);
+            if (error) console.error(`Error creating notification:`, error);
         } catch (error) {
-            console.error('[NOTIFY_FLOW] Catch error creating notification:', error);
+            console.error('Error creating notification:', error);
         }
     }
 
@@ -287,18 +285,15 @@ export class DashboardService {
         }
 
         // Notify ALL current participants (whether they changed or not)
-        console.log(`[NOTIFY_FLOW] Fetching participants for appointment ${id} to notify...`);
         const { data: currentParticipants, error: partError } = await supabase
             .from('appointment_participants')
             .select('user_id')
             .eq('appointment_id', id);
-
         if (partError) {
-            console.error(`[NOTIFY_FLOW] Error fetching participants for notification:`, partError);
+            console.error(`Error fetching participants for notification:`, partError);
         }
 
         if (currentParticipants && currentParticipants.length > 0) {
-            console.log(`[NOTIFY_FLOW] Found ${currentParticipants.length} participants to notify.`);
             const msg = `Cita "${data.title}" actualizada`;
             const notifications = currentParticipants.map(p =>
                 this.createNotification(supabase, p.user_id, 'APPOINTMENT_UPDATE', msg, '/dashboard/citas')
@@ -915,7 +910,6 @@ export class DashboardService {
 
         // Fetch user profile for notification settings
         let intervalMinutes = 30;
-        console.log(`[NOTIFY_FLOW] Checking system notifications for user ${userId} at ${guatemalaNow.toISOString()}`);
         try {
             const { data: profile, error } = await supabase
                 .from('profiles')
@@ -996,10 +990,8 @@ export class DashboardService {
                 const appDate = new Date(guatemalaNow);
                 appDate.setHours(appH, appM, 0, 0);
 
-                console.log(`[NOTIFY_FLOW] Comparing: ${appDate.toISOString()} vs Now: ${guatemalaNow.toISOString()} (Soon: ${soon.toISOString()})`);
 
                 if (appDate > guatemalaNow && appDate <= soon) {
-                    console.log(`[NOTIFY_FLOW] HIT! appointment ${app.title} is within window.`);
                     const msg = `¡Alerta! Tu cita "${app.title}" comienza en menos de ${intervalMinutes} minutos (${app.appointment_time})`;
 
                     const { count } = await supabase
@@ -1039,7 +1031,7 @@ export class DashboardService {
                     .eq('user_id', userId)
                     .eq('type', 'INACTIVITY')
                     .ilike('message', `%${client.company_name}%`)
-                    .eq('is_read', false);
+                    .gte('created_at', todayStr);
 
                 if (count === 0) {
                     await this.createNotification(
@@ -1074,7 +1066,7 @@ export class DashboardService {
                     .eq('user_id', userId)
                     .eq('type', 'EXPIRATION')
                     .ilike('message', `%${client.company_name}%`)
-                    .eq('is_read', false);
+                    .gte('created_at', todayStr);
 
                 if (count === 0) {
                     const daysLeft = Math.ceil((new Date(client.assignment_expires_at).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
