@@ -1,3 +1,4 @@
+"use client"
 import { useState, useEffect } from 'react';
 import { useApi } from '@/hooks/useApi';
 import { Quote } from '@/types';

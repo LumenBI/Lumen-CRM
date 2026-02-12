@@ -20,10 +20,12 @@ const nextConfig = {
             },
         ],
     },
-    webpack: (config, { isServer }) => {
-        if (isServer) {
-            config.resolve.alias['@react-pdf/renderer'] = false;
-        }
+    webpack: (config) => {
+        config.resolve.alias = {
+            ...config.resolve.alias,
+            'canvas': false,
+            'encoding': false
+        };
         return config;
     },
 };
