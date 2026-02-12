@@ -1,13 +1,20 @@
-import { Controller, Get, Post, Body, Headers, Param, Query, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Headers, Param, Query, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { google, gmail_v1 } from 'googleapis';
+import { AuthGuard } from '@nestjs/passport';
+import { SendEmailDto, SendQuoteEmailDto } from './dto/mail.dto';
 
 @Controller('mail')
+@UseGuards(AuthGuard('jwt'))
 export class MailController {
 
     private getAuthClient(token: string) {
         const oauth2Client = new google.auth.OAuth2();
         oauth2Client.setCredentials({ access_token: token });
         return oauth2Client;
+    }
+
+    private sanitizeHeader(value: string): string {
+        return value.replace(/[\r\n]/g, '').trim();
     }
 
     @Get('inbox')
@@ -55,21 +62,14 @@ export class MailController {
                 nextPageToken: response.data.nextPageToken
             };
         } catch (error) {
-            throw new UnauthorizedException('Failed to fetch inbox: ' + (error.message || 'Unknown error'));
+            throw new UnauthorizedException('Failed to fetch inbox');
         }
     }
 
     @Post('send')
     async sendEmail(
         @Headers('x-google-token') token: string,
-        @Body() body: {
-            to: string;
-            subject: string;
-            message: string;
-            threadId?: string;
-            inReplyTo?: string;
-            references?: string;
-        }
+        @Body() body: SendEmailDto
     ) {
         if (!token) throw new UnauthorizedException('No Google Token provided');
 
@@ -77,17 +77,17 @@ export class MailController {
         const gmail = google.gmail({ version: 'v1', auth });
 
         const emailLines = [
-            `To: ${body.to}`,
-            `Subject: ${body.subject}`,
+            `To: ${this.sanitizeHeader(body.to)}`,
+            `Subject: ${this.sanitizeHeader(body.subject)}`,
             'Content-Type: text/plain; charset="UTF-8"',
             'Content-Transfer-Encoding: 7bit',
         ];
 
         if (body.inReplyTo) {
-            emailLines.push(`In-Reply-To: ${body.inReplyTo}`);
+            emailLines.push(`In-Reply-To: ${this.sanitizeHeader(body.inReplyTo)}`);
         }
         if (body.references) {
-            emailLines.push(`References: ${body.references}`);
+            emailLines.push(`References: ${this.sanitizeHeader(body.references)}`);
         }
 
         emailLines.push('');
@@ -105,6 +105,7 @@ export class MailController {
 
         return { success: true };
     }
+
 
     @Get('message/:id')
     async getMessage(@Headers('x-google-token') token: string, @Param('id') id: string) {
@@ -248,7 +249,7 @@ export class MailController {
     @Post('send-quote')
     async sendQuote(
         @Headers('x-google-token') token: string,
-        @Body() body: { to: string; subject: string; message: string; pdfBase64: string; filename: string }
+        @Body() body: SendQuoteEmailDto
     ) {
         if (!token) throw new UnauthorizedException('No Google Token provided');
 
@@ -263,7 +264,7 @@ export class MailController {
         try {
             const listRes = await gmail.users.messages.list({
                 userId: 'me',
-                q: `to:${body.to}`,
+                q: `to:${this.sanitizeHeader(body.to)}`,
                 maxResults: 1
             });
 
@@ -290,17 +291,16 @@ export class MailController {
             }
         } catch (e) {
             console.error("Error finding thread:", e);
-            // Non-blocking, fallback to new thread
         }
 
         const emailLines = [
-            `To: ${body.to}`,
-            `Subject: ${body.subject}`,
+            `To: ${this.sanitizeHeader(body.to)}`,
+            `Subject: ${this.sanitizeHeader(body.subject)}`,
             'Content-Type: multipart/mixed; boundary="foo_bar_baz"',
         ];
 
-        if (inReplyTo) emailLines.push(`In-Reply-To: ${inReplyTo}`);
-        if (references) emailLines.push(`References: ${references}`);
+        if (inReplyTo) emailLines.push(`In-Reply-To: ${this.sanitizeHeader(inReplyTo)}`);
+        if (references) emailLines.push(`References: ${this.sanitizeHeader(references)}`);
 
         emailLines.push(
             '',
@@ -311,7 +311,7 @@ export class MailController {
             body.message,
             '',
             '--foo_bar_baz',
-            `Content-Type: application/pdf; name="${body.filename}"`,
+            `Content-Type: application/pdf; name="${this.sanitizeHeader(body.filename)}"`,
             'Content-Transfer-Encoding: base64',
             'Content-Disposition: attachment',
             '',
@@ -329,12 +329,7 @@ export class MailController {
             }
         });
 
-        // IMPORTANT: Here we should ideally return the threadId so the creating service can log it, 
-        // or trigger the status update. 
-        // For "Zero-Trust", the frontend calls this, so it returns success.
-        // The Status Update happens in a separate step or we could inject QuotesService here 
-        // but MailController is generic. Better to keep it generic.
-
         return { success: true, threadId };
     }
+
 }

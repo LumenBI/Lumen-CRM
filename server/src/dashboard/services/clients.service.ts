@@ -26,7 +26,9 @@ export class ClientsService {
         }
 
         if (query) {
-            builder = builder.or(`company_name.ilike.%${query}%,contact_name.ilike.%${query}%`);
+            // Sanitize query to prevent breaking the .or() filter (commas are used as separators)
+            const sanitizedQuery = query.replace(/,/g, ' ').trim();
+            builder = builder.or(`company_name.ilike.%${sanitizedQuery}%,contact_name.ilike.%${sanitizedQuery}%`);
         }
 
         builder = builder.limit(100);

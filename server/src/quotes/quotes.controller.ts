@@ -1,16 +1,19 @@
-import { Controller, Get, Post, Put, Body, Param, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Headers, UseGuards, Req } from '@nestjs/common';
 import { QuotesService } from './quotes.service';
+import { AuthGuard } from '@nestjs/passport';
+import { CreateQuoteDto } from './dto/create-quote.dto';
+import { UpdateQuoteStatusDto } from './dto/update-quote-status.dto';
 
 @Controller('quotes')
+@UseGuards(AuthGuard('jwt'))
 export class QuotesController {
     constructor(private readonly quotesService: QuotesService) { }
 
     @Post()
     async createQuote(
         @Headers('authorization') token: string,
-        @Body() body: any
+        @Body() body: CreateQuoteDto
     ) {
-        if (!token) throw new UnauthorizedException('Missing token');
         return this.quotesService.createQuote(token, body);
     }
 
@@ -19,7 +22,6 @@ export class QuotesController {
         @Headers('authorization') token: string,
         @Param('dealId') dealId: string
     ) {
-        if (!token) throw new UnauthorizedException('Missing token');
         return this.quotesService.getQuotesByDeal(token, dealId);
     }
 
@@ -28,7 +30,6 @@ export class QuotesController {
         @Headers('authorization') token: string,
         @Param('id') id: string
     ) {
-        if (!token) throw new UnauthorizedException('Missing token');
         return this.quotesService.getQuote(token, id);
     }
 
@@ -36,9 +37,9 @@ export class QuotesController {
     async updateStatus(
         @Headers('authorization') token: string,
         @Param('id') id: string,
-        @Body() body: { status: string, pdfUrl?: string }
+        @Body() body: UpdateQuoteStatusDto
     ) {
-        if (!token) throw new UnauthorizedException('Missing token');
         return this.quotesService.updateQuoteStatus(token, id, body.status, body.pdfUrl);
     }
 }
+

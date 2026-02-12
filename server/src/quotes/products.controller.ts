@@ -1,7 +1,9 @@
-import { Controller, Get, Query, UnauthorizedException, Headers } from '@nestjs/common';
+import { Controller, Get, Query, UnauthorizedException, Headers, UseGuards } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('quotes/products')
+@UseGuards(AuthGuard('jwt'))
 export class ProductsController {
     private getClient(token: string) {
         return createClient(
