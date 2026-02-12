@@ -15,7 +15,10 @@ import {
 } from 'lucide-react'
 import { INTERACTION_TYPES } from '@/constants/interactions'
 import { useUser } from '@/context/UserContext'
+<<<<<<< HEAD
 import { Client, Interaction, Deal } from '@/types'
+=======
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
 
 const DollarSign = LucideDollarSign
 
@@ -28,11 +31,46 @@ const ICON_MAP: { [key: string]: React.ComponentType<{ size?: number; className?
     Briefcase,
 }
 
+<<<<<<< HEAD
+=======
+type Interaction = {
+    id: string
+    category: string
+    modality: string
+    summary: string
+    created_at: string
+    amount_usd?: number
+}
+
+type Deal = {
+    id: string
+    title: string
+    status: string
+    value: number
+    currency: string
+    created_at: string
+}
+
+type ClientData = {
+    id: string
+    company_name: string
+    contact_name: string
+    email: string
+    phone?: string
+    status: string
+    assigned_agent_id?: string
+}
+
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
 export default function ClientModal({ clientId, onClose, onSuccess }: { clientId: string, onClose: () => void, onSuccess?: () => void }) {
     const { profile } = useUser()
     const { clients: clientsApi, appointments: appointmentsApi, interactions: interactionsApi } = useApi()
 
+<<<<<<< HEAD
     const [client, setClient] = useState<Client | null>(null)
+=======
+    const [client, setClient] = useState<ClientData | null>(null)
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
     const [history, setHistory] = useState<Interaction[]>([])
     const [deals, setDeals] = useState<Deal[]>([])
     const [loading, setLoading] = useState(true)
@@ -49,8 +87,16 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
         const fetchData = async () => {
             try {
                 const data = await clientsApi.getById(clientId)
+<<<<<<< HEAD
                 setClient(data.client)
                 setHistory(data.interactions)
+=======
+                // @ts-ignore - mismatch in types potentially, sticking to runtime shape
+                setClient(data.client)
+                // @ts-ignore
+                setHistory(data.interactions)
+                // @ts-ignore
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
                 setDeals(data.deals || [])
             } catch (err) {
                 console.error(err)
@@ -62,7 +108,10 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
     }, [clientId, clientsApi])
 
     useEffect(() => {
+<<<<<<< HEAD
         // ... (existing code for type/modality logic)
+=======
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
         const selectedType = INTERACTION_TYPES.find(t => t.value === type)
         if (selectedType) {
             if (selectedType.defaultModality) {
@@ -93,15 +142,27 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
 
             if (scheduleFuture) {
                 await appointmentsApi.create({
+<<<<<<< HEAD
                     client_id: clientId,
+=======
+                    // @ts-ignore
+                    clientId,
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
                     title: `${selectedType.label} con Cliente`,
                     description: newNote,
                     appointment_date: futureDate,
                     appointment_time: futureTime,
+<<<<<<< HEAD
                     appointment_type: selectedType.backendValue === 'MEETING' ? (modality === 'IN_PERSON' ? 'presencial' : 'virtual') : 'virtual',
                     meeting_link: '',
                     location: '',
                 } as any) // still casting as any because AppointmentSchema is strict about string formats which we are passing but maybe types inference is tricky, but client_id is now correct.
+=======
+                    appointment_type: selectedType.backendValue === 'MEETING' ? (modality === 'IN_PERSON' ? 'presencial' : 'virtual') : 'virtual', // Map to appointment types
+                    meeting_link: '',
+                    location: '',
+                } as any)
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
 
                 alert('Cita agendada correctamente.')
             } else {
@@ -113,6 +174,10 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
                     amount_usd: type === 'SALE' ? 1000 : 0
                 })
 
+<<<<<<< HEAD
+=======
+                // @ts-ignore
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
                 setHistory([newInteraction, ...history])
             }
 

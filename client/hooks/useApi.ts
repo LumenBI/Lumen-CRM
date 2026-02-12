@@ -231,7 +231,11 @@ export const useApi = () => {
 
             update: async (id: string, data: Partial<Appointment>) => {
                 try {
+<<<<<<< HEAD
 
+=======
+                    console.log('Updating appointment:', id, data)
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
                     AppointmentSchema.partial().parse(data)
 
                     const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${id}`, {
@@ -339,6 +343,7 @@ export const useApi = () => {
                 if (!res.ok) throw new Error('Failed to fetch bootstrap data')
                 return res.json()
             }
+<<<<<<< HEAD
         },
 
         quotes: {
@@ -453,6 +458,8 @@ export const useApi = () => {
                 if (!res.ok) throw new Error('Failed to fetch attachment')
                 return res.json()
             }
+=======
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
         }
     }), [authFetch])
 

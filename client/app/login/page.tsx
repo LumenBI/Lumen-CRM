@@ -1,5 +1,6 @@
 'use client'
 
+<<<<<<< HEAD
 import { useState, Suspense, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react'
@@ -21,6 +22,18 @@ function LoginForm() {
             setErrorMessage(error_description || 'Ha ocurrido un error durante el inicio de sesión.')
         }
     }, [searchParams])
+=======
+import { useState, Suspense } from 'react'
+import { createClient } from '@/utils/supabase/client'
+import { Loader2, ArrowLeft } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+
+function LoginForm() {
+    const [loading, setLoading] = useState(false)
+    const supabase = createClient()
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
 
     const handleGoogleLogin = async () => {
         setLoading(true)
@@ -28,11 +41,15 @@ function LoginForm() {
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/callback`,
+<<<<<<< HEAD
                 queryParams: {
                     access_type: 'offline',
                     prompt: 'consent',
                     scope: 'openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly'
                 },
+=======
+                queryParams: { access_type: 'offline', prompt: 'consent' },
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
             },
         })
         if (error) setLoading(false)
@@ -65,6 +82,7 @@ function LoginForm() {
                 <p className="text-gray-400 mt-2 text-sm font-medium">Inicie sesión para gestionar sus envíos</p>
             </div>
 
+<<<<<<< HEAD
             <AnimatePresence>
                 {errorMessage && (
                     <motion.div
@@ -79,6 +97,8 @@ function LoginForm() {
                 )}
             </AnimatePresence>
 
+=======
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
             <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

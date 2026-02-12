@@ -5,7 +5,10 @@ import type { NextRequest } from 'next/server'
 export async function GET(request: NextRequest) {
     const requestUrl = new URL(request.url)
     const code = requestUrl.searchParams.get('code')
+<<<<<<< HEAD
     const next = requestUrl.searchParams.get('next') ?? '/dashboard'
+=======
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
 
     let origin = requestUrl.origin
     const host = request.headers.get('host')
@@ -17,6 +20,7 @@ export async function GET(request: NextRequest) {
 
     if (code) {
         const supabase = await createClient()
+<<<<<<< HEAD
         const { error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error) {
@@ -42,4 +46,11 @@ export async function GET(request: NextRequest) {
 
     // Return the user to an error page with instructions
     return NextResponse.redirect(`${origin}/login?error=auth_code_error`)
+=======
+        await supabase.auth.exchangeCodeForSession(code)
+    }
+
+    const nextUrl = new URL('/dashboard', origin)
+    return NextResponse.redirect(nextUrl)
+>>>>>>> f3dfb7456178ded21d4d15ff7b691dd9702b6f69
 }

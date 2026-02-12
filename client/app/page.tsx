@@ -163,7 +163,13 @@ export default function LandingPage() {
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 1.5 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-slate-800 to-black w-full h-full" />
+                <Image
+                  src="https://images.unsplash.com/photo-1494412574643-35d324698428?q=80&w=2000&auto=format&fit=crop"
+                  alt="Logística Global"
+                  fill
+                  className="object-cover"
+                  priority
+                />
               </motion.div>
             </motion.div>
 
