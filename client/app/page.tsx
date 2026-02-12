@@ -73,8 +73,8 @@ export default function LandingPage() {
       >
         <div className="max-w-[1440px] mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="relative w-32 h-8">
-              <Image src="/logos/star-logo.jpg" alt="Star Cargo" fill className="object-contain object-left" priority />
+            <div className="relative w-40 h-10">
+              <Image src="/logos/star-wide-b.png" alt="Star Cargo" fill className="object-contain object-left" priority />
             </div>
           </div>
 
@@ -163,13 +163,15 @@ export default function LandingPage() {
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 1.5 }}
               >
-                <Image
-                  src="https://images.unsplash.com/photo-1494412574643-35d324698428?q=80&w=2000&auto=format&fit=crop"
-                  alt="Logística Global"
-                  fill
-                  className="object-cover"
-                  priority
-                />
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="object-cover w-full h-full"
+                >
+                  <source src="/videos/0_World_Map_Connections_1280x720.mp4" type="video/mp4" />
+                </video>
               </motion.div>
             </motion.div>
 

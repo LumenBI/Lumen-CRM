@@ -59,7 +59,7 @@ function LoginForm() {
                     transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.3 }}
                     className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 text-blue-600 shadow-sm"
                 >
-                    <Image src="/logos/star-logo-b.png" alt="Star Cargo" width={64} height={64} className="object-contain" />
+                    <Image src="/logos/star-logo.jpg" alt="Star Cargo" width={80} height={80} className="object-contain rounded-xl" />
                 </motion.div>
                 <h1 className="text-2xl font-bold text-base-900 tracking-tight">Bienvenido</h1>
                 <p className="text-gray-400 mt-2 text-sm font-medium">Inicie sesión para gestionar sus envíos</p>

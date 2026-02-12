@@ -70,7 +70,6 @@ export default function TopNav() {
     return (
         <header className="h-16 px-8 flex items-center justify-between bg-white border-b border-gray-100 shrink-0 z-30 sticky top-0">
             <div className="flex items-center gap-2 text-sm text-gray-500">
-                <img src="/logos/star-wide-b.png" alt="Star CRM" className="h-8 object-contain" />
                 <ChevronRight size={14} />
                 <span className="font-bold text-gray-900">{pageTitle}</span>
             </div>

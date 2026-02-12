@@ -119,8 +119,12 @@ export default function UsersPage() {
                                         <tr key={user.id} className="group hover:bg-blue-50/50 transition-all">
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0066FF] to-[#0052CC] flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-110 transition-transform">
-                                                        {user.full_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
+                                                    <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-200 shadow-md group-hover:scale-110 transition-transform">
+                                                        <img
+                                                            src="/logos/star-logo.jpg"
+                                                            alt={user.full_name || 'User'}
+                                                            className="w-full h-full object-cover"
+                                                        />
                                                     </div>
                                                     <div>
                                                         <p className="font-bold text-lg text-[#000D42] group-hover:text-[#0066FF] transition-colors">
