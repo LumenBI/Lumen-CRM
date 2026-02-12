@@ -70,7 +70,7 @@ export default function TopNav() {
     return (
         <header className="h-16 px-8 flex items-center justify-between bg-white border-b border-gray-100 shrink-0 z-30 sticky top-0">
             <div className="flex items-center gap-2 text-sm text-gray-500">
-                <span className="font-medium hover:text-gray-900 transition-colors cursor-pointer">Star CRM</span>
+                <img src="/logos/star-wide-b.png" alt="Star CRM" className="h-8 object-contain" />
                 <ChevronRight size={14} />
                 <span className="font-bold text-gray-900">{pageTitle}</span>
             </div>
@@ -126,8 +126,12 @@ export default function TopNav() {
                         onClick={() => setIsUserOpen(!isUserOpen)}
                         className="flex items-center gap-3 p-1 rounded-full hover:bg-gray-50 transition-colors"
                     >
-                        <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-sm">
-                            {profile?.full_name ? profile.full_name[0].toUpperCase() : <User size={18} />}
+                        <div className="h-9 w-9 rounded-full overflow-hidden border border-gray-200 shadow-sm">
+                            <img
+                                src="/logos/star-logo.jpg"
+                                alt="User"
+                                className="h-full w-full object-cover"
+                            />
                         </div>
                         <div className="hidden md:block text-left mr-2">
                             <p className="text-sm font-semibold text-gray-900 leading-none">

@@ -45,7 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     <aside className="hidden w-64 flex-col border-r bg-white shadow-sm md:flex">
                                         <div className="flex h-16 items-center px-6 border-b border-gray-100">
                                             <Link href="/dashboard" className="flex items-center gap-3">
-                                                <span className="text-lg font-bold text-gray-900">Star CRM</span>
+                                                <img src="/logos/star-wide-b.png" alt="Star CRM" className="h-8 object-contain" />
                                             </Link>
                                         </div>
 
