@@ -451,6 +451,11 @@ export const useApi = () => {
                 toast.success('Correo enviado')
                 return res.json()
             },
+            getThreads: async (email: string) => {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/mail/threads/${email}`)
+                if (!res.ok) throw new Error('Failed to fetch threads')
+                return res.json()
+            },
             getMessage: async (id: string) => {
                 const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/mail/message/${id}`)
                 if (!res.ok) throw new Error('Failed to fetch message details')
