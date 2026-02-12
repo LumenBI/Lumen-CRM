@@ -12,7 +12,7 @@ async function bootstrap() {
     origin: frontendUrl,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    allowedHeaders: 'Content-Type, Accept, Authorization, x-google-token',
   });
   await app.listen(process.env.PORT ?? 3001, '0.0.0.0');
   console.log(`🚀 Backend running on: http://0.0.0.0:${process.env.PORT ?? 3001}`);
