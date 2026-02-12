@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, BrainCircuit, CheckCircle, AlertTriangle, X } from "lucide-react";
-import { pdf } from '@react-pdf/renderer';
 import { QuotePDF } from './QuotePDF';
 import dynamic from 'next/dynamic';
 import { createPortal } from 'react-dom';
@@ -69,6 +68,7 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
         try {
             setLoading(true);
             // Generate PDF Blob
+            const { pdf } = await import('@react-pdf/renderer');
             const blob = await pdf(<QuotePDF data={data} />).toBlob();
             await onConfirm(emailBody, blob);
             onOpenChange(false);

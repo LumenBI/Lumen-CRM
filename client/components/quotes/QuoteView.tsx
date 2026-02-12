@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApi } from '@/hooks/useApi';
 import { Quote } from '@/types';
-import { pdf } from '@react-pdf/renderer';
 import dynamic from 'next/dynamic';
 const PDFViewer = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PDFViewer), {
     ssr: false,
@@ -41,6 +40,7 @@ export const QuoteView: React.FC<QuoteViewProps> = ({ quoteId, clientEmail }) =>
         if (!quote) return;
         setSending(true);
         try {
+            const { pdf } = await import('@react-pdf/renderer');
             const blob = await pdf(<QuoteDocument quote={quote} items={quote.quote_items} currency={quote.currency_code} />).toBlob();
 
             const reader = new FileReader();

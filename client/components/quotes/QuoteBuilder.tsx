@@ -7,7 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Plus, Trash, Save, Send, Loader2 } from "lucide-react";
 import { ServiceAutocomplete } from './ServiceAutocomplete';
 import { CurrencySelector } from './CurrencySelector';
-import { QuotePreviewModal } from './QuotePreviewModal';
+import dynamic from 'next/dynamic';
+const QuotePreviewModal = dynamic(() => import('./QuotePreviewModal').then(mod => mod.QuotePreviewModal), {
+    ssr: false,
+    loading: () => <div className="p-4 text-center">Iniciando previsualización...</div>
+});
 import { toast } from "sonner";
 import { useApi } from '@/hooks/useApi';
 
