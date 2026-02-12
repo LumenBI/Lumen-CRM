@@ -1,14 +1,23 @@
 "use client"
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { QuoteBuilder } from '@/components/quotes/QuoteBuilder';
 import { useSearchParams } from 'next/navigation';
 
-export default function QuotesPage() {
+function QuotesContent() {
     const searchParams = useSearchParams();
     const dealId = searchParams.get('dealId') || undefined;
     const clientName = searchParams.get('clientName') || 'N/A';
 
+    return (
+        <QuoteBuilder
+            dealId={dealId}
+            clientName={clientName}
+        />
+    );
+}
+
+export default function QuotesPage() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-2">
@@ -16,10 +25,9 @@ export default function QuotesPage() {
                 <p className="text-slate-500 text-sm">Cree y envíe cotizaciones inteligentes con soporte de IA.</p>
             </div>
 
-            <QuoteBuilder
-                dealId={dealId}
-                clientName={clientName}
-            />
+            <Suspense fallback={<div className="p-12 text-center text-slate-500 font-medium animate-pulse">Cargando constructor de cotización...</div>}>
+                <QuotesContent />
+            </Suspense>
         </div>
     );
 }
