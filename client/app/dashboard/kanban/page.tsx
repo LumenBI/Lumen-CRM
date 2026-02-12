@@ -21,6 +21,7 @@ import EditDealModal from '@/components/kanban/EditDealModal'
 import StageChangeModal from '@/components/kanban/StageChangeModal'
 import ContextMenu from '@/components/ContextMenu'
 import { useDeals, KANBAN_COLUMNS } from '@/context/DealsContext'
+import { useApi } from '@/hooks/useApi'
 import type { Deal } from '@/types'
 import { toast } from 'sonner'
 import { TEXTS } from '@/constants/text'
@@ -30,6 +31,7 @@ import { SHIPPING_TYPES, SHIPPING_TYPE_MAP } from '@/constants/shipping'
 
 export default function KanbanPage() {
     const { board, loading, refreshBoard, moveDeal } = useDeals()
+    const { deals: dealsApi } = useApi()
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
     const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -333,7 +335,23 @@ export default function KanbanPage() {
                     </DragDropContext>
                 </div>
             ) : (
-                <DealsListView deals={filteredDeals} onEdit={() => { }} onMove={() => { }} />
+                <DealsListView
+                    deals={filteredDeals}
+                    onEdit={(deal) => setEditingDeal(deal)}
+                    onMove={(deal) => handleMoveFromContext(deal)}
+                    onDelete={async (deal) => {
+                        if (window.confirm('¿Estás seguro de eliminar este seguimiento?')) {
+                            try {
+                                await dealsApi.delete(deal.id)
+                                toast.success('Seguimiento eliminado')
+                                refreshBoard()
+                            } catch (error) {
+                                console.error(error)
+                                toast.error('Error al eliminar')
+                            }
+                        }
+                    }}
+                />
             )}
 
             {selectedClientId && (

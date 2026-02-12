@@ -9,9 +9,10 @@ type DealsListViewProps = {
     deals: Deal[]
     onEdit: (deal: Deal) => void
     onMove: (deal: Deal) => void
+    onDelete?: (deal: Deal) => void
 }
 
-export default function DealsListView({ deals, onEdit, onMove }: DealsListViewProps) {
+export default function DealsListView({ deals, onEdit, onMove, onDelete }: DealsListViewProps) {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden animate-in fade-in duration-300">
             <div className="overflow-x-auto">
@@ -60,6 +61,27 @@ export default function DealsListView({ deals, onEdit, onMove }: DealsListViewPr
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => onEdit(deal)}
+                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                title="Editar seguimiento"
+                                            >
+                                                <LucidePencil size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => onMove(deal)}
+                                                className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                                title="Mover etapa"
+                                            >
+                                                <LucideArrowRightCircle size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => onDelete?.(deal)}
+                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Eliminar"
+                                            >
+                                                <LucideTrash2 size={18} />
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

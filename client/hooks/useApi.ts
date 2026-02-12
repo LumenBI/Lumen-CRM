@@ -198,6 +198,14 @@ export const useApi = () => {
                 toast.success('Cambios guardados')
                 return res.json() as Promise<Deal>
             },
+
+            delete: async (id: string) => {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals/${id}`, {
+                    method: 'DELETE'
+                })
+                if (!res.ok) throw new Error('Failed to delete deal')
+                return res.json()
+            },
         },
 
         appointments: {
