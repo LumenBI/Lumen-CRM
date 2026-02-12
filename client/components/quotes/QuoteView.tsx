@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useApi } from '@/hooks/useApi';
 import { Quote } from '@/types';
-import { PDFViewer, pdf } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
+import dynamic from 'next/dynamic';
+const PDFViewer = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PDFViewer), {
+    ssr: false,
+    loading: () => <div className="p-8 text-center">Cargando visor de PDF...</div>
+});
 import { QuoteDocument } from './QuoteDocument';
 import { Loader2, Send, Download } from 'lucide-react';
 import { toast } from 'sonner';
