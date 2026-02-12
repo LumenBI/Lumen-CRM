@@ -12,18 +12,28 @@ export class DealsService {
 
     async getKanbanBoard(token: string, userId: string) {
         const supabase = this.supabaseService.getClient(token);
-        const { data: deals, error } = await supabase
+
+        // Get user role
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single();
+
+        let query = supabase
             .from('deals')
             .select(`
                 *,
                 client:clients!inner(id, company_name, contact_name, phone, email, assigned_agent_id)
             `)
-            .eq('client.assigned_agent_id', userId)
             .order('updated_at', { ascending: false });
+
+        if (profile && profile.role !== 'ADMIN' && profile.role !== 'MANAGER') {
+            query = query.eq('assigned_agent_id', userId);
+        }
+
+        const { data: deals, error } = await query;
 
         if (error) throw new Error(error.message);
 
         return {
+            PENDING: deals.filter(d => d.status === 'PENDING'),
             CONTACTADO: deals.filter(d => d.status === 'CONTACTADO'),
             CITA: deals.filter(d => d.status === 'CITA'),
             PROCESO_COTIZACION: deals.filter(d => d.status === 'PROCESO_COTIZACION'),
@@ -34,6 +44,15 @@ export class DealsService {
 
     async moveCard(token: string, userId: string, dealId: string, newStatus: string) {
         const supabase = this.supabaseService.getClient(token);
+
+        // Security check
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single();
+        if (profile && profile.role !== 'ADMIN' && profile.role !== 'MANAGER') {
+            const { data: deal } = await supabase.from('deals').select('assigned_agent_id').eq('id', dealId).single();
+            if (deal && deal.assigned_agent_id !== userId) {
+                throw new Error('No tienes permiso para mover esta negociación.');
+            }
+        }
 
         const { data, error } = await supabase
             .from('deals')
@@ -109,6 +128,10 @@ export class DealsService {
 
     async getDeals(token: string, userId: string, clientId?: string) {
         const supabase = this.supabaseService.getClient(token);
+
+        // Get user role
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single();
+
         let query = supabase
             .from('deals')
             .select(`
@@ -119,6 +142,10 @@ export class DealsService {
 
         if (clientId) {
             query = query.eq('client_id', clientId);
+        }
+
+        if (profile && profile.role !== 'ADMIN' && profile.role !== 'MANAGER') {
+            query = query.eq('assigned_agent_id', userId);
         }
 
         const { data, error } = await query;
@@ -138,7 +165,7 @@ export class DealsService {
                 currency: payload.currency || 'USD',
                 status: payload.status || 'CONTACTADO',
                 type: payload.type || 'FCL',
-                assigned_agent_id: userId,
+                assigned_agent_id: payload.assigned_agent_id || userId,
             })
             .select()
             .single();
@@ -156,6 +183,17 @@ export class DealsService {
 
     async updateDeal(token: string, id: string, payload: any) {
         const supabase = this.supabaseService.getClient(token);
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+            if (profile && profile.role !== 'ADMIN' && profile.role !== 'MANAGER') {
+                const { data: deal } = await supabase.from('deals').select('assigned_agent_id').eq('id', id).single();
+                if (deal && deal.assigned_agent_id !== user.id) {
+                    throw new Error('No tienes permiso para editar esta negociación.');
+                }
+            }
+        }
 
         const updateData: any = {};
         if (payload.title !== undefined) updateData.title = payload.title;
@@ -175,7 +213,6 @@ export class DealsService {
 
         if (error) throw new Error(error.message);
 
-        // Notify managers
         // Notify managers
         const message = `ha actualizado la negociación "${data.title}"`;
         await this.notificationsService.notifyManagers(supabase, 'DEAL_UPDATE', `[${data.agent?.full_name || 'Agente'}] ${message}`, '/dashboard/kanban');

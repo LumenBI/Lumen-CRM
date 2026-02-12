@@ -31,7 +31,10 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
 
     const fetchBoard = useCallback(async () => {
         try {
+            console.log("Fetching Kanban Board from API...");
             const data: KanbanBoard = await dealsApi.getKanban()
+            console.log("Kanban API Response:", data);
+
             const splitBoard = { ...data }
 
             if (splitBoard.CERRADO) {
@@ -44,6 +47,8 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
                 if (!splitBoard[col.id]) splitBoard[col.id] = []
             })
 
+            console.log("Processed Board:", splitBoard);
+
             setBoard(splitBoard)
         } catch (error) {
             console.error("Error cargando kanban:", error)
@@ -53,8 +58,10 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
     }, [dealsApi])
 
     // Bridge with DataContext
+    // Bridge with DataContext
     useEffect(() => {
         if (bootstrapBoard) {
+            console.log("Using Bootstrap Kanban Data:", bootstrapBoard);
             const splitBoard = { ...bootstrapBoard }
             // Handle splitting CERRADO if not already handled by backend
             if (splitBoard.CERRADO) {
@@ -68,6 +75,7 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
             setBoard(splitBoard)
             setLoading(false)
         } else if (!dataLoading) {
+            console.log("No Bootstrap Data, calling fetchBoard directly");
             fetchBoard()
         }
     }, [bootstrapBoard, dataLoading, fetchBoard])

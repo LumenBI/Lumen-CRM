@@ -336,7 +336,9 @@ export const useApi = () => {
         },
         bootstrap: {
             get: async () => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/bootstrap`)
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/bootstrap`, {
+                    cache: 'no-store'
+                })
                 if (!res.ok) throw new Error('Failed to fetch bootstrap data')
                 return res.json()
             },

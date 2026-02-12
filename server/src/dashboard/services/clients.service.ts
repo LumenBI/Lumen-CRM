@@ -11,12 +11,17 @@ export class ClientsService {
 
     async getClients(token: string, query: string, mine: boolean = false, userId?: string) {
         const supabase = this.supabaseService.getClient(token);
+
+        // Get user role
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single();
+
         let builder = supabase
             .from('clients')
-            .select('id, company_name, contact_name, email, phone, origin, assigned_agent_id, assignment_expires_at')
+            .select('id, company_name, contact_name, email, phone, origin, assigned_agent_id, assignment_expires_at, agent:profiles!assigned_agent_id(full_name)')
             .order('company_name', { ascending: true });
 
-        if (mine && userId) {
+        // Force mine filter for agents
+        if ((mine || (profile && profile.role !== 'ADMIN' && profile.role !== 'MANAGER')) && userId) {
             builder = builder.eq('assigned_agent_id', userId);
         }
 
@@ -24,9 +29,6 @@ export class ClientsService {
             builder = builder.or(`company_name.ilike.%${query}%,contact_name.ilike.%${query}%`);
         }
 
-        // Limit only if searching or viewing a general list, 
-        // but for global context we might want more. 
-        // However, 50 is a safe default for now.
         builder = builder.limit(100);
 
         const { data, error } = await builder;
@@ -49,9 +51,9 @@ export class ClientsService {
                 email: payload.email,
                 origin: payload.origin || 'MANUAL',
                 status: payload.status || 'PENDING',
-                assigned_agent_id: payload.assigned_agent_id || userId,
+                assigned_agent_id: payload.assigned_agent_id || null, // Allow null
                 assignment_expires_at: payload.assignment_expires_at || defaultExpires,
-                assigned_at: new Date()
+                assigned_at: payload.assigned_agent_id ? new Date() : null
             })
             .select()
             .single();
