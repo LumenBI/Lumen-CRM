@@ -2,7 +2,7 @@
 
 import { LucideX, LucideCalendar, LucideClock, LucideMapPin, LucideVideo, LucideUser, LucideAlignLeft } from 'lucide-react'
 import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { es } from 'date-fns/locale/es'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { getTypeIcon } from '@/utils/appointmentUtils'
 import { getTypeLabel } from '@/constants/appointments'

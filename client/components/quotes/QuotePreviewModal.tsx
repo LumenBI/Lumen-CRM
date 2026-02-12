@@ -3,9 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, BrainCircuit, CheckCircle, AlertTriangle, X } from "lucide-react";
-import { QuotePDF } from './QuotePDF';
 import dynamic from 'next/dynamic';
 import { createPortal } from 'react-dom';
+
+const QuotePDF = dynamic(() => import('./QuotePDF').then(mod => mod.QuotePDF), {
+    ssr: false,
+    loading: () => <p>Cargando previsualización...</p>,
+});
 import { useApi } from '@/hooks/useApi';
 
 // Dynamic import for PDFViewer to avoid SSR issues

@@ -7,7 +7,9 @@ const PDFViewer = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PD
     ssr: false,
     loading: () => <div className="p-8 text-center">Cargando visor de PDF...</div>
 });
-import { QuoteDocument } from './QuoteDocument';
+const QuoteDocument = dynamic(() => import('./QuoteDocument').then(mod => mod.QuoteDocument), {
+    ssr: false,
+});
 import { Loader2, Send, Download } from 'lucide-react';
 import { toast } from 'sonner';
 

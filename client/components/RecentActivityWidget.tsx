@@ -2,7 +2,7 @@
 
 import { LucideMessageSquare, LucidePhone, LucideCalendar, LucideUser } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { es } from 'date-fns/locale/es'
 import { TEXTS } from '@/constants/text'
 import { useData } from '@/context/DataContext'
 
