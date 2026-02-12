@@ -13,7 +13,9 @@ export const useApi = () => {
     const api = useMemo(() => ({
         clients: {
             getAll: async (query: string = '', mine: boolean = false) => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients?query=${query}&mine=${mine}`)
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients?query=${query}&mine=${mine}`, {
+                    cache: 'no-store'
+                })
                 if (!res.ok) throw new Error('Failed to fetch clients')
                 return res.json() as Promise<Client[]>
             },
@@ -143,7 +145,9 @@ export const useApi = () => {
 
         deals: {
             getKanban: async () => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/kanban`)
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/kanban`, {
+                    cache: 'no-store'
+                })
                 if (!res.ok) throw new Error('Failed to fetch kanban')
                 return res.json()
             },
@@ -158,15 +162,13 @@ export const useApi = () => {
                         body: JSON.stringify(data)
                     })
                     if (!res.ok) throw new Error('Failed to create deal')
-                    toast.success('Oportunidad creada exitosamente')
+                    // toast handled in UI
                     return res.json() as Promise<Deal>
                 } catch (error) {
                     if (error instanceof ZodError) {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const message = (error as any).issues[0].message
                         toast.error(message)
-                    } else {
-                        toast.error('Error al crear oportunidad')
                     }
                     throw error
                 }
