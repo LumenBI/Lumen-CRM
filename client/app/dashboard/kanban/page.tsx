@@ -543,7 +543,7 @@ export default function KanbanPage() {
                 isLoading={deleteModal.isDeleting}
                 title="Eliminar Seguimiento"
                 message="¿Estás seguro de que deseas eliminar este seguimiento? Esta acción no se puede deshacer."
-                confirmLabel="Eliminar"
+                confirmText="Eliminar"
                 isDestructive={true}
             />
         </div >
