@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import NotificationBell from '@/components/notifications/NotificationBell'
 import { Toaster } from '@/components/ui/sonner'
 import TopNav from '@/components/layout/TopNav'
+import BottomNav from '@/components/layout/BottomNav'
 import { MENU_ITEMS, SYSTEM_ITEMS } from '@/constants/text'
 
 import { UserProvider } from '@/context/UserContext'
@@ -19,6 +20,7 @@ import { ClientsProvider } from '@/context/ClientsContext'
 import { AgentsProvider } from '@/context/AgentsContext'
 import { AppointmentsProvider } from '@/context/AppointmentsContext'
 import { DealsProvider } from '@/context/DealsContext'
+import { QuickActionsProvider } from '@/context/QuickActionsContext'
 
 import { useTheme } from 'next-themes'
 import { useState, useEffect } from 'react'
@@ -54,6 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <AgentsProvider>
                         <AppointmentsProvider>
                             <DealsProvider>
+                                <QuickActionsProvider>
                                 <div className="flex h-screen w-full bg-[#f5f6f8] dark:bg-slate-950 transition-colors duration-300">
                                     <aside className="hidden w-64 flex-col border-r border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm md:flex transition-colors duration-300">
                                         <div className="flex h-16 items-center px-6 border-b border-gray-100 dark:border-slate-800">
@@ -110,12 +113,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                                     <main className="flex-1 flex flex-col h-screen overflow-hidden">
                                         <TopNav />
-                                        <div className="flex-1 overflow-y-auto bg-[#f5f6f8] dark:bg-slate-950 p-6 transition-colors duration-300">
+                                        <div className="flex-1 overflow-y-auto bg-[#f5f6f8] dark:bg-slate-950 p-4 md:p-6 pb-20 md:pb-6 transition-colors duration-300">
                                             {children}
                                         </div>
+                                        <BottomNav />
                                     </main>
                                 </div>
                                 <Toaster />
+                                </QuickActionsProvider>
                             </DealsProvider>
                         </AppointmentsProvider>
                     </AgentsProvider>

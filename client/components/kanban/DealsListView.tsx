@@ -15,7 +15,69 @@ type DealsListViewProps = {
 export default function DealsListView({ deals, onEdit, onMove, onDelete }: DealsListViewProps) {
     return (
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in duration-300">
-            <div className="overflow-x-auto">
+            {/* Vista cards - móvil */}
+            <div className="md:hidden p-4 space-y-3">
+                {deals.length === 0 ? (
+                    <div className="py-12 text-center text-slate-500 dark:text-slate-400">
+                        No hay seguimientos registrados
+                    </div>
+                ) : (
+                    deals.map((deal) => (
+                        <div
+                            key={deal.id}
+                            className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30"
+                        >
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                                <div className="min-w-0">
+                                    <p className="font-bold text-[#000d42] dark:text-white truncate">
+                                        {deal.client?.company_name || 'Cliente desconocido'}
+                                    </p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                                        {deal.client?.contact_name}
+                                    </p>
+                                </div>
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${getStageBadgeColor(deal.status)} shadow-sm`}>
+                                    {getStageLabel(deal.status)}
+                                </span>
+                            </div>
+                            <p className="text-sm text-slate-700 dark:text-slate-300 font-medium mb-2 line-clamp-2">{deal.title}</p>
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: deal.currency }).format(deal.value)}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => onEdit(deal)}
+                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
+                                        title="Editar seguimiento"
+                                    >
+                                        <LucidePencil size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => onMove(deal)}
+                                        className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg"
+                                        title="Mover etapa"
+                                    >
+                                        <LucideArrowRightCircle size={18} />
+                                    </button>
+                                    {onDelete && (
+                                        <button
+                                            onClick={() => onDelete(deal)}
+                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
+                                            title="Eliminar"
+                                        >
+                                            <LucideTrash2 size={18} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Vista tabla - desktop */}
+            <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                     <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
                         <tr>

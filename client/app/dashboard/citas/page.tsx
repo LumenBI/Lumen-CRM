@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import CreateAppointmentModal from '@/components/appointments/CreateAppointmentModal'
 import AppointmentDetailsModal from '@/components/appointments/AppointmentDetailsModal'
 import CalendarView from '@/components/calendar/CalendarView'
@@ -23,12 +23,21 @@ import {
     LucideClock
 } from 'lucide-react'
 import ContextMenu from '@/components/ContextMenu'
+import { useQuickActions } from '@/context/QuickActionsContext'
 
 export default function AppointmentsPage() {
     const { appointments, loading, refreshAppointments, updateAppointment, updateAppointmentStatus } = useAppointments()
     const [filter, setFilter] = useState<'all' | 'pendiente' | 'confirmada' | 'completada'>('all')
     const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar')
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const { requestAction, clearAction } = useQuickActions()
+
+    useEffect(() => {
+        if (requestAction === 'newAppointment') {
+            setIsModalOpen(true)
+            clearAction()
+        }
+    }, [requestAction, clearAction])
     const [confirmModal, setConfirmModal] = useState<{
         isOpen: boolean
         appointmentId: string | null

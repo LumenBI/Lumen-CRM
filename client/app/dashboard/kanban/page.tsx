@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import PageHeader from '@/components/ui/PageHeader'
@@ -25,6 +25,7 @@ import EditDealModal from '@/components/kanban/EditDealModal'
 import StageChangeModal, { STAGE_ID_COTIZANDO } from '@/components/kanban/StageChangeModal'
 import ContextMenu from '@/components/ContextMenu'
 import { useDeals, KANBAN_COLUMNS, type KanbanBoard } from '@/context/DealsContext'
+import { useQuickActions } from '@/context/QuickActionsContext'
 import { useApi } from '@/hooks/useApi'
 import type { Deal } from '@/types'
 import { toast } from 'sonner'
@@ -42,6 +43,20 @@ export default function KanbanPage() {
     const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
+    const { requestAction, clearAction } = useQuickActions()
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setViewMode('list')
+        }
+    }, [])
+
+    useEffect(() => {
+        if (requestAction === 'newDeal') {
+            setIsCreateModalOpen(true)
+            clearAction()
+        }
+    }, [requestAction, clearAction])
     const [deleteModal, setDeleteModal] = useState<{
         isOpen: boolean
         dealId: string | null

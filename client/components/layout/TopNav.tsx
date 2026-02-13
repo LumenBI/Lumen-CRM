@@ -17,6 +17,7 @@ import {
     Calendar
 } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
+import { useQuickActions } from '@/context/QuickActionsContext'
 import NotificationBell from '@/components/notifications/NotificationBell'
 import { createClient as createSupabaseClient } from '@/utils/supabase/client'
 import { useClients } from '@/context/ClientsContext'
@@ -31,14 +32,15 @@ const PAGE_TITLES: Record<string, string> = {
 }
 
 const QUICK_ACTIONS = [
-    { label: TEXTS.NEW_CLIENT, icon: Users, action: 'NEW_CLIENT' },
-    { label: TEXTS.NEW_DEAL, icon: Briefcase, action: 'NEW_DEAL' },
-    { label: TEXTS.SCHEDULE_APPOINTMENT, icon: Calendar, action: 'NEW_APPOINTMENT' },
+    { label: TEXTS.NEW_CLIENT, icon: Users, handler: 'requestNewClient' as const },
+    { label: TEXTS.NEW_DEAL, icon: Briefcase, handler: 'requestNewDeal' as const },
+    { label: TEXTS.SCHEDULE_APPOINTMENT, icon: Calendar, handler: 'requestNewAppointment' as const },
 ]
 
 export default function TopNav() {
     const pathname = usePathname()
     const router = useRouter()
+    const { requestNewClient, requestNewDeal, requestNewAppointment } = useQuickActions()
     const { profile, logout } = useUser()
     const [isUserOpen, setIsUserOpen] = useState(false)
     const [isQuickOpen, setIsQuickOpen] = useState(false)
@@ -67,7 +69,7 @@ export default function TopNav() {
     const pageTitle = PAGE_TITLES[pathname] || 'Dashboard'
 
     return (
-        <header className="h-16 px-8 flex items-center justify-between bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shrink-0 z-30 sticky top-0 transition-colors duration-300">
+        <header className="h-16 px-4 md:px-8 flex items-center justify-between bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shrink-0 z-30 sticky top-0 transition-colors duration-300">
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
                 <ChevronRight size={14} />
                 <span className="font-bold text-gray-900 dark:text-white">{pageTitle}</span>
@@ -83,7 +85,7 @@ export default function TopNav() {
                     />
                 </div>
 
-                <div className="relative" ref={quickDropdownRef}>
+                <div className="relative hidden md:block" ref={quickDropdownRef}>
                     <button
                         onClick={() => setIsQuickOpen(!isQuickOpen)}
                         className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:scale-95"
@@ -96,21 +98,22 @@ export default function TopNav() {
                             <div className="px-2 py-1.5 text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">
                                 {TEXTS.QUICK_ACTIONS}
                             </div>
-                            {QUICK_ACTIONS.map((action, idx) => (
-                                <button
-                                    key={idx}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors text-left"
-                                    onClick={() => {
-                                        setIsQuickOpen(false)
-                                        if (action.action === 'NEW_CLIENT') router.push('/dashboard/clients')
-                                        if (action.action === 'NEW_DEAL') router.push('/dashboard/kanban')
-                                        if (action.action === 'NEW_APPOINTMENT') router.push('/dashboard/citas')
-                                    }}
-                                >
-                                    <action.icon size={16} />
-                                    {action.label}
-                                </button>
-                            ))}
+                            {QUICK_ACTIONS.map((action, idx) => {
+                                const handler = { requestNewClient, requestNewDeal, requestNewAppointment }[action.handler]
+                                return (
+                                    <button
+                                        key={idx}
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors text-left"
+                                        onClick={() => {
+                                            setIsQuickOpen(false)
+                                            handler()
+                                        }}
+                                    >
+                                        <action.icon size={16} />
+                                        {action.label}
+                                    </button>
+                                )
+                            })}
                         </div>
                     )}
                 </div>

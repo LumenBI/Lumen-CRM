@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Building2, User, Phone, Mail, Trash2, Pencil, UserPlus } from 'lucide-react';
+import { useQuickActions } from '@/context/QuickActionsContext';
+import { Building2, User, Phone, Mail, Trash2, Pencil } from 'lucide-react';
 import { useAuthFetch } from '@/hooks/useAuthFetch';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchBar from '@/components/ui/SearchBar';
@@ -48,8 +49,16 @@ export default function ClientsPage() {
 
     const { authFetch } = useAuthFetch();
     const { profile } = useUser();
+    const { requestAction, clearAction } = useQuickActions();
 
     const displayedClients = searchTerm ? searchAllClients(searchTerm) : allClients;
+
+    useEffect(() => {
+        if (requestAction === 'newClient') {
+            setIsCreateModalOpen(true);
+            clearAction();
+        }
+    }, [requestAction, clearAction]);
 
     const handleDeleteClick = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -99,13 +108,10 @@ export default function ClientsPage() {
     }
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="p-4 md:p-8 space-y-6">
             <PageHeader
                 title={TEXTS.CLIENTS_TITLE}
                 subtitle="Gestiona tu base de datos de clientes"
-                actionLabel={TEXTS.NEW_CLIENT}
-                actionIcon={<UserPlus size={20} />}
-                onAction={() => setIsCreateModalOpen(true)}
             />
             <SearchBar
                 value={searchTerm}
@@ -114,7 +120,76 @@ export default function ClientsPage() {
             />
 
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Vista cards - móvil */}
+                <div className="md:hidden p-4 space-y-3">
+                    {loading ? (
+                        <div className="text-center py-8 text-gray-500 dark:text-slate-400">Cargando clientes...</div>
+                    ) : displayedClients.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500 dark:text-slate-400 font-medium">No se encontraron clientes</div>
+                    ) : (
+                        displayedClients.map((client) => (
+                            <div
+                                key={client.id}
+                                onClick={() => setSelectedClientId(client.id)}
+                                className="p-4 rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 active:bg-blue-50/50 dark:active:bg-blue-900/10 transition-colors"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0066FF] to-[#0052CC] flex items-center justify-center text-white shadow-md flex-shrink-0">
+                                            <Building2 size={22} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-[#000D42] dark:text-white truncate">{client.company_name}</p>
+                                            <p className="text-sm text-gray-600 dark:text-slate-400 truncate">{client.contact_name || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                        <button
+                                            onClick={(e) => handleEditClick(e, client)}
+                                            className="p-2 text-gray-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg"
+                                            title={TEXTS.EDIT_CLIENT}
+                                        >
+                                            <Pencil size={18} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDeleteClick(e, client.id)}
+                                            className="p-2 text-gray-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg"
+                                            title={TEXTS.DELETE_CLIENT}
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${client.origin === 'APP COBUS' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+                                        client.origin === 'WEB' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
+                                            'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400'
+                                        }`}>
+                                        {client.origin || 'MANUAL'}
+                                    </span>
+                                    {(profile?.role === 'ADMIN' || profile?.role === 'MANAGER') && client.agent && (
+                                        <span className="text-xs text-gray-500 dark:text-slate-400">
+                                            {client.agent.full_name || 'Sin asignar'}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="mt-3 space-y-1.5">
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
+                                        <Mail size={14} className="flex-shrink-0 text-blue-500" />
+                                        <span className="truncate">{client.email}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
+                                        <Phone size={14} className="flex-shrink-0 text-green-500" />
+                                        <span>{client.phone || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Vista tabla - desktop */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-800/50">
