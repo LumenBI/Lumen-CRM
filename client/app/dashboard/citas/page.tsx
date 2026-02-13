@@ -421,7 +421,7 @@ export default function AppointmentsPage() {
                 isLoading={confirmModal.isLoading}
                 title="Cancelar Cita"
                 message="¿Estás seguro de que deseas cancelar esta cita? Esta acción no se puede deshacer."
-                confirmLabel="Cancelar Cita"
+                confirmText="Cancelar Cita"
                 isDestructive={true}
             />
         </div>
