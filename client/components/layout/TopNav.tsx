@@ -150,6 +150,7 @@ export default function TopNav() {
                             <div className="p-2">
                                 <Link
                                     href="/dashboard/users"
+                                    prefetch={false}
                                     className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 rounded-lg transition-colors"
                                     onClick={() => setIsUserOpen(false)}
                                 >
