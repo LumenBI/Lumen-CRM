@@ -5,17 +5,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, BrainCircuit, CheckCircle, AlertTriangle, X } from "lucide-react";
 import dynamic from 'next/dynamic';
 import { createPortal } from 'react-dom';
+import { useApi } from '@/hooks/useApi';
+
+const PDFViewerComponent = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PDFViewer), {
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-full text-gray-500">Cargando visor de PDF...</div>,
+});
 
 const QuotePDF = dynamic(() => import('./QuotePDF').then(mod => mod.QuotePDF), {
     ssr: false,
-    loading: () => <p>Cargando previsualización...</p>,
-});
-import { useApi } from '@/hooks/useApi';
-
-// Dynamic import for PDFViewer to avoid SSR issues
-const PDFViewerComponent = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PDFViewer), {
-    ssr: false,
-    loading: () => <p>Loading PDF Viewer...</p>,
 });
 
 interface QuotePreviewModalProps {
@@ -46,7 +44,7 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
         try {
             const draft = await api.ai.smartDraft({
                 quote_number: data.quote_number?.toString() ?? 'BORRADOR',
-                client_name: data.client_name ?? 'Cliente',
+                company_name: data.company_name ?? data.client_name ?? 'Cliente',
                 items: (data.items ?? []).map((i: { description?: string }) => ({ description: i.description ?? '' })),
                 valid_until: data.valid_until,
                 currency: data.currency
@@ -69,12 +67,15 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
         setStep('review');
     };
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const handleConfirmSend = async () => {
         try {
             setLoading(true);
-            // Generate PDF Blob
-            const { pdf } = await import('@react-pdf/renderer');
-            const blob = await pdf(<QuotePDF data={data} />).toBlob();
+            const [{ pdf }, { QuotePDF: RawQuotePDF }] = await Promise.all([
+                import('@react-pdf/renderer'),
+                import('./QuotePDF')
+            ]);
+            const blob = await pdf(<RawQuotePDF data={data} />).toBlob();
             await onConfirm(emailBody, blob);
             onOpenChange(false);
         } catch (error) {
@@ -89,8 +90,6 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
-
-                {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b">
                     <div>
                         <h2 className="text-lg font-semibold">Revisión y Envío de Cotización</h2>
@@ -103,9 +102,7 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
                     </Button>
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 overflow-hidden p-4 bg-slate-50">
-
                     {step === 'ai' && (
                         <div className="flex flex-col items-center justify-center h-full space-y-4">
                             {loading ? (
@@ -139,7 +136,7 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
                     {step === 'review' && (
                         <div className="flex flex-col md:flex-row gap-4 h-full">
                             <div className="w-full md:w-1/2 flex flex-col gap-2 h-full">
-                                <label className="text-sm font-medium">Cuerpo del Correo</label>
+                                <label className="text-sm font-medium text-gray-700">Cuerpo del Correo</label>
                                 <Textarea
                                     value={emailBody}
                                     onChange={(e) => setEmailBody(e.target.value)}
@@ -148,9 +145,8 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
                                 />
                             </div>
                             <div className="w-full md:w-1/2 border rounded-lg overflow-hidden bg-gray-100 flex flex-col h-full shadow-inner">
-                                <div className="p-2 bg-white border-b text-xs font-semibold text-center">Vista Previa PDF</div>
+                                <div className="p-2 bg-white border-b text-xs font-semibold text-center text-gray-600">Vista Previa PDF</div>
                                 <div className="flex-1 relative">
-                                    {/* PDF Viewer needs height to show up */}
                                     <PDFViewerComponent className="w-full h-full" showToolbar={false}>
                                         <QuotePDF data={data} />
                                     </PDFViewerComponent>
@@ -160,12 +156,11 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
                     )}
                 </div>
 
-                {/* Footer */}
                 <div className="p-4 border-t flex justify-end gap-2 bg-white">
                     {step === 'review' && (
                         <>
                             <Button variant="outline" onClick={() => setStep('ai')}>Atrás</Button>
-                            <Button onClick={handleConfirmSend} disabled={loading}>
+                            <Button onClick={handleConfirmSend} disabled={loading} className="min-w-[150px]">
                                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                                 Confirmar y Enviar
                             </Button>
@@ -175,7 +170,6 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
                         <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
                     )}
                 </div>
-
             </div>
         </div>,
         document.body

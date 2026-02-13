@@ -390,7 +390,7 @@ export const useApi = () => {
         },
 
         ai: {
-            smartDraft: async (data: { quote_number?: string; client_name?: string; items: { description: string }[]; valid_until?: string; currency?: string }) => {
+            smartDraft: async (data: { quote_number?: string; company_name?: string; items: { description: string }[]; valid_until?: string; currency?: string }) => {
                 const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/smart-draft`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

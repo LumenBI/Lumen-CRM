@@ -39,12 +39,16 @@ export const QuoteView: React.FC<QuoteViewProps> = ({ quoteId, clientEmail }) =>
         fetchQuote();
     }, [quoteId, api.quotes]);
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const handleSendEmail = async () => {
         if (!quote) return;
         setSending(true);
         try {
-            const { pdf } = await import('@react-pdf/renderer');
-            const blob = await pdf(<QuoteDocument quote={quote} items={quote.quote_items} currency={quote.currency_code} />).toBlob();
+            const [{ pdf }, { QuoteDocument: RawQuoteDocument }] = await Promise.all([
+                import('@react-pdf/renderer'),
+                import('./QuoteDocument')
+            ]);
+            const blob = await pdf(<RawQuoteDocument quote={quote} items={quote.quote_items} currency={quote.currency_code} />).toBlob();
 
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -74,18 +78,18 @@ export const QuoteView: React.FC<QuoteViewProps> = ({ quoteId, clientEmail }) =>
         }
     };
 
-    if (loading) return <Loader2 className="animate-spin" />;
-    if (!quote) return <div>No se encontró la cotización</div>;
+    if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>;
+    if (!quote) return <div className="p-8 text-center text-gray-500">No se encontró la cotización</div>;
 
     return (
         <div className="flex flex-col gap-4 h-full">
-            <div className="flex justify-between items-center bg-white p-4 rounded shadow-sm">
-                <h2 className="text-xl font-bold">Cotización #{quote.quote_number}</h2>
+            <div className="flex justify-between items-center bg-white p-4 rounded shadow-sm border">
+                <h2 className="text-xl font-bold text-gray-800">Cotización #{quote.quote_number}</h2>
                 <div className="flex gap-2">
                     <button
                         onClick={handleSendEmail}
                         disabled={sending}
-                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
                     >
                         {sending ? <Loader2 className="animate-spin w-4 h-4" /> : <Send className="w-4 h-4" />}
                         Enviar por Correo
@@ -93,8 +97,7 @@ export const QuoteView: React.FC<QuoteViewProps> = ({ quoteId, clientEmail }) =>
                 </div>
             </div>
 
-            <div className="flex-1 min-h-[500px] border rounded overflow-hidden">
-                {/* PDFViewer renders an iframe, so we need to ensure height is set */}
+            <div className="flex-1 min-h-[600px] border rounded overflow-hidden bg-white shadow-sm">
                 <PDFViewer width="100%" height="100%" className="w-full h-full min-h-[600px]">
                     <QuoteDocument quote={quote} items={quote.quote_items} currency={quote.currency_code} />
                 </PDFViewer>

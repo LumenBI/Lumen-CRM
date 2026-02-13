@@ -117,7 +117,7 @@ export default function ReportsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {historyData.slice().reverse().map((row, idx) => (
+                            {historyData.slice().reverse().map((row: AggregatedData, idx: number) => (
                                 <tr key={idx} className="hover:bg-gray-50/50">
                                     <td className="px-6 py-3 font-medium text-gray-800">{row.name}</td>
                                     <td className="px-6 py-3 text-center text-gray-600">{row.interactions}</td>
