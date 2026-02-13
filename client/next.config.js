@@ -1,17 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    transpilePackages: [
-        '@react-pdf/renderer',
-        '@react-pdf/font',
-        '@react-pdf/layout',
-        '@react-pdf/pdfkit',
-        '@react-pdf/primitives',
-        '@react-pdf/render',
-        '@react-pdf/stylesheet',
-        '@react-pdf/textkit',
-        '@react-pdf/types',
-        '@react-pdf/fns'
-    ],
+    transpilePackages: [],
     images: {
         remotePatterns: [
             {
@@ -21,11 +10,15 @@ const nextConfig = {
         ],
     },
     webpack: (config) => {
-        config.resolve.alias = {
-            ...config.resolve.alias,
-            'canvas': false,
-            'encoding': false
-        };
+        // Asegurar que alias existe
+        if (!config.resolve.alias) {
+            config.resolve.alias = {};
+        }
+
+        // Evitar que webpack intente empaquetar dependencias nativas
+        config.resolve.alias.canvas = false;
+        config.resolve.alias.encoding = false;
+
         return config;
     },
 };
