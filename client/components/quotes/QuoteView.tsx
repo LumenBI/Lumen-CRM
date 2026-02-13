@@ -3,15 +3,16 @@ import { useState, useEffect } from 'react';
 import { useApi } from '@/hooks/useApi';
 import { Quote } from '@/types';
 import dynamic from 'next/dynamic';
-const PDFViewer = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PDFViewer), {
-    ssr: false,
-    loading: () => <div className="p-8 text-center">Cargando visor de PDF...</div>
-});
-const QuoteDocument = dynamic(() => import('./QuoteDocument').then(mod => mod.QuoteDocument), {
-    ssr: false,
-});
-import { Loader2, Send, Download } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import { toast } from 'sonner';
+
+const QuotePDFView = dynamic(() => import('./QuotePDFView'), {
+    ssr: false,
+    loading: () => <div className="p-8 text-center text-gray-500 flex flex-col items-center gap-2">
+        <Loader2 className="animate-spin" />
+        <p>Cargando visor de PDF...</p>
+    </div>
+});
 
 interface QuoteViewProps {
     quoteId: string;
@@ -48,7 +49,15 @@ export const QuoteView: React.FC<QuoteViewProps> = ({ quoteId, clientEmail }) =>
                 import('@react-pdf/renderer'),
                 import('./QuoteDocument')
             ]);
-            const blob = await pdf(<RawQuoteDocument quote={quote} items={quote.quote_items} currency={quote.currency_code} />).toBlob();
+
+            // Explicitly pass only necessary data to avoid serialization issues
+            const blob = await pdf(
+                <RawQuoteDocument
+                    quote={quote}
+                    items={quote.quote_items || []}
+                    currency={quote.currency_code || 'USD'}
+                />
+            ).toBlob();
 
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -78,18 +87,18 @@ export const QuoteView: React.FC<QuoteViewProps> = ({ quoteId, clientEmail }) =>
         }
     };
 
-    if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>;
-    if (!quote) return <div className="p-8 text-center text-gray-500">No se encontró la cotización</div>;
+    if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>;
+    if (!quote) return <div className="p-8 text-center text-gray-500 border rounded bg-gray-50">No se encontró la cotización</div>;
 
     return (
         <div className="flex flex-col gap-4 h-full">
-            <div className="flex justify-between items-center bg-white p-4 rounded shadow-sm border">
+            <div className="flex justify-between items-center bg-white p-4 rounded shadow-sm border border-gray-100">
                 <h2 className="text-xl font-bold text-gray-800">Cotización #{quote.quote_number}</h2>
                 <div className="flex gap-2">
                     <button
                         onClick={handleSendEmail}
                         disabled={sending}
-                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 transition-all shadow-sm active:scale-95"
                     >
                         {sending ? <Loader2 className="animate-spin w-4 h-4" /> : <Send className="w-4 h-4" />}
                         Enviar por Correo
@@ -97,10 +106,8 @@ export const QuoteView: React.FC<QuoteViewProps> = ({ quoteId, clientEmail }) =>
                 </div>
             </div>
 
-            <div className="flex-1 min-h-[600px] border rounded overflow-hidden bg-white shadow-sm">
-                <PDFViewer width="100%" height="100%" className="w-full h-full min-h-[600px]">
-                    <QuoteDocument quote={quote} items={quote.quote_items} currency={quote.currency_code} />
-                </PDFViewer>
+            <div className="flex-1 min-h-[600px] border rounded-xl overflow-hidden bg-white shadow-sm border-gray-100">
+                <QuotePDFView quote={quote} items={quote.quote_items || []} />
             </div>
         </div>
     );

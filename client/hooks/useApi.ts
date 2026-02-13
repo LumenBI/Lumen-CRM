@@ -390,12 +390,18 @@ export const useApi = () => {
         },
 
         ai: {
-            smartDraft: async (data: { quote_number?: string; company_name?: string; items: { description: string }[]; valid_until?: string; currency?: string }) => {
+            smartDraft: async (data: { company_name: string; items: { description: string }[]; contact_person?: string; notes?: string }) => {
+                const payload = {
+                    company_name: data.company_name,
+                    items: data.items,
+                    contact_person: data.contact_person,
+                    notes: data.notes
+                };
                 const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/smart-draft`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                })
+                    body: JSON.stringify(payload)
+                });
                 if (!res.ok) throw new Error('Failed to generate draft')
                 const json = await res.json()
                 return json.draft as string
