@@ -4,16 +4,18 @@ import React, { useState } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash, Save, Send, Loader2 } from "lucide-react";
+import { Plus, Trash, Save, Send, Loader2, X } from "lucide-react";
 import { ServiceAutocomplete } from './ServiceAutocomplete';
 import { CurrencySelector } from './CurrencySelector';
+import { ClientAutocomplete } from './ClientAutocomplete';
 import dynamic from 'next/dynamic';
-const QuotePreviewModal = dynamic(() => import('./QuotePreviewModal').then(mod => mod.QuotePreviewModal), {
+const QuotePreviewModal = dynamic(() => import('./QuotePreviewModal'), {
     ssr: false,
     loading: () => <div className="p-4 text-center">Iniciando previsualización...</div>
 });
 import { toast } from "sonner";
 import { useApi } from '@/hooks/useApi';
+import { Client } from '@/types';
 
 interface QuoteItem {
     description: string;
@@ -35,13 +37,18 @@ interface QuoteBuilderProps {
     clientEmail?: string;
 }
 
-export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, clientEmail }) => {
+export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName: initialClientName, clientEmail: initialClientEmail }) => {
     const api = useApi();
     const [currency, setCurrency] = useState('USD');
     const [exchangeRate, setExchangeRate] = useState(520);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [createdQuote, setCreatedQuote] = useState<{ id: string; quote_number: number } | null>(null);
     const [creating, setCreating] = useState(false);
+
+    // Manual client selection state
+    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+    const currentClientName = selectedClient?.company_name || initialClientName;
+    const currentClientEmail = selectedClient?.email || initialClientEmail;
 
     const { register, control, handleSubmit, watch, setValue } = useForm<QuoteFormValues>({
         defaultValues: {
@@ -64,11 +71,11 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
     const hasValidItems = watchItems?.some((i: QuoteItem) => (i.description ?? '').trim() !== '');
 
     const onSubmit = async (data: QuoteFormValues) => {
-        if (dealId) {
+        if (dealId || selectedClient) {
             try {
                 setCreating(true);
                 const quote = await api.quotes.create({
-                    deal_id: dealId,
+                    deal_id: dealId || null,
                     currency_code: currency,
                     valid_until: data.valid_until,
                     items: data.items.map((it) => ({
@@ -87,7 +94,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
                 setCreating(false);
             }
         } else {
-            toast.info('Guardar borrador disponible cuando la cotización está vinculada a un seguimiento.');
+            toast.info('Selecciona un cliente para guardar el borrador.');
         }
     };
 
@@ -96,11 +103,11 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
             toast.error('Agrega al menos un ítem con descripción.');
             return;
         }
-        if (dealId) {
+        if (dealId || selectedClient) {
             try {
                 setCreating(true);
                 const payload = {
-                    deal_id: dealId,
+                    deal_id: dealId || null,
                     currency_code: currency,
                     valid_until: validUntil,
                     items: watchItems.map((it: QuoteItem) => ({
@@ -120,18 +127,19 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
                 setCreating(false);
             }
         } else {
-            setCreatedQuote(null);
-            setIsModalOpen(true);
+            toast.error('Selecciona un cliente o vincula un seguimiento antes de previsualizar.');
         }
     };
 
     const handleConfirmSend = async (emailBody: string, pdfBlob: Blob) => {
         const quoteNumber = createdQuote?.quote_number ?? 'DRAFT';
         const quoteId = createdQuote?.id;
-        if (!clientEmail) {
-            toast.error('Falta el correo del cliente. Abre la cotización desde el Kanban con el cliente seleccionado.');
+
+        if (!currentClientEmail) {
+            toast.error('No se ha detectado el correo del cliente. Por favor, selecciona un cliente válido con correo electrónico configurado.');
             return;
         }
+
         try {
             const reader = new FileReader();
             reader.readAsDataURL(pdfBlob);
@@ -140,7 +148,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
                     const base64data = (reader.result as string)?.split(',')[1];
                     if (!base64data) throw new Error('No se pudo generar el PDF');
                     await api.mail.sendQuote({
-                        to: clientEmail,
+                        to: currentClientEmail,
                         subject: `Cotización #${quoteNumber} - Star Cargo`,
                         message: emailBody + (quoteNumber !== 'DRAFT' ? `\n\nReferencia: Cotización #${quoteNumber}` : ''),
                         pdfBase64: base64data,
@@ -170,7 +178,34 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
             <div className="flex justify-between items-center border-b pb-4">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900">Nueva Cotización</h2>
-                    <p className="text-muted-foreground text-sm">Cliente: {clientName || 'N/A'}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                        <span className="text-muted-foreground text-sm">Cliente:</span>
+                        {((!initialClientName || initialClientName.trim().toUpperCase() === 'N/A') && !selectedClient) ? (
+                            <ClientAutocomplete
+                                onSelect={(client) => setSelectedClient(client)}
+                                placeholder="Seleccionar cliente para cotizar..."
+                            />
+                        ) : (
+                            <div className="flex items-center gap-1">
+                                <span
+                                    className="text-sm font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 uppercase tracking-tighter cursor-pointer hover:bg-blue-100 transition-colors"
+                                    onClick={() => selectedClient && setSelectedClient(null)}
+                                    title={selectedClient ? "Clic para cambiar cliente" : ""}
+                                >
+                                    {currentClientName || 'N/A'}
+                                </span>
+                                {selectedClient && (
+                                    <button
+                                        onClick={() => setSelectedClient(null)}
+                                        className="text-muted-foreground hover:text-red-500 transition-colors"
+                                        title="Borrar selección"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={handleSubmit(onSubmit)}>
@@ -183,7 +218,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-0">
                 <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-gray-700">Moneda</label>
                     <CurrencySelector
@@ -198,7 +233,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
                 </div>
             </div>
 
-            <div className="border rounded-lg overflow-hidden shadow-sm">
+            <div className="border rounded-lg shadow-sm overflow-visible">
                 <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b">
                         <tr>
@@ -212,8 +247,8 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
                     <tbody className="divide-y divide-gray-200 bg-white">
                         {fields.map((field, index) => (
                             <tr key={field.id} className="group hover:bg-gray-50 transition-colors">
-                                <td className="p-3">
-                                    <div className="flex flex-col gap-2">
+                                <td className="p-3 relative overflow-visible">
+                                    <div className="flex flex-col gap-2 relative">
                                         <Controller
                                             control={control}
                                             name={`items.${index}.description`}
@@ -269,7 +304,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName, 
                 onOpenChange={setIsModalOpen}
                 data={{
                     quote_number: createdQuote?.quote_number ?? 'DRAFT',
-                    client_name: clientName,
+                    client_name: currentClientName,
                     date: new Date().toISOString().split('T')[0],
                     valid_until: validUntil,
                     currency: currency,

@@ -588,12 +588,19 @@ export class DashboardService {
 
         // STRICT SECURITY: Only ADMIN/MANAGER can reassign
         if (payload.assigned_agent_id !== undefined) {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data, error: authError } = await supabase.auth.getUser();
+            const user = data?.user;
+            if (authError) console.error('Error fetching user for reassignment check:', authError);
+
             if (user) {
-                const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+                const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+                if (profileError) console.error('Error fetching profile for reassignment check:', profileError);
+
                 if (profile && profile.role !== 'ADMIN' && profile.role !== 'MANAGER') {
                     throw new BadRequestException('No tienes permisos para reasignar clientes.');
                 }
+            } else {
+                console.warn('User not found during reassignment security check');
             }
             updateData.assigned_agent_id = payload.assigned_agent_id;
         }

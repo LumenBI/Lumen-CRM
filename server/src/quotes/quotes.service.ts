@@ -21,7 +21,7 @@ export class QuotesService {
         const exchangeRate = data.exchange_rate_snapshot || await this.currencyService.getExchangeRate(data.currency_code);
 
         const quoteJson = {
-            deal_id: data.deal_id,
+            deal_id: data.deal_id || null,
             status: 'DRAFT',
             currency_code: data.currency_code,
             exchange_rate_snapshot: exchangeRate,

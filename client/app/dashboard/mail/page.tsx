@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useApi } from '@/hooks/useApi'
+import { useUser } from '@/context/UserContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Loader2,
@@ -17,7 +18,8 @@ import {
     Image as ImageIcon,
     Download,
     Paperclip,
-    X
+    X,
+    AlertCircle
 } from 'lucide-react'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
@@ -76,12 +78,14 @@ function formatFileSize(bytes: number) {
 
 export default function MailPage() {
     const { mail } = useApi()
+    const { reauthorizeGoogle } = useUser()
     const [threads, setThreads] = useState<Thread[]>([])
     const [loading, setLoading] = useState(true)
     const [openCompose, setOpenCompose] = useState(false)
     const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null)
     const [messageDetail, setMessageDetail] = useState<MessageDetail | null>(null)
     const [loadingDetail, setLoadingDetail] = useState(false)
+    const [needsGoogleAuth, setNeedsGoogleAuth] = useState(false)
 
     // Pagination state
     const [pageToken, setPageToken] = useState<string | undefined>(undefined)
@@ -99,13 +103,19 @@ export default function MailPage() {
 
     const fetchInbox = useCallback(async (token?: string) => {
         setLoading(true)
+        setNeedsGoogleAuth(false)
         try {
             const data: InboxResponse = await mail.getInbox(token, limit)
             setThreads(data.messages)
             setPageToken(data.nextPageToken)
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching inbox:', error)
-            toast.error('Error al cargar la bandeja de entrada')
+            const errorMsg = error.message || ''
+            if (errorMsg.includes('Google Token') || errorMsg.includes('Unauthorized')) {
+                setNeedsGoogleAuth(true)
+            } else {
+                toast.error('Error al cargar la bandeja de entrada')
+            }
         } finally {
             setLoading(false)
         }
@@ -300,6 +310,20 @@ export default function MailPage() {
                         {loading ? (
                             <div className="flex flex-col items-center justify-center h-64 gap-3">
                                 <Loader2 className="h-8 w-8 animate-spin text-blue-600/30" />
+                            </div>
+                        ) : needsGoogleAuth ? (
+                            <div className="text-center py-20 px-6">
+                                <div className="mx-auto w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 text-blue-600">
+                                    <AlertCircle className="h-6 w-6" />
+                                </div>
+                                <h3 className="text-sm font-bold text-slate-800">Conexión con Google requerida</h3>
+                                <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-bold mb-4">La sesión de Google ha expirado o no está vinculada</p>
+                                <Button
+                                    onClick={reauthorizeGoogle}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white gap-2 py-2 px-4 rounded-xl font-bold transition-all text-xs"
+                                >
+                                    Reconectar cuenta
+                                </Button>
                             </div>
                         ) : threads.length === 0 ? (
                             <div className="text-center py-20 px-6">

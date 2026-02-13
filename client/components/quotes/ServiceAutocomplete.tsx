@@ -35,7 +35,7 @@ export const ServiceAutocomplete: React.FC<ServiceAutocompleteProps> = ({ onSele
         };
     }, [wrapperRef]);
 
-    const fetchProducts = async (search: string) => {
+    const fetchProducts = async (search: string = "") => {
         setLoading(true);
         try {
             const data = await api.quotes.getProducts(search);
@@ -50,12 +50,15 @@ export const ServiceAutocomplete: React.FC<ServiceAutocompleteProps> = ({ onSele
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         if (onChange) onChange(val);
-        if (val.length > 2) {
-            fetchProducts(val);
-            setOpen(true);
-        } else {
-            setOpen(false);
+        fetchProducts(val);
+        setOpen(true);
+    };
+
+    const handleFocus = () => {
+        if (products.length === 0) {
+            fetchProducts("");
         }
+        setOpen(true);
     };
 
     return (
@@ -64,14 +67,14 @@ export const ServiceAutocomplete: React.FC<ServiceAutocompleteProps> = ({ onSele
                 <Input
                     value={value}
                     onChange={handleInputChange}
-                    onFocus={() => { if (value.length > 2 && products.length > 0) setOpen(true); }}
+                    onFocus={handleFocus}
                     placeholder="Search service..."
                     className="w-full"
                 />
             </div>
 
             {open && (
-                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
                     {loading && <div className="p-2 text-sm text-center text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Loading...</div>}
                     {!loading && products.length === 0 && <div className="p-2 text-sm text-center text-muted-foreground">No services found.</div>}
                     {!loading && products.map((product) => (

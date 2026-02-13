@@ -22,6 +22,10 @@ export function useAuthFetch() {
         // Get Google Provider Token if available
         const providerToken = session.provider_token
 
+        if (!providerToken && url.includes('/mail')) {
+            console.warn('WARNING: Accessing /mail route but session.provider_token is missing. This will cause re-authorization requirements.');
+        }
+
         return fetch(url, {
             ...options,
             headers: {

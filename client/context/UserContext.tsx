@@ -18,6 +18,7 @@ interface UserContextType {
     loading: boolean
     refreshProfile: () => Promise<void>
     logout: () => Promise<void>
+    reauthorizeGoogle: () => Promise<void>
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
@@ -31,14 +32,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     const fetchProfile = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession()
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+            if (sessionError) {
+                console.error('Session retrieval error:', sessionError);
+                setLoading(false);
+                return;
+            }
+
             if (!session?.user) {
                 setLoading(false)
                 return
             }
 
             setUser(session.user)
-
 
             const { data, error } = await supabase
                 .from('profiles')
@@ -55,6 +62,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             console.error('Error in fetchProfile:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const reauthorizeGoogle = async () => {
+        console.log('Initiating Google re-authorization fallback...');
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                    scope: 'openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly'
+                },
+            },
+        });
+
+        if (error) {
+            console.error('Error during Google re-authorization:', error);
+            throw error;
         }
     }
 
@@ -77,7 +104,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }, [])
 
     return (
-        <UserContext.Provider value={{ user, profile, loading, refreshProfile: fetchProfile, logout }}>
+        <UserContext.Provider value={{ user, profile, loading, refreshProfile: fetchProfile, logout, reauthorizeGoogle }}>
             {children}
         </UserContext.Provider>
     )

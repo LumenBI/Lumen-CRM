@@ -125,6 +125,14 @@ function LoginForm() {
 import ParticleBackground from '@/components/ui/ParticleBackground'
 
 export default function LoginPage() {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) return <div className="min-h-screen bg-[#F8FAFC]" />;
+
     return (
         <div className="min-h-screen w-full flex relative bg-[#F8FAFC] overflow-hidden">
             <ParticleBackground />

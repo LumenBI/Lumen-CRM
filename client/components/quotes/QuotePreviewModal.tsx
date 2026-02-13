@@ -22,7 +22,7 @@ interface QuotePreviewModalProps {
     onConfirm: (emailBody: string, pdfBlob: Blob) => Promise<void>;
 }
 
-export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOpenChange, data, onConfirm }) => {
+const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOpenChange, data, onConfirm }) => {
     const api = useApi();
     const [step, setStep] = useState<'ai' | 'review'>('ai');
     const [aiDraft, setAiDraft] = useState("");
@@ -41,9 +41,12 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
         setLoading(true);
         setAnalyzingPrices(true);
         try {
-            // WHITESLISTED PAYLOAD to avoid 400 error from strict DTO
             const draft = await api.ai.smartDraft({
                 company_name: data.company_name ?? data.client_name ?? 'Cliente',
+                quote_number: data.quote_number,
+                currency: data.currency,
+                valid_until: data.valid_until,
+                total_amount: data.total_amount,
                 items: (data.items ?? []).map((i: { description?: string }) => ({ description: i.description ?? '' })),
             });
             setAiDraft(draft || `Estimado ${data.client_name || 'Cliente'},\n\nAdjunto encontrará la cotización #${data.quote_number ?? 'xxx'}.\n\nSaludos,\nStar Cargo.`);
@@ -200,3 +203,5 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ open, onOp
         document.body
     );
 };
+
+export default QuotePreviewModal;

@@ -293,9 +293,10 @@ export class MailController {
             console.error("Error finding thread:", e);
         }
 
+        const encodedSubject = `=?UTF-8?B?${Buffer.from(this.sanitizeHeader(body.subject)).toString('base64')}?=`;
         const emailLines = [
             `To: ${this.sanitizeHeader(body.to)}`,
-            `Subject: ${this.sanitizeHeader(body.subject)}`,
+            `Subject: ${encodedSubject}`,
             'Content-Type: multipart/mixed; boundary="foo_bar_baz"',
         ];
 

@@ -35,7 +35,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(req: any, payload: any) {
+        // Diagnostic log to catch the "stringified session" bug
+        if (typeof payload === 'string') {
+            console.error('CRITICAL: JwtStrategy received a string payload instead of an object:', payload.substring(0, 100) + '...');
+            try {
+                payload = JSON.parse(payload);
+                console.log('Successfully auto-parsed string payload.');
+            } catch (e) {
+                console.error('Failed to parse string payload as JSON.');
+                throw new UnauthorizedException('Invalid token payload format');
+            }
+        }
+
         const userId = payload.sub;
+        if (!userId) {
+            console.error('No sub (userId) found in payload:', payload);
+            throw new UnauthorizedException('Invalid token payload');
+        }
 
         const rawHeader = req.headers.authorization;
         const token = rawHeader ? rawHeader.split(' ')[1] : null;
@@ -72,11 +88,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             throw new UnauthorizedException('User is inactive');
         }
 
+        // Return a fresh object to avoid any prototype pollution or weirdness if payload was a string
         return {
-            userId: payload.sub,
+            userId: userId,
             email: payload.email,
             role: profile.role,
-            ...payload
+            ...(typeof payload === 'object' ? payload : {})
         };
     }
 }

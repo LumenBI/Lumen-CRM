@@ -19,15 +19,17 @@ BEGIN
       exchange_rate_snapshot,
       valid_until,
       version,
-      quote_number
+      quote_number,
+      created_by
     ) VALUES (
       (quote_json->>'deal_id')::uuid,
       quote_json->>'status',
       quote_json->>'currency_code',
       (quote_json->>'exchange_rate_snapshot')::numeric,
-      (quote_json->>'valid_until')::timestamp,
+      (quote_json->>'valid_until')::date,
       COALESCE((quote_json->>'version')::int, 1),
-      (quote_json->>'quote_number')::integer
+      (quote_json->>'quote_number')::integer,
+      auth.uid()
     )
     RETURNING id INTO new_quote_id;
   ELSE
@@ -37,14 +39,16 @@ BEGIN
       currency_code,
       exchange_rate_snapshot,
       valid_until,
-      version
+      version,
+      created_by
     ) VALUES (
       (quote_json->>'deal_id')::uuid,
       quote_json->>'status',
       quote_json->>'currency_code',
       (quote_json->>'exchange_rate_snapshot')::numeric,
-      (quote_json->>'valid_until')::timestamp,
-      COALESCE((quote_json->>'version')::int, 1)
+      (quote_json->>'valid_until')::date,
+      COALESCE((quote_json->>'version')::int, 1),
+      auth.uid()
     )
     RETURNING id INTO new_quote_id;
   END IF;

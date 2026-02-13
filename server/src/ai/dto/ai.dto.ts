@@ -25,6 +25,21 @@ export class SmartDraftDto {
     @IsString()
     @IsOptional()
     notes?: string;
+
+    @IsString()
+    @IsOptional()
+    quote_number?: string;
+
+    @IsString()
+    @IsOptional()
+    currency?: string;
+
+    @IsString()
+    @IsOptional()
+    valid_until?: string;
+
+    @IsOptional()
+    total_amount?: number;
 }
 
 export class PriceAuditDto {

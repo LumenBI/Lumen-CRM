@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { motion, useScroll, useTransform, useSpring, useMotionValue, useMotionTemplate, Variants } from 'framer-motion'
 import { ArrowRight, Globe, ShieldCheck } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const staggerContainer: Variants = {
   hidden: { opacity: 0 },
@@ -44,8 +44,20 @@ const clipReveal: Variants = {
 }
 
 export default function LandingPage() {
+  const [mounted, setMounted] = useState(false);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
+
+  const rotateX = useTransform(mouseY, [0, 1], [5, -5]);
+  const rotateY = useTransform(mouseX, [0, 1], [-5, 5]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div className="min-h-screen bg-white" />;
+  }
 
   function handleMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
     const { left, top, width, height } = currentTarget.getBoundingClientRect();
@@ -55,9 +67,6 @@ export default function LandingPage() {
     mouseX.set(xPoint);
     mouseY.set(yPoint);
   }
-
-  const rotateX = useTransform(mouseY, [0, 1], [5, -5]);
-  const rotateY = useTransform(mouseX, [0, 1], [-5, 5]);
 
   return (
     <div

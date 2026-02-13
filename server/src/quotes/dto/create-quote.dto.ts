@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsArray, ValidateNested, IsOptional, IsUUID, Min } from 'class-validator';
+import { IsString, IsNumber, IsArray, ValidateNested, IsOptional, IsUUID, Min, ValidateIf } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QuoteItemDto {
@@ -20,8 +20,10 @@ export class QuoteItemDto {
 }
 
 export class CreateQuoteDto {
+    @IsOptional()
+    @ValidateIf((o) => o.deal_id !== null && o.deal_id !== undefined)
     @IsUUID()
-    deal_id: string;
+    deal_id?: string;
 
     @IsString()
     currency_code: string;
