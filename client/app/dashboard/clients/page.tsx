@@ -124,6 +124,11 @@ export default function ClientsPage() {
                                 {(profile?.role === 'ADMIN' || profile?.role === 'MANAGER') && (
                                     <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">Asignado A</th>
                                 )}
+
+                                <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">
+                                    Datos
+                                </th>
+
                                 <th className="px-8 py-5 text-right text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">Acciones</th>
                             </tr>
                         </thead>
