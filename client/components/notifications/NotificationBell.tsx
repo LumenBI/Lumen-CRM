@@ -66,9 +66,15 @@ export default function NotificationBell() {
         const checkReminders = async () => {
             const { data: { session } } = await supabase.auth.getSession()
             if (session) {
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/notifications/check`, {
-                    headers: { 'Authorization': `Bearer ${session.access_token}` }
-                })
+                if (process.env.NEXT_PUBLIC_API_URL) {
+                    try {
+                        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/notifications/check`, {
+                            headers: { 'Authorization': `Bearer ${session.access_token}` }
+                        })
+                    } catch (err) {
+                        console.error('Failed to fetch notifications check:', err)
+                    }
+                }
             }
         }
 

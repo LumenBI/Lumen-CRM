@@ -67,19 +67,19 @@ export default function TopNav() {
     const pageTitle = PAGE_TITLES[pathname] || 'Dashboard'
 
     return (
-        <header className="h-16 px-8 flex items-center justify-between bg-white border-b border-gray-100 shrink-0 z-30 sticky top-0">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+        <header className="h-16 px-8 flex items-center justify-between bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shrink-0 z-30 sticky top-0 transition-colors duration-300">
+            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
                 <ChevronRight size={14} />
-                <span className="font-bold text-gray-900">{pageTitle}</span>
+                <span className="font-bold text-gray-900 dark:text-white">{pageTitle}</span>
             </div>
 
             <div className="flex items-center gap-2">
                 <div className="relative mr-2 hidden md:block">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={16} />
                     <input
                         type="text"
                         placeholder={TEXTS.SEARCH}
-                        className="h-9 w-64 rounded-full bg-gray-50 border-none pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none"
+                        className="h-9 w-64 rounded-full bg-gray-50 dark:bg-slate-800 border-none dark:border-slate-700 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 focus:bg-white dark:focus:bg-slate-700 text-gray-900 dark:text-white transition-all outline-none"
                     />
                 </div>
 
@@ -92,14 +92,14 @@ export default function TopNav() {
                     </button>
 
                     {isQuickOpen && (
-                        <div className="absolute right-0 mt-2 w-56 p-2 rounded-xl bg-white shadow-2xl ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-100 transform origin-top-right">
-                            <div className="px-2 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        <div className="absolute right-0 mt-2 w-56 p-2 rounded-xl bg-white dark:bg-slate-800 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-100 transform origin-top-right">
+                            <div className="px-2 py-1.5 text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">
                                 {TEXTS.QUICK_ACTIONS}
                             </div>
                             {QUICK_ACTIONS.map((action, idx) => (
                                 <button
                                     key={idx}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 rounded-lg transition-colors text-left"
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors text-left"
                                     onClick={() => {
                                         setIsQuickOpen(false)
                                         if (action.action === 'NEW_CLIENT') router.push('/dashboard/clients')
@@ -115,16 +115,16 @@ export default function TopNav() {
                     )}
                 </div>
 
-                <div className="w-px h-6 bg-gray-200 mx-2" />
+                <div className="w-px h-6 bg-gray-200 dark:bg-slate-800 mx-2" />
 
                 <NotificationBell />
 
                 <div className="relative ml-2" ref={userDropdownRef}>
                     <button
                         onClick={() => setIsUserOpen(!isUserOpen)}
-                        className="flex items-center gap-3 p-1 rounded-full hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 p-1 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                     >
-                        <div className="h-9 w-9 rounded-full overflow-hidden border border-gray-200 shadow-sm">
+                        <div className="h-9 w-9 rounded-full overflow-hidden border border-gray-200 dark:border-slate-700 shadow-sm">
                             <img
                                 src="/logos/star-logo.jpg"
                                 alt="User"
@@ -132,26 +132,26 @@ export default function TopNav() {
                             />
                         </div>
                         <div className="hidden md:block text-left mr-2">
-                            <p className="text-sm font-semibold text-gray-900 leading-none">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white leading-none">
                                 {profile?.full_name || 'Usuario'}
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                                 {profile?.role || 'Agente'}
                             </p>
                         </div>
                     </button>
 
                     {isUserOpen && (
-                        <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white shadow-2xl ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-100 transform origin-top-right">
-                            <div className="p-4 border-b border-gray-100">
-                                <p className="font-semibold text-gray-900">{profile?.full_name || 'Usuario'}</p>
-                                <p className="text-xs text-gray-500">{profile?.email}</p>
+                        <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-slate-800 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-100 transform origin-top-right">
+                            <div className="p-4 border-b border-gray-100 dark:border-slate-700">
+                                <p className="font-semibold text-gray-900 dark:text-white">{profile?.full_name || 'Usuario'}</p>
+                                <p className="text-xs text-gray-500 dark:text-slate-400">{profile?.email}</p>
                             </div>
                             <div className="p-2">
                                 <Link
-                                    href="/dashboard/users"
+                                    href="/dashboard/settings"
                                     prefetch={false}
-                                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 rounded-lg transition-colors"
+                                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors"
                                     onClick={() => setIsUserOpen(false)}
                                 >
                                     <Settings size={16} />
@@ -159,7 +159,7 @@ export default function TopNav() {
                                 </Link>
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                 >
                                     <LogOut size={16} />
                                     {TEXTS.LOGOUT}

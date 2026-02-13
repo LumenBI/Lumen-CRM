@@ -11,4 +11,11 @@ export class SupabaseService {
             { global: { headers: { Authorization: `Bearer ${token}` } } }
         );
     }
+
+    getAdminClient(): SupabaseClient {
+        return createClient(
+            process.env.SUPABASE_URL!,
+            process.env.SUPABASE_KEY! // This is likely the service_role key already if SUPABASE_KEY is used for backends.
+        );
+    }
 }

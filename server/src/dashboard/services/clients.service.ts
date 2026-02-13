@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from './supabase.service';
 import { NotificationsService } from './notifications.service';
 
@@ -129,8 +129,17 @@ export class ClientsService {
             .from('clients')
             .select('*')
             .eq('id', clientId)
-            .single();
-        if (clientError) throw new Error(clientError.message);
+            .maybeSingle();
+
+        if (clientError) {
+            console.error(`[ClientsService.getClientDetails] Error fetching client ${clientId}:`, clientError);
+            throw new InternalServerErrorException(clientError.message);
+        }
+
+        if (!client) {
+            console.warn(`[ClientsService.getClientDetails] Client ${clientId} not found or access denied by RLS`);
+            throw new NotFoundException('Cliente no encontrado o no tienes permisos para verlo');
+        }
 
         const { data: interactions, error: interactionsError } = await supabase
             .from('interactions')
@@ -151,6 +160,12 @@ export class ClientsService {
 
     async addInteraction(token: string, userId: string, payload: any) {
         const supabase = this.supabaseService.getClient(token);
+
+        if (!payload.clientId) {
+            console.error('[ClientsService.addInteraction] Missing clientId in payload:', payload);
+            throw new BadRequestException('El ID del cliente es obligatorio para registrar una interacción');
+        }
+
         const { data, error } = await supabase
             .from('interactions')
             .insert({
@@ -164,9 +179,16 @@ export class ClientsService {
                 completed_at: new Date(),
             })
             .select('*, client:clients(company_name), agent:profiles!agent_id(full_name)')
-            .single();
+            .maybeSingle();
 
-        if (error) throw new Error(error.message);
+        if (error) {
+            console.error('[ClientsService.addInteraction] Error inserting interaction:', error);
+            throw new InternalServerErrorException(error.message);
+        }
+
+        if (!data) {
+            throw new InternalServerErrorException('Error al recuperar la interacción creada');
+        }
 
         await supabase
             .from('clients')

@@ -6,6 +6,7 @@ import { AppointmentsService } from './services/appointments.service';
 import { ClientsService } from './services/clients.service';
 import { DealsService } from './services/deals.service';
 import { StatsService } from './services/stats.service';
+import { NotificationListener } from './listeners/notification.listener';
 
 @Module({
   controllers: [DashboardController],
@@ -15,7 +16,8 @@ import { StatsService } from './services/stats.service';
     AppointmentsService,
     ClientsService,
     DealsService,
-    StatsService
+    StatsService,
+    NotificationListener
   ],
 })
 export class DashboardModule { }

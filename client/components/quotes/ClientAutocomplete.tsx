@@ -74,20 +74,20 @@ export const ClientAutocomplete: React.FC<ClientAutocompleteProps> = ({ onSelect
             </div>
 
             {open && (
-                <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-md shadow-lg max-h-60 overflow-auto">
                     {loading && <div className="p-2 text-sm text-center text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Buscando...</div>}
                     {!loading && clients.length === 0 && <div className="p-2 text-sm text-center text-muted-foreground">No se encontraron clientes.</div>}
                     {!loading && clients.map((client) => (
                         <div
                             key={client.id}
-                            className="px-4 py-3 text-sm cursor-pointer hover:bg-gray-100 flex flex-col gap-0.5 border-b last:border-0"
+                            className="px-4 py-3 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 flex flex-col gap-0.5 border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors"
                             onClick={() => {
                                 setQuery(client.company_name);
                                 onSelect(client);
                                 setOpen(false);
                             }}
                         >
-                            <div className="font-bold text-gray-900 flex items-center gap-2">
+                            <div className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <User className="h-3 w-3 text-blue-600" />
                                 {client.company_name}
                             </div>

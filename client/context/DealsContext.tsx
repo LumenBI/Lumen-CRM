@@ -18,6 +18,7 @@ interface DealsContextType {
     loading: boolean
     refreshBoard: () => Promise<void>
     moveDeal: (dealId: string, newStatus: Deal['status'], interactionData?: { interactionType: string, summary: string, nextStep?: string }) => Promise<void>
+    updateBoard: (newBoard: KanbanBoard) => void
 }
 
 const DealsContext = createContext<DealsContextType | undefined>(undefined)
@@ -133,12 +134,17 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
     }, [board, dealsApi, interactionsApi])
 
 
+    const updateBoard = useCallback((newBoard: KanbanBoard) => {
+        setBoard(newBoard)
+    }, [])
+
     const value = useMemo(() => ({
         board,
         loading,
         refreshBoard: fetchBoard,
-        moveDeal
-    }), [board, loading, fetchBoard, moveDeal])
+        moveDeal,
+        updateBoard
+    }), [board, loading, fetchBoard, moveDeal, updateBoard])
 
     return (
         <DealsContext.Provider value={value}>

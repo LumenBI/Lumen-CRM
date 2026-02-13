@@ -28,18 +28,18 @@ export default function UpcomingAppointmentsWidget() {
 
     if (loading) {
         return (
-            <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-[#000d42]">Próximas citas</h3>
-                    <LucideCalendar className="h-5 w-5 text-[#0056fc]" />
+                    <h3 className="text-lg font-bold text-[#000d42] dark:text-white">Próximas citas</h3>
+                    <LucideCalendar className="h-5 w-5 text-[#0056fc] dark:text-blue-400" />
                 </div>
                 <div className="space-y-3">
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="animate-pulse flex items-center p-3 bg-slate-50 rounded-lg">
-                            <div className="bg-slate-200 rounded-lg h-14 w-14 mr-4"></div>
+                        <div key={i} className="animate-pulse flex items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                            <div className="bg-slate-200 dark:bg-slate-700 rounded-lg h-14 w-14 mr-4"></div>
                             <div className="flex-1 space-y-2">
-                                <div className="bg-slate-200 h-4 w-3/4 rounded"></div>
-                                <div className="bg-slate-200 h-3 w-1/2 rounded"></div>
+                                <div className="bg-slate-200 dark:bg-slate-700 h-4 w-3/4 rounded"></div>
+                                <div className="bg-slate-200 dark:bg-slate-700 h-3 w-1/2 rounded"></div>
                             </div>
                         </div>
                     ))}
@@ -49,12 +49,12 @@ export default function UpcomingAppointmentsWidget() {
     }
 
     return (
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-[#000d42]">Próximas citas</h3>
+                <h3 className="text-lg font-bold text-[#000d42] dark:text-white">Próximas citas</h3>
                 <Link
                     href="/dashboard/citas"
-                    className="text-sm text-[#0056fc] hover:underline flex items-center gap-1"
+                    className="text-sm text-[#0056fc] dark:text-blue-400 hover:underline flex items-center gap-1"
                 >
                     Ver todas
                     <LucideCalendar className="h-4 w-4" />
@@ -62,7 +62,7 @@ export default function UpcomingAppointmentsWidget() {
             </div>
 
             {upcomingAppointments.length === 0 ? (
-                <div className="text-center py-8 text-slate-400">
+                <div className="text-center py-8 text-slate-400 dark:text-slate-500">
                     <LucideCalendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No hay citas programadas</p>
                     <Link
@@ -87,17 +87,17 @@ export default function UpcomingAppointmentsWidget() {
                                 rel={isExternal ? 'noopener noreferrer' : undefined}
                                 className="block group"
                             >
-                                <div className="flex items-center p-3 hover:bg-slate-50 rounded-lg transition border-b border-slate-100 last:border-0 group-hover:scale-[1.02] group-hover:shadow-sm">
-                                    <div className="bg-blue-100 text-[#000d42] font-bold rounded-lg p-3 text-center min-w-[60px] group-hover:bg-[#0056fc] group-hover:text-white transition-colors">
+                                <div className="flex items-center p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition border-b border-slate-100 dark:border-slate-800 last:border-0 group-hover:scale-[1.02] group-hover:shadow-sm">
+                                    <div className="bg-blue-100 dark:bg-blue-900/40 text-[#000d42] dark:text-blue-300 font-bold rounded-lg p-3 text-center min-w-[60px] group-hover:bg-[#0056fc] dark:group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                         <span className="block text-xs uppercase">{month}</span>
                                         <span className="block text-lg leading-none">{day}</span>
                                     </div>
                                     <div className="ml-4 flex-1">
-                                        <h4 className="font-bold text-slate-700 group-hover:text-[#0056fc] transition-colors">{appointment.client.company_name}</h4>
-                                        <div className="flex items-center gap-1 text-sm text-slate-600 mb-0.5">
+                                        <h4 className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-[#0056fc] dark:group-hover:text-blue-400 transition-colors">{appointment.client.company_name}</h4>
+                                        <div className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 mb-0.5">
                                             <span className="font-medium">con: {appointment.client.contact_name}</span>
                                         </div>
-                                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                                        <p className="text-xs text-slate-500 dark:text-slate-500 flex items-center gap-1">
                                             {getTypeIcon(appointment.appointment_type)}
                                             <span>{appointment.appointment_time.slice(0, 5)}</span>
                                             <span className="mx-1">•</span>

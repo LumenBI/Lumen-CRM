@@ -1,91 +1,93 @@
-'use client';
+'use client'
 
-import React from 'react';
-import { X, AlertCircle, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
-import { createPortal } from 'react-dom'
+export type AlertType = 'info' | 'success' | 'warning' | 'error'
 
-export type AlertType = 'success' | 'error' | 'warning' | 'info';
+import { LucideInfo, LucideCheckCircle, LucideAlertTriangle, LucideX } from 'lucide-react'
+import ModalPortal from './ModalPortal'
 
 interface AlertModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    title: string;
-    message: string;
-    type?: AlertType;
+    isOpen: boolean
+    onClose: () => void
+    title: string
+    message: string
+    type?: AlertType
 }
 
-const TYPE_CONFIG = {
-    success: {
-        icon: CheckCircle2,
-        color: 'text-green-600',
-        bg: 'bg-green-100',
-        gradient: 'from-green-400 to-green-600',
-        button: 'bg-green-600 hover:bg-green-700',
-    },
-    error: {
-        icon: AlertCircle,
-        color: 'text-red-600',
-        bg: 'bg-red-100',
-        gradient: 'from-red-400 to-red-600',
-        button: 'bg-red-600 hover:bg-red-700',
-    },
-    warning: {
-        icon: AlertTriangle,
-        color: 'text-yellow-600',
-        bg: 'bg-yellow-100',
-        gradient: 'from-yellow-400 to-yellow-600',
-        button: 'bg-yellow-600 hover:bg-yellow-700',
-    },
-    info: {
-        icon: Info,
-        color: 'text-blue-600',
-        bg: 'bg-blue-100',
-        gradient: 'from-blue-400 to-blue-600',
-        button: 'bg-blue-600 hover:bg-blue-700',
-    },
-};
+export default function AlertModal({
+    isOpen,
+    onClose,
+    title,
+    message,
+    type = 'info'
+}: AlertModalProps) {
+    if (!isOpen) return null
 
+    const typeConfig = {
+        info: {
+            icon: LucideInfo,
+            color: 'text-blue-600',
+            bg: 'bg-blue-50',
+            border: 'border-blue-100',
+            button: 'bg-blue-600 hover:bg-blue-700'
+        },
+        success: {
+            icon: LucideCheckCircle,
+            color: 'text-green-600',
+            bg: 'bg-green-50',
+            border: 'border-green-100',
+            button: 'bg-green-600 hover:bg-green-700'
+        },
+        warning: {
+            icon: LucideAlertTriangle,
+            color: 'text-yellow-600',
+            bg: 'bg-yellow-50',
+            border: 'border-yellow-100',
+            button: 'bg-yellow-600 hover:bg-yellow-700'
+        },
+        error: {
+            icon: LucideAlertTriangle,
+            color: 'text-red-600',
+            bg: 'bg-red-50',
+            border: 'border-red-100',
+            button: 'bg-red-600 hover:bg-red-700'
+        }
+    }
 
+    const { icon: Icon, color, bg, border, button } = typeConfig[type]
 
-export default function AlertModal({ isOpen, onClose, title, message, type = 'info' }: AlertModalProps) {
-    if (!isOpen) return null;
+    return (
+        <ModalPortal>
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800">
+                    <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className={`p-3 rounded-xl ${bg} ${color} dark:bg-opacity-10 dark:text-opacity-90`}>
+                                <Icon size={24} />
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400 dark:text-slate-500"
+                            >
+                                <LucideX size={20} />
+                            </button>
+                        </div>
 
-    const config = TYPE_CONFIG[type];
-    const Icon = config.icon;
+                        <h3 className="text-xl font-bold text-[#000d42] dark:text-white mb-2">{title}</h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+                            {message}
+                        </p>
 
-    const [mounted, setMounted] = React.useState(false)
-    React.useEffect(() => {
-        setMounted(true)
-        return () => setMounted(false)
-    }, [])
-
-    if (!mounted) return null
-
-    return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div
-                className="absolute inset-0 bg-[#000D42]/60 backdrop-blur-sm animate-in fade-in duration-200"
-                onClick={onClose}
-            ></div>
-
-            <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <div className="p-6 text-center">
-                    <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${config.bg}`}>
-                        <Icon className={`h-8 w-8 ${config.color}`} />
+                        <div className="mt-6">
+                            <button
+                                onClick={onClose}
+                                className={`w-full py-3 rounded-xl text-white font-bold transition-all shadow-lg active:scale-95 ${button}`}
+                            >
+                                Entendido
+                            </button>
+                        </div>
                     </div>
-
-                    <h3 className="mb-2 text-xl font-bold text-gray-900">{title}</h3>
-                    <p className="mb-6 text-gray-600 text-sm leading-relaxed whitespace-pre-line">{message}</p>
-
-                    <button
-                        onClick={onClose}
-                        className={`w-full rounded-xl py-3 px-4 font-bold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl ${config.button}`}
-                    >
-                        Entendido
-                    </button>
                 </div>
             </div>
-        </div>,
-        document.body
-    );
+        </ModalPortal>
+    )
 }

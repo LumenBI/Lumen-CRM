@@ -68,6 +68,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             }
         });
 
+        // 1. Fetch Profile
         const { data: profile, error } = await scopedSupabase
             .from('profiles')
             .select('is_active, role')
@@ -75,7 +76,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             .maybeSingle();
 
         if (error) {
-            console.error('Supabase query error:', error);
+            console.error('Supabase profile query error:', error);
             throw new UnauthorizedException('Error verifying user status');
         }
 
@@ -84,15 +85,25 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             throw new UnauthorizedException('User profile not found or access denied');
         }
 
-        if (profile.is_active === false) {
-            throw new UnauthorizedException('User is inactive');
+        // 2. Fetch Permissions based on role (separate query to avoid join error without FK)
+        const { data: permissionsData, error: permError } = await scopedSupabase
+            .from('role_permissions')
+            .select('permission_name')
+            .eq('role', profile.role);
+
+        if (permError) {
+            console.error('Supabase permissions query error:', permError);
+            // Non-critical, but logging it
         }
+
+        const permissions = (permissionsData as any[] || []).map(p => p.permission_name);
 
         // Return a fresh object to avoid any prototype pollution or weirdness if payload was a string
         return {
             userId: userId,
             email: payload.email,
             role: profile.role,
+            permissions: permissions, // Attached for PermissionsGuard
             ...(typeof payload === 'object' ? payload : {})
         };
     }

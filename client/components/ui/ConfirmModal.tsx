@@ -1,18 +1,18 @@
-'use client';
+'use client'
 
-import React from 'react';
-import { AlertTriangle, Trash2 } from 'lucide-react';
-import { createPortal } from 'react-dom'
+import { LucideAlertCircle, LucideX, LucideLoader2 } from 'lucide-react'
+import ModalPortal from './ModalPortal'
 
 interface ConfirmModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
-    title: string;
-    message: string;
-    confirmText?: string;
-    cancelText?: string;
-    isLoading?: boolean;
+    isOpen: boolean
+    onClose: () => void
+    onConfirm: () => void
+    title: string
+    message: string
+    confirmText?: string
+    cancelText?: string
+    isDestructive?: boolean
+    isLoading?: boolean
 }
 
 export default function ConfirmModal({
@@ -21,55 +21,50 @@ export default function ConfirmModal({
     onConfirm,
     title,
     message,
-    confirmText = 'Eliminar',
+    confirmText = 'Confirmar',
     cancelText = 'Cancelar',
+    isDestructive = true,
     isLoading = false
 }: ConfirmModalProps) {
-    if (!isOpen) return null;
+    if (!isOpen) return null
 
-    const [mounted, setMounted] = React.useState(false)
-    React.useEffect(() => {
-        setMounted(true)
-        return () => setMounted(false)
-    }, [])
+    return (
+        <ModalPortal>
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800">
+                    <div className="p-6 text-center">
+                        <div className="flex justify-center mb-4">
+                            <div className={`p-4 rounded-full ${isDestructive ? 'bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400' : 'bg-blue-50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400'}`}>
+                                <LucideAlertCircle size={32} />
+                            </div>
+                        </div>
 
-    if (!mounted) return null
+                        <h3 className="text-xl font-bold text-[#000d42] dark:text-white mb-2">{title}</h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
+                            {message}
+                        </p>
 
-    return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div
-                className="absolute inset-0 bg-[#000D42]/60 backdrop-blur-sm animate-in fade-in duration-200"
-                onClick={isLoading ? undefined : onClose}
-            ></div>
-
-            <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <div className="p-6 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-                        <Trash2 className="h-8 w-8 text-red-600" />
-                    </div>
-
-                    <h3 className="mb-2 text-xl font-bold text-gray-900">{title}</h3>
-                    <p className="mb-6 text-gray-600 text-sm leading-relaxed whitespace-pre-line">{message}</p>
-
-                    <div className="flex gap-3">
-                        <button
-                            onClick={onClose}
-                            disabled={isLoading}
-                            className="flex-1 rounded-xl py-3 px-4 font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
-                        >
-                            {cancelText}
-                        </button>
-                        <button
-                            onClick={onConfirm}
-                            disabled={isLoading}
-                            className="flex-1 rounded-xl py-3 px-4 font-bold text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/30 transition-all hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? 'Procesando...' : confirmText}
-                        </button>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={onClose}
+                                disabled={isLoading}
+                                className="flex-1 py-3 px-4 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50"
+                            >
+                                {cancelText}
+                            </button>
+                            <button
+                                onClick={onConfirm}
+                                disabled={isLoading}
+                                className={`flex-1 py-3 px-4 rounded-xl text-white font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${isDestructive ? 'bg-red-600 hover:bg-red-700 shadow-red-200 dark:shadow-red-900/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 dark:shadow-blue-900/20'
+                                    }`}
+                            >
+                                {isLoading && <LucideLoader2 size={18} className="animate-spin" />}
+                                {confirmText}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>,
-        document.body
-    );
+        </ModalPortal>
+    )
 }

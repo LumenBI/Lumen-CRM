@@ -113,29 +113,29 @@ export default function ClientsPage() {
                 placeholder="Buscar por nombre de empresa, contacto o email..."
             />
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
-                                <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide uppercase">Cliente</th>
-                                <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide uppercase">Contacto</th>
-                                <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide uppercase">Origen</th>
+                            <tr className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-800/50">
+                                <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">Cliente</th>
+                                <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">Contacto</th>
+                                <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">Origen</th>
                                 {(profile?.role === 'ADMIN' || profile?.role === 'MANAGER') && (
-                                    <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] tracking-wide uppercase">Asignado A</th>
+                                    <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">Asignado A</th>
                                 )}
-                                <th className="px-8 py-5 text-right text-sm font-bold text-[#000D42] tracking-wide uppercase">Acciones</th>
+                                <th className="px-8 py-5 text-right text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                             {loading ? (
-                                <tr><td colSpan={5} className="text-center py-8">Cargando clientes...</td></tr>
+                                <tr><td colSpan={5} className="text-center py-8 text-gray-500 dark:text-slate-400">Cargando clientes...</td></tr>
                             ) : displayedClients.length === 0 ? (
-                                <tr><td colSpan={5} className="text-center py-8 text-gray-500">No se encontraron clientes</td></tr>
+                                <tr><td colSpan={5} className="text-center py-8 text-gray-500 dark:text-slate-400 font-medium">No se encontraron clientes</td></tr>
                             ) : displayedClients.map((client) => (
                                 <tr
                                     key={client.id}
-                                    className="group hover:bg-blue-50/50 transition-all cursor-pointer border-b border-gray-100 hover:shadow-md hover:scale-[1.01] "
+                                    className="group hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all cursor-pointer border-b border-gray-100 dark:border-slate-800 hover:shadow-md hover:scale-[1.01]"
                                     onClick={() => setSelectedClientId(client.id)}
                                 >
                                     <td className="px-8 py-6 w-[35%]">
@@ -144,22 +144,22 @@ export default function ClientsPage() {
                                                 <Building2 size={24} />
                                             </div>
                                             <div className="overflow-hidden">
-                                                <p className="font-bold text-lg text-[#000D42] group-hover:text-[#0066FF] transition-colors truncate">{client.company_name}</p>
+                                                <p className="font-bold text-lg text-[#000D42] dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">{client.company_name}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 w-[25%]">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                                                <User size={18} className="text-purple-600" />
+                                            <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center flex-shrink-0">
+                                                <User size={18} className="text-purple-600 dark:text-purple-400" />
                                             </div>
-                                            <span className="text-gray-800 font-medium truncate">{client.contact_name || 'N/A'}</span>
+                                            <span className="text-gray-800 dark:text-slate-200 font-medium truncate">{client.contact_name || 'N/A'}</span>
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 w-[15%]">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${client.origin === 'APP COBUS' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                                            client.origin === 'WEB' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
-                                                'bg-gray-100 text-gray-600 border border-gray-200'
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${client.origin === 'APP COBUS' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                                            client.origin === 'WEB' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800' :
+                                                'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 border border-gray-200 dark:border-slate-700'
                                             }`}>
                                             {client.origin || 'MANUAL'}
                                         </span>
@@ -168,7 +168,7 @@ export default function ClientsPage() {
                                         <td className="px-8 py-6 w-[20%]">
                                             <div className="flex items-center gap-2">
                                                 <div className={`w-2 h-2 rounded-full ${client.assigned_agent_id ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                                <span className="text-sm text-gray-700 font-medium truncate">
+                                                <span className="text-sm text-gray-700 dark:text-slate-300 font-medium truncate">
                                                     {client.agent?.full_name || 'Sin Asignar'}
                                                 </span>
                                             </div>
@@ -177,16 +177,16 @@ export default function ClientsPage() {
                                     <td className="px-8 py-6 w-[25%]">
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-3 text-sm">
-                                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                                    <Mail size={16} className="text-blue-600" />
+                                                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
+                                                    <Mail size={16} className="text-blue-600 dark:text-blue-400" />
                                                 </div>
-                                                <span className="text-gray-700 truncate">{client.email}</span>
+                                                <span className="text-gray-700 dark:text-slate-400 truncate">{client.email}</span>
                                             </div>
                                             <div className="flex items-center gap-3 text-sm">
-                                                <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
-                                                    <Phone size={16} className="text-green-600" />
+                                                <div className="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/20 flex items-center justify-center flex-shrink-0">
+                                                    <Phone size={16} className="text-green-600 dark:text-green-400" />
                                                 </div>
-                                                <span className="text-gray-700 truncate">{client.phone || 'N/A'}</span>
+                                                <span className="text-gray-700 dark:text-slate-400 truncate">{client.phone || 'N/A'}</span>
                                             </div>
                                         </div>
                                     </td>
@@ -201,7 +201,7 @@ export default function ClientsPage() {
                                             </button>
                                             <button
                                                 onClick={(e) => handleDeleteClick(e, client.id)}
-                                                className="inline-flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white hover:bg-red-500 rounded-xl transition-all hover:scale-110 shadow-sm hover:shadow-md"
+                                                className="inline-flex items-center justify-center w-10 h-10 text-gray-400 dark:text-slate-500 hover:text-white hover:bg-red-500 rounded-xl transition-all hover:scale-110 shadow-sm hover:shadow-md border border-gray-100 dark:border-slate-800"
                                                 title={TEXTS.DELETE_CLIENT}
                                             >
                                                 <Trash2 size={18} />

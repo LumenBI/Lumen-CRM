@@ -160,6 +160,12 @@ export class DashboardController {
     return this.notificationsService.updateNotificationInterval(token, req.user.userId, interval);
   }
 
+  @Patch('profile/preferences')
+  async updatePreferences(@Req() req, @Body('preferences') preferences: any) {
+    const token = this.extractToken(req);
+    return this.notificationsService.updateUserPreferences(token, req.user.userId, preferences);
+  }
+
   @Get('bootstrap')
   async getBootstrap(@Req() req) {
     const token = this.extractToken(req);

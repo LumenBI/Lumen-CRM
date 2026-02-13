@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from './supabase.service';
 import { NotificationsService } from './notifications.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AppointmentCreatedEvent } from '../events/dashboard.events';
 
 @Injectable()
 export class AppointmentsService {
     constructor(
         private readonly supabaseService: SupabaseService,
-        private readonly notificationsService: NotificationsService
+        private readonly notificationsService: NotificationsService,
+        private readonly eventEmitter: EventEmitter2
     ) { }
 
     async getAppointments(token: string, userId: string, filters?: { from?: string; to?: string; status?: string }) {
@@ -158,12 +161,16 @@ export class AppointmentsService {
 
         await supabase.from('appointment_participants').insert(participantRows);
 
-        // Fetch agent name for notifications
-        const agentName = (Array.isArray(data.agent) ? data.agent[0] : data.agent)?.full_name || 'Un agente';
+        await supabase.from('appointment_participants').insert(participantRows);
 
-        // Notify all participants (except creator, who gets a generic notification)
-        await this.notificationsService.createNotification(supabase, userId, 'APPOINTMENT_CREATED', 'Has agendado una nueva cita.', '/dashboard/citas');
-        await this.notificationsService.notifyManagers(supabase, 'APPOINTMENT_CREATED', `[${agentName}] ha agendado una nueva cita con "${payload.client_id || 'Cliente'}"`, '/dashboard/citas');
+        // Fetch user email for the event
+        const { data: userProfile } = await supabase.from('profiles').select('email').eq('id', userId).single();
+
+        // Emit event for asynchronous notifications
+        this.eventEmitter.emit(
+            'appointment.created',
+            new AppointmentCreatedEvent(data, userId, userProfile?.email || 'Unknown')
+        );
 
         return data;
     }

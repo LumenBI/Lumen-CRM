@@ -174,12 +174,12 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName: 
     };
 
     return (
-        <div className="p-6 space-y-6 bg-white rounded-lg shadow-sm border font-sans">
-            <div className="flex justify-between items-center border-b pb-4">
+        <div className="p-6 space-y-6 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 font-sans">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Nueva Cotización</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Nueva Cotización</h2>
                     <div className="mt-1 flex items-center gap-2">
-                        <span className="text-muted-foreground text-sm">Cliente:</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-sm">Cliente:</span>
                         {((!initialClientName || initialClientName.trim().toUpperCase() === 'N/A') && !selectedClient) ? (
                             <ClientAutocomplete
                                 onSelect={(client) => setSelectedClient(client)}
@@ -188,7 +188,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName: 
                         ) : (
                             <div className="flex items-center gap-1">
                                 <span
-                                    className="text-sm font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 uppercase tracking-tighter cursor-pointer hover:bg-blue-100 transition-colors"
+                                    className="text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-800 uppercase tracking-tighter cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                                     onClick={() => selectedClient && setSelectedClient(null)}
                                     title={selectedClient ? "Clic para cambiar cliente" : ""}
                                 >
@@ -208,10 +208,10 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName: 
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleSubmit(onSubmit)}>
-                        <Save className="mr-2 h-4 w-4" /> Guardar Borrador
+                    <Button variant="outline" onClick={handleSubmit(onSubmit)} className="dark:bg-slate-800 dark:text-white dark:border-slate-700 dark:hover:bg-slate-700">
+                        <Save className="mr-2 h-4 w-4 text-orange-500" /> Guardar Borrador
                     </Button>
-                    <Button onClick={handleOpenPreview} disabled={creating} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Button onClick={handleOpenPreview} disabled={creating} className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700">
                         {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                         Previsualizar y Enviar
                     </Button>
@@ -220,7 +220,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName: 
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-0">
                 <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">Moneda</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Moneda</label>
                     <CurrencySelector
                         value={currency}
                         onChange={(val) => { setCurrency(val); setValue('currency', val); }}
@@ -228,25 +228,25 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName: 
                     />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">Válido Hasta</label>
-                    <Input type="date" {...register('valid_until')} />
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Válido Hasta</label>
+                    <Input type="date" {...register('valid_until')} className="dark:bg-slate-800 dark:border-slate-700 dark:text-white" />
                 </div>
             </div>
 
-            <div className="border rounded-lg shadow-sm overflow-visible">
+            <div className="border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm overflow-visible">
                 <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                         <tr>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-900">Servicio / Descripción</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-900 w-24">Cant.</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-900 w-32">Precio Unit.</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-900 w-32">Total</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-slate-200 uppercase tracking-widest text-[10px]">Servicio / Descripción</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-slate-200 uppercase tracking-widest text-[10px] w-24">Cant.</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-slate-200 uppercase tracking-widest text-[10px] w-32">Precio Unit.</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-slate-200 uppercase tracking-widest text-[10px] w-32">Total</th>
                             <th className="px-4 py-3 w-10"></th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
                         {fields.map((field, index) => (
-                            <tr key={field.id} className="group hover:bg-gray-50 transition-colors">
+                            <tr key={field.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                                 <td className="p-3 relative overflow-visible">
                                     <div className="flex flex-col gap-2 relative">
                                         <Controller
@@ -266,16 +266,16 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName: 
                                     </div>
                                 </td>
                                 <td className="p-3 align-top">
-                                    <Input type="number" {...register(`items.${index}.quantity`, { valueAsNumber: true })} className="h-9" />
+                                    <Input type="number" {...register(`items.${index}.quantity`, { valueAsNumber: true })} className="h-9 dark:bg-slate-800 dark:border-slate-700" />
                                 </td>
                                 <td className="p-3 align-top">
-                                    <Input type="number" {...register(`items.${index}.unit_price`, { valueAsNumber: true })} className="h-9" />
+                                    <Input type="number" {...register(`items.${index}.unit_price`, { valueAsNumber: true })} className="h-9 dark:bg-slate-800 dark:border-slate-700" />
                                 </td>
-                                <td className="p-3 font-medium text-gray-900 align-top pt-5">
+                                <td className="p-3 font-bold text-gray-900 dark:text-white align-top pt-5">
                                     {((watchItems[index]?.quantity || 0) * (watchItems[index]?.unit_price || 0)).toFixed(2)}
                                 </td>
                                 <td className="p-3 text-center align-top pt-4">
-                                    <Button variant="ghost" size="icon" onClick={() => remove(index)} className="text-muted-foreground hover:text-red-500 hover:bg-red-50 h-8 w-8">
+                                    <Button variant="ghost" size="icon" onClick={() => remove(index)} className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8">
                                         <Trash className="h-4 w-4" />
                                     </Button>
                                 </td>
@@ -283,18 +283,18 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName: 
                         ))}
                     </tbody>
                 </table>
-                <div className="p-3 bg-gray-50 border-t">
-                    <Button variant="ghost" onClick={() => append({ description: '', quantity: 1, unit_price: 0, tax_rate: 0 })} className="text-primary hover:text-primary/80 hover:bg-primary/10">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800">
+                    <Button variant="ghost" onClick={() => append({ description: '', quantity: 1, unit_price: 0, tax_rate: 0 })} className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-bold">
                         <Plus className="mr-2 h-4 w-4" /> Agregar Ítem
                     </Button>
                 </div>
             </div>
 
-            <div className="flex justify-end pt-4 border-t">
+            <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
                 <div className="text-right space-y-1">
-                    <p className="text-2xl font-bold text-gray-900">Total: {currency} {subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">Total: <span className="text-blue-600 dark:text-blue-400">{currency} {subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></p>
                     {currency === 'USD' && (
-                        <p className="text-sm text-muted-foreground">Estimado en CRC: ₡{(subtotal * exchangeRate).toLocaleString()}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 italic">Estimado en CRC: ₡{(subtotal * exchangeRate).toLocaleString()}</p>
                     )}
                 </div>
             </div>

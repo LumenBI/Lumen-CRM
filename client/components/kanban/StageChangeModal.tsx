@@ -74,7 +74,7 @@ export default function StageChangeModal({
                 onClick={loading ? undefined : onClose}
             ></div>
 
-            <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-gray-100 dark:border-slate-800">
                 <div className="bg-gradient-to-r from-[#000D42] to-[#0066FF] p-6 text-white">
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="text-xl font-bold">Registrar Avance</h3>
@@ -96,7 +96,7 @@ export default function StageChangeModal({
 
                 <div className="p-6 space-y-6">
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">
                             ¿Cómo fue el contacto?
                         </label>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -105,8 +105,8 @@ export default function StageChangeModal({
                                     key={option.id}
                                     onClick={() => setInteractionType(option.id)}
                                     className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${interactionType === option.id
-                                        ? 'border-[#0066FF] bg-blue-50 text-[#0066FF]'
-                                        : 'border-gray-100 hover:border-blue-200 text-gray-600'
+                                        ? 'border-[#0066FF] dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-[#0066FF] dark:text-blue-400'
+                                        : 'border-gray-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-slate-700 text-gray-600 dark:text-slate-400'
                                         }`}
                                 >
                                     <option.icon size={20} />
@@ -117,19 +117,19 @@ export default function StageChangeModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">
                             Resumen de la interacción
                         </label>
                         <textarea
                             value={summary}
                             onChange={(e) => setSummary(e.target.value)}
                             placeholder="Ej: Se acordó enviar cotización actualizada..."
-                            className="w-full h-24 rounded-xl border border-gray-200 p-3 text-sm focus:border-[#0066FF] focus:ring-4 focus:ring-blue-50 outline-none resize-none"
+                            className="w-full h-24 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-sm text-gray-900 dark:text-white focus:border-[#0066FF] focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/10 outline-none resize-none"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">
                             Próximo paso (Opcional)
                         </label>
                         <input
@@ -137,19 +137,19 @@ export default function StageChangeModal({
                             value={nextStep}
                             onChange={(e) => setNextStep(e.target.value)}
                             placeholder="Ej: Llamar el martes..."
-                            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-[#0066FF] focus:ring-4 focus:ring-blue-50 outline-none"
+                            className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-gray-900 dark:text-white focus:border-[#0066FF] focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/10 outline-none"
                         />
                     </div>
 
                     <div className="pt-2 space-y-2">
                         {isMovingToCotizando ? (
                             <>
-                                <p className="text-sm font-medium text-gray-600 text-center">¿Deseas preparar una cotización ahora?</p>
+                                <p className="text-sm font-medium text-gray-600 dark:text-slate-400 text-center">¿Deseas preparar una cotización ahora?</p>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={() => handleSubmit(false)}
                                         disabled={!summary.trim() || loading}
-                                        className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 font-semibold py-3 rounded-xl border border-slate-200 hover:bg-slate-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         No, solo mover
                                     </button>

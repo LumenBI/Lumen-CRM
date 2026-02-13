@@ -11,9 +11,11 @@ import { CurrencyModule } from './currency/currency.module';
 import { MailModule } from './mail/mail.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { AiModule } from './ai/ai.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{
       ttl: 60000,

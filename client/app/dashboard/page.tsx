@@ -17,8 +17,8 @@ export default async function DashboardPage() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-2">
-                <h1 className="text-4xl font-bold text-[#000D42] mb-2">{TEXTS.DASHBOARD_TITLE}</h1>
-                <p className="text-lg text-gray-500">{TEXTS.WELCOME_BACK}</p>
+                <h1 className="text-4xl font-bold text-[#000D42] dark:text-white mb-2">{TEXTS.DASHBOARD_TITLE}</h1>
+                <p className="text-lg text-gray-500 dark:text-slate-400">{TEXTS.WELCOME_BACK}</p>
             </div>
 
             <DashboardMetrics />
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
                 </div>
             </div>
 
-            <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
                 <PerformanceChartWidget />
             </div>
         </div>

@@ -2,12 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 import { NotificationsService } from './notifications.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { DealCreatedEvent } from '../events/dashboard.events';
 
 @Injectable()
 export class DealsService {
     constructor(
         private readonly supabaseService: SupabaseService,
-        private readonly notificationsService: NotificationsService
+        private readonly notificationsService: NotificationsService,
+        private readonly eventEmitter: EventEmitter2
     ) { }
 
     async getKanbanBoard(token: string, userId: string) {
@@ -172,11 +175,14 @@ export class DealsService {
 
         if (error) throw new Error(error.message);
 
-        // Fetch agent name for notification
-        const { data: agent } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+        // Fetch agent name and email for the event
+        const { data: agent } = await supabase.from('profiles').select('full_name, email').eq('id', userId).single();
 
-        await this.notificationsService.createNotification(supabase, userId, 'DEAL_CREATED', `Has creado una nueva negociación: ${payload.title}`, '/dashboard/kanban');
-        await this.notificationsService.notifyManagers(supabase, 'DEAL_CREATED', `[${agent?.full_name || 'Agente'}] ha creado una nueva negociación: ${payload.title}`, '/dashboard/kanban');
+        // Emit event for asynchronous notifications
+        this.eventEmitter.emit(
+            'deal.created',
+            new DealCreatedEvent(data, userId, agent?.email || 'Unknown')
+        );
 
         return data;
     }

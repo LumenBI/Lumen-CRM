@@ -74,19 +74,19 @@ export const ServiceAutocomplete: React.FC<ServiceAutocompleteProps> = ({ onSele
             </div>
 
             {open && (
-                <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-md shadow-lg max-h-60 overflow-auto">
                     {loading && <div className="p-2 text-sm text-center text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Loading...</div>}
                     {!loading && products.length === 0 && <div className="p-2 text-sm text-center text-muted-foreground">No services found.</div>}
                     {!loading && products.map((product) => (
                         <div
                             key={product.id}
-                            className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 flex justify-between items-center"
+                            className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 flex justify-between items-center transition-colors"
                             onClick={() => {
                                 onSelect(product);
                                 setOpen(false);
                             }}
                         >
-                            <span>{product.name}</span>
+                            <span className="text-gray-900 dark:text-white font-medium">{product.name}</span>
                             <span className="text-xs text-muted-foreground text-right">${product.price}</span>
                         </div>
                     ))}

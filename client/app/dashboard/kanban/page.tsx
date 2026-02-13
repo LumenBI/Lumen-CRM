@@ -14,14 +14,17 @@ import {
     ArrowRightCircle,
     List,
     LayoutGrid,
-    PhoneCall
+    PhoneCall,
+    Phone,
+    Mail,
+    Trash2
 } from 'lucide-react'
 import ClientModal from '@/components/ClientModal'
 import NewDealModal from '@/components/kanban/NewDealModal'
 import EditDealModal from '@/components/kanban/EditDealModal'
 import StageChangeModal, { STAGE_ID_COTIZANDO } from '@/components/kanban/StageChangeModal'
 import ContextMenu from '@/components/ContextMenu'
-import { useDeals, KANBAN_COLUMNS } from '@/context/DealsContext'
+import { useDeals, KANBAN_COLUMNS, type KanbanBoard } from '@/context/DealsContext'
 import { useApi } from '@/hooks/useApi'
 import type { Deal } from '@/types'
 import { toast } from 'sonner'
@@ -29,15 +32,25 @@ import { TEXTS } from '@/constants/text'
 import DealsListView from '@/components/kanban/DealsListView'
 import { STAGE_MAP } from '@/constants/stages'
 import { SHIPPING_TYPES, SHIPPING_TYPE_MAP } from '@/constants/shipping'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 
 export default function KanbanPage() {
     const router = useRouter()
-    const { board, loading, refreshBoard, moveDeal } = useDeals()
+    const { board, loading, refreshBoard, moveDeal, updateBoard } = useDeals()
     const { deals: dealsApi } = useApi()
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
     const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
+    const [deleteModal, setDeleteModal] = useState<{
+        isOpen: boolean
+        dealId: string | null
+        isDeleting: boolean
+    }>({
+        isOpen: false,
+        dealId: null,
+        isDeleting: false
+    })
 
     const [stageModal, setStageModal] = useState<{
         isOpen: boolean
@@ -73,6 +86,8 @@ export default function KanbanPage() {
 
     const [filterType, setFilterType] = useState('ALL')
 
+    const [previousBoard, setPreviousBoard] = useState<KanbanBoard | null>(null)
+
     const onDragEnd = (result: DropResult) => {
         const { source, destination, draggableId } = result
 
@@ -80,20 +95,41 @@ export default function KanbanPage() {
             return
         }
 
-        const deal = board?.[source.droppableId]?.find(d => d.id === draggableId)
-        if (!deal) return
-        const toStageId = destination.droppableId
+        if (!board) return
+        setPreviousBoard({ ...board })
+
+        // Optimistic Move for Instant UI feedback
+        const newBoard = { ...board }
+        const sourceCol = [...newBoard[source.droppableId]]
+        const destCol = source.droppableId === destination.droppableId ? sourceCol : [...newBoard[destination.droppableId]]
+
+        const [movedDeal] = sourceCol.splice(source.index, 1)
+        destCol.splice(destination.index, 0, movedDeal)
+
+        newBoard[source.droppableId] = sourceCol
+        newBoard[destination.droppableId] = destCol
+
+        updateBoard(newBoard) // Update the context board immediately
+
         setStageModal({
             isOpen: true,
-            dealId: deal.id,
-            deal,
-            dealTitle: deal.title,
+            dealId: movedDeal.id,
+            deal: movedDeal,
+            dealTitle: movedDeal.title,
             fromStage: KANBAN_COLUMNS.find(c => c.id === source.droppableId)?.title || source.droppableId,
-            toStage: KANBAN_COLUMNS.find(c => c.id === toStageId)?.title || toStageId,
-            toStageId,
+            toStage: KANBAN_COLUMNS.find(c => c.id === destination.droppableId)?.title || destination.droppableId,
+            toStageId: destination.droppableId,
             pendingSource: source,
             pendingDest: destination
         })
+    }
+
+    const handleCancelMove = () => {
+        if (previousBoard) {
+            updateBoard(previousBoard)
+            setPreviousBoard(null)
+        }
+        setStageModal(prev => ({ ...prev, isOpen: false }))
     }
 
     const handleConfirmMove = async (
@@ -163,7 +199,22 @@ export default function KanbanPage() {
                 pendingDest: { droppableId: nextStage.id, index: 0 }
             })
         } else {
-            alert('Esta negociación ya está en la etapa final o no se puede mover automáticamente.')
+            toast.info('Esta negociación ya está en la etapa final o no se puede mover automáticamente.')
+        }
+    }
+
+    const handleDeleteDeal = async () => {
+        if (!deleteModal.dealId) return
+        setDeleteModal(prev => ({ ...prev, isDeleting: true }))
+        try {
+            await dealsApi.delete(deleteModal.dealId)
+            toast.success('Seguimiento eliminado')
+            refreshBoard()
+            setDeleteModal({ isOpen: false, dealId: null, isDeleting: false })
+        } catch (error) {
+            console.error(error)
+            toast.error('Error al eliminar')
+            setDeleteModal(prev => ({ ...prev, isDeleting: false }))
         }
     }
 
@@ -186,20 +237,20 @@ export default function KanbanPage() {
     }
 
     return (
-        <div className="space-y-6 h-full flex flex-col">
+        <div className="space-y-6 h-full flex flex-col p-4 md:p-6 bg-transparent dark:text-white transition-colors">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#000d42]">{TEXTS.SALES_FLOW_TITLE}</h1>
-                    <p className="text-slate-500">Gestiona tus oportunidades comerciales</p>
+                    <h1 className="text-2xl font-bold text-[#000d42] dark:text-white">{TEXTS.SALES_FLOW_TITLE}</h1>
+                    <p className="text-slate-500 dark:text-slate-400">Gestiona tus oportunidades comerciales</p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="bg-white border border-slate-200 p-1 rounded-xl flex items-center shadow-sm">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl flex items-center shadow-sm">
                         <button
                             onClick={() => setViewMode('kanban')}
                             className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'kanban'
-                                ? 'bg-blue-50 text-[#0056fc]'
-                                : 'text-slate-500 hover:bg-slate-50'
+                                ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0056fc] dark:text-blue-400'
+                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                                 }`}
                             title="Vista de Tablero"
                         >
@@ -209,8 +260,8 @@ export default function KanbanPage() {
                         <button
                             onClick={() => setViewMode('list')}
                             className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'list'
-                                ? 'bg-blue-50 text-[#0056fc]'
-                                : 'text-slate-500 hover:bg-slate-50'
+                                ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0056fc] dark:text-blue-400'
+                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                                 }`}
                             title="Vista de Lista"
                         >
@@ -219,10 +270,10 @@ export default function KanbanPage() {
                         </button>
                     </div>
 
-                    <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
                         <button
                             onClick={() => setFilterType('ALL')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === 'ALL' ? 'bg-[#000d42] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === 'ALL' ? 'bg-[#000d42] dark:bg-blue-600 text-white shadow-md' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
                         >
                             Ver todos
                         </button>
@@ -230,7 +281,7 @@ export default function KanbanPage() {
                             <button
                                 key={st.id}
                                 onClick={() => setFilterType(st.id)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === st.id ? `${st.filterColor} text-white shadow-md` : 'text-gray-500 hover:bg-gray-100'}`}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === st.id ? `${st.filterColor} text-white shadow-md` : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
                             >
                                 {st.label}
                             </button>
@@ -239,7 +290,7 @@ export default function KanbanPage() {
 
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="flex items-center gap-2 bg-white text-blue-600 border border-blue-200 px-4 py-2 rounded-xl hover:bg-blue-50 transition-colors font-medium shadow-sm"
+                        className="flex items-center gap-2 bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-4 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors font-medium shadow-sm"
                     >
                         <Plus size={18} />
                         {TEXTS.NEW_DEAL}
@@ -280,7 +331,7 @@ export default function KanbanPage() {
                                                 <div
                                                     {...provided.droppableProps}
                                                     ref={provided.innerRef}
-                                                    className={`flex-1 p-2 bg-gray-50/50 rounded-b-xl border border-gray-100 overflow-y-auto transition-colors ${snapshot.isDraggingOver ? 'bg-blue-50/50 ring-2 ring-blue-100 ring-inset' : ''
+                                                    className={`flex-1 p-2 bg-gray-50/50 dark:bg-slate-900/20 rounded-b-xl border border-gray-100 dark:border-slate-800 overflow-y-auto transition-colors ${snapshot.isDraggingOver ? 'bg-blue-50/50 dark:bg-blue-900/10 ring-2 ring-blue-100 dark:ring-blue-900 ring-inset' : ''
                                                         }`}
                                                 >
                                                     <div className="space-y-3">
@@ -295,12 +346,18 @@ export default function KanbanPage() {
                                                                             onClick={() => {
                                                                             }}
                                                                             onContextMenu={(e) => handleContextMenu(e, deal.id)}
-                                                                            className={`bg-white p-4 rounded-xl border shadow-sm group hover:shadow-md transition-all relative ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl ring-2 ring-blue-500 z-50' : 'border-gray-100 hover:border-blue-200'
+                                                                            className={`bg-white dark:bg-slate-800 p-4 rounded-xl border shadow-sm group hover:shadow-md transition-all relative ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl ring-2 ring-blue-500 z-50' : 'border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800'
                                                                                 }`}
                                                                             style={provided.draggableProps.style}
                                                                         >
                                                                             <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                <button className="p-1 hover:bg-gray-100 rounded">
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation()
+                                                                                        setEditingDeal(deal)
+                                                                                    }}
+                                                                                    className="p-1 hover:bg-gray-100 rounded"
+                                                                                >
                                                                                     <Pencil size={14} className="text-gray-400" />
                                                                                 </button>
                                                                             </div>
@@ -310,7 +367,7 @@ export default function KanbanPage() {
                                                                                     const shipConfig = SHIPPING_TYPE_MAP[deal.type]
                                                                                     const ShipIcon = shipConfig?.icon
                                                                                     return (
-                                                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${shipConfig?.badgeColor || 'bg-gray-50 text-gray-700'}`}>
+                                                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${shipConfig?.badgeColor || 'bg-gray-50 dark:bg-slate-700 text-gray-700 dark:text-slate-300'}`}>
                                                                                             {ShipIcon && <ShipIcon size={10} />}
                                                                                             {shipConfig?.label || deal.type}
                                                                                         </span>
@@ -318,7 +375,7 @@ export default function KanbanPage() {
                                                                                 })()}
                                                                             </div>
 
-                                                                            <h4 className="font-bold text-gray-800 text-sm mb-1 line-clamp-2 leading-relaxed">
+                                                                            <h4 className="font-bold text-gray-800 dark:text-slate-100 text-sm mb-1 line-clamp-2 leading-relaxed">
                                                                                 {deal.title}
                                                                             </h4>
 
@@ -326,17 +383,17 @@ export default function KanbanPage() {
                                                                                 <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase">
                                                                                     {deal.client?.company_name?.substring(0, 1) || '?'}
                                                                                 </div>
-                                                                                <span className="text-xs text-gray-500 font-medium truncate max-w-[180px]">
+                                                                                <span className="text-xs text-gray-500 dark:text-slate-400 font-medium truncate max-w-[180px]">
                                                                                     {deal.client?.company_name}
                                                                                 </span>
                                                                             </div>
 
-                                                                            <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-                                                                                <span className="text-sm font-bold text-gray-900">
+                                                                            <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-slate-700">
+                                                                                <span className="text-sm font-bold text-gray-900 dark:text-white">
                                                                                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: deal.currency, maximumFractionDigits: 0 }).format(deal.value)}
                                                                                 </span>
                                                                                 {deal.expected_close_date && (
-                                                                                    <div className="flex items-center gap-1 text-[10px] font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded-full">
+                                                                                    <div className="flex items-center gap-1 text-[10px] font-medium text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-700/50 px-2 py-1 rounded-full">
                                                                                         <CalendarClock size={12} />
                                                                                         {new Date(deal.expected_close_date).toLocaleDateString()}
                                                                                     </div>
@@ -364,16 +421,11 @@ export default function KanbanPage() {
                     onEdit={(deal) => setEditingDeal(deal)}
                     onMove={(deal) => handleMoveFromContext(deal)}
                     onDelete={async (deal) => {
-                        if (window.confirm('¿Estás seguro de eliminar este seguimiento?')) {
-                            try {
-                                await dealsApi.delete(deal.id)
-                                toast.success('Seguimiento eliminado')
-                                refreshBoard()
-                            } catch (error) {
-                                console.error(error)
-                                toast.error('Error al eliminar')
-                            }
-                        }
+                        setDeleteModal({
+                            isOpen: true,
+                            dealId: deal.id,
+                            isDeleting: false
+                        })
                     }}
                 />
             )}
@@ -398,12 +450,13 @@ export default function KanbanPage() {
 
             <StageChangeModal
                 isOpen={stageModal.isOpen}
-                onClose={() => setStageModal(prev => ({ ...prev, isOpen: false }))}
+                onClose={handleCancelMove}
                 onConfirm={handleConfirmMove}
                 dealTitle={stageModal.dealTitle}
                 fromStage={stageModal.fromStage}
                 toStage={stageModal.toStage}
                 toStageId={stageModal.toStageId}
+                loading={stageModal.isOpen && !board} // Simple loading check
             />
 
             {contextMenu.isOpen && getContextDeal() && (
@@ -439,10 +492,34 @@ export default function KanbanPage() {
                         {
                             label: 'Contactar cliente',
                             icon: PhoneCall,
-                            action: () => {
-                                const deal = getContextDeal()
-                                if (deal?.client?.id) setSelectedClientId(deal.client.id)
-                            }
+                            subItems: [
+                                {
+                                    label: `Llamar (${getContextDeal()?.client?.phone || 'N/A'})`,
+                                    icon: Phone,
+                                    action: () => {
+                                        const phone = getContextDeal()?.client?.phone
+                                        if (phone) window.location.href = `tel:${phone}`
+                                        else toast.error('No hay teléfono registrado')
+                                    }
+                                },
+                                {
+                                    label: 'Enviar Email',
+                                    icon: Mail,
+                                    action: () => {
+                                        const email = getContextDeal()?.client?.email
+                                        if (email) window.location.href = `mailto:${email}`
+                                        else toast.error('No hay email registrado')
+                                    }
+                                },
+                                {
+                                    label: 'Ver perfil completo',
+                                    icon: Eye,
+                                    action: () => {
+                                        const deal = getContextDeal()
+                                        if (deal?.client?.id) setSelectedClientId(deal.client.id)
+                                    }
+                                }
+                            ]
                         }
                     ]}
                 />
@@ -458,6 +535,17 @@ export default function KanbanPage() {
                     }}
                 />
             )}
+
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, dealId: null, isDeleting: false })}
+                onConfirm={handleDeleteDeal}
+                isLoading={deleteModal.isDeleting}
+                title="Eliminar Seguimiento"
+                message="¿Estás seguro de que deseas eliminar este seguimiento? Esta acción no se puede deshacer."
+                confirmLabel="Eliminar"
+                isDestructive={true}
+            />
         </div >
     )
 }

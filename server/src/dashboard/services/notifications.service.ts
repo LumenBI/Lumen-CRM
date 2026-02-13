@@ -51,6 +51,19 @@ export class NotificationsService {
         return data;
     }
 
+    async updateUserPreferences(token: string, userId: string, preferences: any) {
+        const supabase = this.supabaseService.getClient(token);
+        const { data, error } = await supabase
+            .from('profiles')
+            .update({ preferences })
+            .eq('id', userId)
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
     async checkAndReleaseExpiredClients(supabase: SupabaseClient, userId: string) {
         const nowStr = new Date().toISOString();
         const { data: expiredClients } = await supabase

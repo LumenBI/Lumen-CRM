@@ -68,25 +68,25 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
     const totalSlots = [...blanks, ...days]
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden text-[#000d42]">
-            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden text-[#000d42] dark:text-white">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
                 <h2 className="text-xl font-bold flex items-center gap-2">
-                    {MONTHS[month]} <span className="text-slate-400 font-normal">{year}</span>
+                    {MONTHS[month]} <span className="text-slate-400 dark:text-slate-500 font-normal">{year}</span>
                 </h2>
-                <div className="flex bg-slate-100 rounded-lg p-1">
-                    <button onClick={prevMonth} className="p-1 hover:bg-white rounded-md transition shadow-sm">
+                <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                    <button onClick={prevMonth} className="p-1 hover:bg-white dark:hover:bg-slate-700 rounded-md transition shadow-sm">
                         <LucideChevronLeft size={20} />
                     </button>
-                    <button onClick={() => setCurrentDate(new Date())} className="px-3 text-sm font-semibold hover:bg-white rounded-md transition">
+                    <button onClick={() => setCurrentDate(new Date())} className="px-3 text-sm font-semibold hover:bg-white dark:hover:bg-slate-700 rounded-md transition">
                         Hoy
                     </button>
-                    <button onClick={nextMonth} className="p-1 hover:bg-white rounded-md transition shadow-sm">
+                    <button onClick={nextMonth} className="p-1 hover:bg-white dark:hover:bg-slate-700 rounded-md transition shadow-sm">
                         <LucideChevronRight size={20} />
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50">
+            <div className="grid grid-cols-7 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
                 {DAYS.map(day => (
                     <div key={day} className="py-2 text-center text-xs font-semibold uppercase text-slate-500 tracking-wider">
                         {day}
@@ -94,9 +94,9 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
                 ))}
             </div>
 
-            <div className="grid grid-cols-7 auto-rows-[minmax(120px,auto)] divide-x divide-slate-100 divide-y">
+            <div className="grid grid-cols-7 auto-rows-[minmax(120px,auto)] divide-x divide-slate-100 dark:divide-slate-800 divide-y">
                 {totalSlots.map((day, index) => {
-                    if (!day) return <div key={`blank-${index}`} className="bg-slate-50/50" />
+                    if (!day) return <div key={`blank-${index}`} className="bg-slate-50/50 dark:bg-slate-800/30" />
 
                     const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                     const isToday = dateString === todayStr
@@ -114,27 +114,27 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
                             }}
                             onDragOver={(e) => {
                                 e.preventDefault()
-                                e.currentTarget.classList.add('bg-blue-50', 'ring-2', 'ring-blue-200', 'ring-inset')
+                                e.currentTarget.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'ring-2', 'ring-blue-200', 'dark:ring-blue-800', 'ring-inset')
                             }}
                             onDragLeave={(e) => {
-                                e.currentTarget.classList.remove('bg-blue-50', 'ring-2', 'ring-blue-200', 'ring-inset')
+                                e.currentTarget.classList.remove('bg-blue-50', 'dark:bg-blue-900/20', 'ring-2', 'ring-blue-200', 'dark:ring-blue-800', 'ring-inset')
                             }}
                             onDrop={(e) => {
                                 e.preventDefault()
-                                e.currentTarget.classList.remove('bg-blue-50', 'ring-2', 'ring-blue-200', 'ring-inset')
+                                e.currentTarget.classList.remove('bg-blue-50', 'dark:bg-blue-900/20', 'ring-2', 'ring-blue-200', 'dark:ring-blue-800', 'ring-inset')
                                 const appointmentId = e.dataTransfer.getData('text/plain')
                                 if (appointmentId && onAppointmentMove) {
                                     onAppointmentMove(appointmentId, dateString)
                                 }
                             }}
-                            className={`p-2 relative group hover:bg-blue-50/20 transition-all ${isToday ? 'bg-blue-50/50' : ''} min-h-[120px]`}
+                            className={`p-2 relative group hover:bg-blue-50/20 dark:hover:bg-blue-900/10 transition-all ${isToday ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''} min-h-[120px]`}
                         >
                             <div className="flex justify-between items-start mb-1 pointer-events-none">
-                                <span className={`flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold ${isToday ? 'bg-[#0056fc] text-white' : 'text-slate-700'}`}>
+                                <span className={`flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold ${isToday ? 'bg-blue-600 dark:bg-blue-500 text-white' : 'text-slate-700 dark:text-slate-400'}`}>
                                     {day}
                                 </span>
                                 {dayAppointments.length > 0 && (
-                                    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 rounded-full">
+                                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 rounded-full">
                                         {dayAppointments.length}
                                     </span>
                                 )}

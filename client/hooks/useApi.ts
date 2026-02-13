@@ -140,6 +140,20 @@ export const useApi = () => {
                     console.error('Error updating notification interval:', error)
                     throw error
                 }
+            },
+            updatePreferences: async (preferences: any) => {
+                try {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/profile/preferences`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ preferences })
+                    })
+                    if (!res.ok) throw new Error('Failed to update preferences')
+                    return res.json()
+                } catch (error) {
+                    console.error('Error updating preferences:', error)
+                    throw error
+                }
             }
         },
 

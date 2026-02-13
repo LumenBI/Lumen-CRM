@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/react"
 
+import { ThemeProvider } from "@/components/ThemeProvider";
+
 const mulish = Mulish({
   variable: "--font-mulish",
   subsets: ["latin"],
@@ -29,12 +31,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body className={`${mulish.variable} font-sans antialiased`}>
-        {children}
-        <Toaster />
-        <SpeedInsights />
-        <Analytics />
+        <ThemeProvider>
+          {children}
+          <Toaster />
+          <SpeedInsights />
+          <Analytics />
+        </ThemeProvider>
       </body>
     </html>
   );

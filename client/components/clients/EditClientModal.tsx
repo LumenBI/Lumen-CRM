@@ -83,7 +83,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
 
     return (
         <ModalPortal>
-            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800">
                 <div className="bg-gradient-to-r from-[#000D42] to-[#0066FF] px-6 py-4 flex items-center justify-between shrink-0">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
                         <Building2 size={24} className="text-blue-200" />
@@ -102,7 +102,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">
-                                <h3 className="text-sm font-bold text-[#000D42] uppercase tracking-wider border-b border-gray-100 pb-2 mb-4">Información General</h3>
+                                <h3 className="text-sm font-bold text-[#000D42] dark:text-blue-400 uppercase tracking-wider border-b border-gray-100 dark:border-slate-800 pb-2 mb-4">Información General</h3>
 
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nombre Empresa</label>
@@ -110,7 +110,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                                         required
                                         value={formData.company_name}
                                         onChange={e => setFormData({ ...formData, company_name: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 outline-none text-sm transition-all"
                                     />
                                 </div>
 
@@ -119,7 +119,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                                     <input
                                         value={formData.contact_name}
                                         onChange={e => setFormData({ ...formData, contact_name: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 outline-none text-sm transition-all"
                                     />
                                 </div>
 
@@ -129,7 +129,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                                         type="email"
                                         value={formData.email}
                                         onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 outline-none text-sm transition-all"
                                     />
                                 </div>
 
@@ -138,7 +138,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                                     <input
                                         value={formData.phone}
                                         onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 outline-none text-sm transition-all"
                                     />
                                 </div>
 
@@ -147,7 +147,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                                     <select
                                         value={formData.origin}
                                         onChange={e => setFormData({ ...formData, origin: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm bg-white"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 outline-none text-sm transition-all"
                                     >
                                         {ORIGIN_OPTIONS.map(opt => (
                                             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -157,8 +157,8 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                             </div>
 
                             {profile && (profile.role === 'ADMIN' || profile.role === 'MANAGER') && (
-                                <div className="space-y-4 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                                    <h3 className="text-sm font-bold text-[#0066FF] uppercase tracking-wider border-b border-blue-100 pb-2 mb-4 flex items-center gap-2">
+                                <div className="space-y-4 bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                                    <h3 className="text-sm font-bold text-[#0066FF] dark:text-blue-400 uppercase tracking-wider border-b border-blue-100 dark:border-blue-900/30 pb-2 mb-4 flex items-center gap-2">
                                         <UserCheck size={16} /> Asignación y Vigencia
                                     </h3>
 
@@ -167,7 +167,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                                         <select
                                             value={formData.assigned_agent_id}
                                             onChange={e => setFormData({ ...formData, assigned_agent_id: e.target.value })}
-                                            className="w-full px-4 py-2 rounded-xl border border-blue-200 focus:border-blue-500 outline-none text-sm bg-white"
+                                            className="w-full px-4 py-2 rounded-xl border border-blue-200 dark:border-slate-700 focus:border-blue-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white transition-all"
                                         >
                                             <option value="">-- Sin Asignar --</option>
                                             {agents.map(agent => (
@@ -190,8 +190,8 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                                                     key={opt.value}
                                                     onClick={() => setDuration(opt.value)}
                                                     className={`px-3 py-2 text-xs font-bold rounded-lg border transition-all ${duration === opt.value
-                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                                        : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                                                        ? 'bg-blue-600 dark:bg-blue-500 text-white border-blue-600 dark:border-blue-500 shadow-md'
+                                                        : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500'
                                                         }`}
                                                 >
                                                     {opt.label}
@@ -208,13 +208,13 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                                                         type="date"
                                                         value={customDate}
                                                         onChange={e => setCustomDate(e.target.value)}
-                                                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-blue-200 focus:border-blue-500 outline-none text-sm"
+                                                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-blue-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-blue-500 outline-none text-sm transition-all"
                                                     />
                                                 </div>
                                             </div>
                                         )}
 
-                                        <div className="mt-4 p-3 bg-blue-100 rounded-lg text-xs text-blue-800">
+                                        <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/40 rounded-lg text-xs text-blue-800 dark:text-blue-200">
                                             <p className="font-bold mb-1">Nota:</p>
                                             <p>Al vencer el tiempo de asignación, el cliente podría ser liberado o reasignado automáticamente según las reglas de negocio.</p>
                                         </div>
@@ -225,11 +225,11 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                         </div>
                     </div>
 
-                    <div className="shrink-0 p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+                    <div className="shrink-0 p-4 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 flex items-center justify-end gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-5 py-2.5 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors"
+                            className="px-5 py-2.5 text-gray-600 dark:text-slate-400 font-medium hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
                         >
                             Cancelar
                         </button>
