@@ -17,10 +17,12 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
   imports: [
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     ScheduleModule.forRoot(),
     AuthModule,
     DashboardModule,
@@ -28,9 +30,9 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     CurrencyModule,
     MailModule,
     QuotesModule,
-    AiModule
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

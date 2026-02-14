@@ -174,8 +174,8 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName: 
     };
 
     return (
-        <div className="p-6 space-y-6 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 font-sans">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="p-4 md:p-6 space-y-6 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 font-sans">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Nueva Cotización</h2>
                     <div className="mt-1 flex items-center gap-2">
@@ -207,13 +207,24 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName: 
                         )}
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleSubmit(onSubmit)} className="dark:bg-slate-800 dark:text-white dark:border-slate-700 dark:hover:bg-slate-700">
-                        <Save className="mr-2 h-4 w-4 text-orange-500" /> Guardar Borrador
+                <div className="flex flex-wrap gap-2 mt-4 md:mt-0 w-full md:w-auto">
+                    <Button
+                        variant="outline"
+                        onClick={handleSubmit(onSubmit)}
+                        className="dark:bg-slate-800 dark:text-white dark:border-slate-700 dark:hover:bg-slate-700 flex-1 md:flex-none text-xs md:text-sm h-10 md:h-11 rounded-xl"
+                    >
+                        <Save className="mr-1 md:mr-2 h-4 w-4 text-orange-500" />
+                        <span className="hidden xs:inline">Guardar Borrador</span>
+                        <span className="xs:hidden">Borrador</span>
                     </Button>
-                    <Button onClick={handleOpenPreview} disabled={creating} className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700">
-                        {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                        Previsualizar y Enviar
+                    <Button
+                        onClick={handleOpenPreview}
+                        disabled={creating}
+                        className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700 flex-1 md:flex-none text-xs md:text-sm h-10 md:h-11 rounded-xl"
+                    >
+                        {creating ? <Loader2 className="mr-1 md:mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-1 md:mr-2 h-4 w-4" />}
+                        <span className="hidden xs:inline">Previsualizar y Enviar</span>
+                        <span className="xs:hidden">Enviar</span>
                     </Button>
                 </div>
             </div>
@@ -233,8 +244,8 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({ dealId, clientName: 
                 </div>
             </div>
 
-            <div className="border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm overflow-visible">
-                <table className="w-full text-sm">
+            <div className="border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm overflow-x-auto custom-scrollbar">
+                <table className="w-full text-sm min-w-[650px]">
                     <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                         <tr>
                             <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-slate-200 uppercase tracking-widest text-[10px]">Servicio / Descripción</th>

@@ -48,119 +48,174 @@ export default function UsersPage() {
     const pendingCount = users.filter(u => u.status === 'PENDING').length;
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="p-4 md:p-8 space-y-6">
             <PageHeader
                 title={TEXTS.USERS_TITLE}
                 subtitle="Administra el equipo y permisos del sistema"
+                icon={Shield}
                 actionLabel={TEXTS.NEW_USER}
-                actionIcon={<Plus size={20} />}
+                actionIcon={<Plus size={18} />}
                 onAction={() => setIsModalOpen(true)}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                 <KpiCard
                     title="Usuarios Activos"
                     value={activeCount}
-                    icon={<UserCheck className="text-white" size={24} />}
-                    color="bg-gradient-to-br from-emerald-400 to-emerald-600"
+                    icon={<UserCheck className="text-white" size={20} />}
+                    color="bg-gradient-to-br from-emerald-500 to-emerald-600"
                 />
                 <KpiCard
                     title="Inactivos"
                     value={inactiveCount}
-                    icon={<UserX className="text-white" size={24} />}
-                    color="bg-gradient-to-br from-red-400 to-red-600"
+                    icon={<UserX className="text-white" size={20} />}
+                    color="bg-gradient-to-br from-red-500 to-red-600"
                 />
                 <KpiCard
                     title="Pendientes"
                     value={pendingCount}
-                    icon={<UserPlus className="text-white" size={24} />}
-                    color="bg-gradient-to-br from-amber-400 to-amber-600"
+                    icon={<UserPlus className="text-white" size={20} />}
+                    color="bg-gradient-to-br from-amber-500 to-amber-600"
                 />
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800">
-                <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex gap-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
+                <div className="p-4 md:p-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/20">
                     <div className="relative flex-1 max-w-md">
                         <SearchBar
                             value={searchTerm}
                             onChange={setSearchTerm}
                             placeholder="Buscar por nombre o correo..."
-                            className="p-0 shadow-none border-0"
+                            className="p-0 shadow-none border-0 bg-transparent"
                         />
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Mobile View - Compact Cards */}
+                <div className="md:hidden p-4 space-y-3">
+                    {loading ? (
+                        <div className="text-center py-8 text-gray-500 dark:text-slate-400">Cargando usuarios...</div>
+                    ) : filteredUsers.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500 dark:text-slate-400 font-medium">No se encontraron usuarios</div>
+                    ) : (
+                        filteredUsers.map((user) => (
+                            <div
+                                key={user.id}
+                                className="p-4 rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 transition-colors"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 dark:border-slate-700 shadow-sm flex-shrink-0">
+                                            <img
+                                                src="/logos/star-logo.jpg"
+                                                alt={user.full_name || 'User'}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-[#000D42] dark:text-white truncate">{user.full_name || 'Sin nombre'}</p>
+                                            <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{user.email}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${user.role === 'ADMIN' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}`}>
+                                            {user.role}
+                                        </span>
+                                        {user.status !== 'PENDING' && (
+                                            <button
+                                                onClick={() => handleToggleStatus(user)}
+                                                className={`p-1.5 rounded-lg text-xs font-bold transition-all ${user.is_active
+                                                    ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                                    : 'text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
+                                                    }`}
+                                                title={user.is_active ? 'Desactivar' : 'Activar'}
+                                            >
+                                                {user.is_active ? <UserX size={16} /> : <UserCheck size={16} />}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="mt-3 flex items-center justify-between">
+                                    {(() => {
+                                        const statusConfig = USER_STATUS_MAP[user.status || '']
+                                        return (
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-bold text-[10px] ${statusConfig?.badgeColor || 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300'}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusConfig?.dotColor || 'bg-gray-500 dark:bg-slate-400'}`}></span>
+                                                {statusConfig?.label || user.status}
+                                            </span>
+                                        )
+                                    })()}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Desktop View - Compact Table */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-800/50">
-                                <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">USUARIO</th>
-                                <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">ROL</th>
-                                <th className="px-8 py-5 text-left text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">ESTADO</th>
-                                <th className="px-8 py-5 text-right text-sm font-bold text-[#000D42] dark:text-blue-400 tracking-wide uppercase">ACCIONES</th>
+                            <tr className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold text-gray-500 dark:text-slate-400 tracking-wider uppercase">Usuario</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-bold text-gray-500 dark:text-slate-400 tracking-wider uppercase">Rol</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-bold text-gray-500 dark:text-slate-400 tracking-wider uppercase">Estado</th>
+                                <th className="px-6 py-4 text-right text-[10px] font-bold text-gray-500 dark:text-slate-400 tracking-wider uppercase">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={4} className="px-8 py-12 text-center text-gray-500 dark:text-slate-400 font-medium">
-                                        Cargando usuarios...
-                                    </td>
+                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">Cargando usuarios...</td>
                                 </tr>
                             ) : filteredUsers.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="px-8 py-12 text-center text-gray-500 dark:text-slate-400 font-medium">
-                                        No se encontraron usuarios
-                                    </td>
+                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">No se encontraron usuarios</td>
                                 </tr>
                             ) : (
                                 filteredUsers.map((user) => (
-                                    <tr key={user.id} className="group hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all border-b border-gray-100 dark:border-slate-800">
-                                        <td className="px-8 py-6">
+                                    <tr key={user.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-200 dark:border-slate-700 shadow-md group-hover:scale-110 transition-transform">
+                                                <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-100 dark:border-slate-700 flex-shrink-0">
                                                     <img
                                                         src="/logos/star-logo.jpg"
                                                         alt={user.full_name || 'User'}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 </div>
-                                                <div>
-                                                    <p className="font-bold text-lg text-[#000D42] dark:text-white group-hover:text-[#0066FF] dark:group-hover:text-blue-400 transition-colors">
-                                                        {user.full_name || 'Sin nombre'}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600 dark:text-slate-400">{user.email}</p>
+                                                <div className="min-w-0">
+                                                    <p className="font-bold text-sm text-[#000D42] dark:text-white truncate">{user.full_name || 'Sin nombre'}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{user.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6">
-                                            <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm shadow-sm ${user.role === 'ADMIN' ? 'bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 text-purple-700 dark:text-purple-300' :
-                                                'bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 text-blue-700 dark:text-blue-300'
-                                                }`}>
-                                                {user.role === 'ADMIN' ? <Shield size={16} /> : <Briefcase size={16} />}
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-xs ${user.role === 'ADMIN' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'}`}>
+                                                {user.role === 'ADMIN' ? <Shield size={14} /> : <Briefcase size={14} />}
                                                 {user.role}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6">
+                                        <td className="px-6 py-4">
                                             {(() => {
                                                 const statusConfig = USER_STATUS_MAP[user.status || '']
                                                 return (
-                                                    <span className={`inline-flex items-center px-4 py-2 rounded-full font-bold text-xs shadow-md ${statusConfig?.badgeColor || 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300'}`}>
-                                                        <span className={`w-2 h-2 rounded-full mr-2 ${statusConfig?.dotColor || 'bg-gray-500 dark:bg-slate-400'}`}></span>
+                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full font-bold text-[10px] ${statusConfig?.badgeColor || 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300'}`}>
+                                                        <span className={`w-1.5 h-1.5 rounded-full mr-2 ${statusConfig?.dotColor || 'bg-gray-500 dark:bg-slate-400'}`}></span>
                                                         {statusConfig?.label || user.status}
                                                     </span>
                                                 )
                                             })()}
                                         </td>
-                                        <td className="px-8 py-6 text-right">
+                                        <td className="px-6 py-4 text-right">
                                             {user.status !== 'PENDING' && (
                                                 <button
                                                     onClick={() => handleToggleStatus(user)}
-                                                    className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg hover:scale-105 ${user.is_active
-                                                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50'
-                                                        : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                                                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${user.is_active
+                                                        ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30'
+                                                        : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30'
                                                         }`}
                                                 >
+                                                    {user.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
                                                     {user.is_active ? 'Desactivar' : 'Activar'}
                                                 </button>
                                             )}
@@ -171,15 +226,13 @@ export default function UsersPage() {
                         </tbody>
                     </table>
                 </div>
-
-                <UserModal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    onUserCreated={() => {
-                        refreshAgents();
-                    }}
-                />
             </div>
+
+            <UserModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onUserCreated={() => refreshAgents()}
+            />
         </div>
     );
 }

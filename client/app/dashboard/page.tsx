@@ -6,6 +6,9 @@ import RecentActivityWidget from '@/components/RecentActivityWidget'
 import PerformanceChartWidget from '@/components/PerformanceChartWidget'
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics'
 
+import PageHeader from '@/components/ui/PageHeader'
+import { LayoutDashboard } from 'lucide-react'
+
 export default async function DashboardPage() {
     const supabase = await createClient()
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
@@ -15,11 +18,12 @@ export default async function DashboardPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-4xl font-bold text-[#000D42] dark:text-white mb-2">{TEXTS.DASHBOARD_TITLE}</h1>
-                <p className="text-lg text-gray-500 dark:text-slate-400">{TEXTS.WELCOME_BACK}</p>
-            </div>
+        <div className="space-y-6 p-4 md:p-8">
+            <PageHeader
+                title={TEXTS.DASHBOARD_TITLE}
+                subtitle={TEXTS.WELCOME_BACK}
+                icon={LayoutDashboard}
+            />
 
             <DashboardMetrics />
 

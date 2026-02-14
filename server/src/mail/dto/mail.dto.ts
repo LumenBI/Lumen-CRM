@@ -1,41 +1,41 @@
 import { IsEmail, IsString, IsOptional, IsBase64 } from 'class-validator';
 
 export class SendEmailDto {
-    @IsEmail()
-    to: string;
+  @IsEmail()
+  to: string;
 
-    @IsString()
-    subject: string;
+  @IsString()
+  subject: string;
 
-    @IsString()
-    message: string;
+  @IsString()
+  message: string;
 
-    @IsOptional()
-    @IsString()
-    threadId?: string;
+  @IsOptional()
+  @IsString()
+  threadId?: string;
 
-    @IsOptional()
-    @IsString()
-    inReplyTo?: string;
+  @IsOptional()
+  @IsString()
+  inReplyTo?: string;
 
-    @IsOptional()
-    @IsString()
-    references?: string;
+  @IsOptional()
+  @IsString()
+  references?: string;
 }
 
 export class SendQuoteEmailDto {
-    @IsEmail()
-    to: string;
+  @IsEmail()
+  to: string;
 
-    @IsString()
-    subject: string;
+  @IsString()
+  subject: string;
 
-    @IsString()
-    message: string;
+  @IsString()
+  message: string;
 
-    @IsBase64()
-    pdfBase64: string;
+  @IsBase64()
+  pdfBase64: string;
 
-    @IsString()
-    filename: string;
+  @IsString()
+  filename: string;
 }

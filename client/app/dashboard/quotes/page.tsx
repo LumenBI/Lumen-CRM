@@ -3,6 +3,8 @@
 import React, { Suspense } from 'react';
 import { QuoteBuilder } from '@/components/quotes/QuoteBuilder';
 import { useSearchParams } from 'next/navigation';
+import PageHeader from '@/components/ui/PageHeader';
+import { FileText } from 'lucide-react';
 
 function QuotesContent() {
     const searchParams = useSearchParams();
@@ -21,11 +23,12 @@ function QuotesContent() {
 
 export default function QuotesPage() {
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold text-[#000d42] dark:text-white">Gestión de Cotizaciones</h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">Cree y envíe cotizaciones inteligentes con soporte de IA.</p>
-            </div>
+        <div className="space-y-6 p-4 md:p-8">
+            <PageHeader
+                title="Gestión de Cotizaciones"
+                subtitle="Cree y envíe cotizaciones inteligentes con soporte de IA."
+                icon={FileText}
+            />
 
             <Suspense fallback={<div className="p-12 text-center text-slate-500 dark:text-slate-400 font-medium animate-pulse">Cargando constructor de cotización...</div>}>
                 <QuotesContent />

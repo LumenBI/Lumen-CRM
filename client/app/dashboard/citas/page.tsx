@@ -5,6 +5,7 @@ import CreateAppointmentModal from '@/components/appointments/CreateAppointmentM
 import AppointmentDetailsModal from '@/components/appointments/AppointmentDetailsModal'
 import CalendarView from '@/components/calendar/CalendarView'
 import { useAppointments } from '@/context/AppointmentsContext'
+import PageHeader from '@/components/ui/PageHeader'
 import { getTypeIcon, getStatusBadge, formatAppointmentDate } from '@/utils/appointmentUtils'
 import type { Appointment } from '@/types'
 import { TEXTS } from '@/constants/text'
@@ -144,13 +145,19 @@ export default function AppointmentsPage() {
     }
 
     return (
-        <div className="space-y-6 dark:text-white transition-colors">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-[#000d42] dark:text-white">{TEXTS.CALENDAR_TITLE}</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Gestiona tus reuniones y llamadas programadas</p>
-                </div>
-                <div className="flex items-center gap-3">
+        <div className="space-y-6 p-4 md:p-8 dark:text-white transition-colors">
+            <PageHeader
+                title={TEXTS.CALENDAR_TITLE}
+                subtitle="Gestiona tus reuniones y llamadas programadas"
+                icon={LucideCalendar}
+                actionLabel={TEXTS.NEW_APPOINTMENT}
+                actionIcon={<LucidePlus size={20} />}
+                onAction={() => {
+                    setEditingAppointment(null)
+                    setIsModalOpen(true)
+                }}
+                actionClassName="bg-[#ff5e1e] hover:bg-[#e04d13] shadow-orange-100 dark:shadow-none"
+                extraActions={
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl flex items-center shadow-sm">
                         <button
                             onClick={() => setViewMode('calendar')}
@@ -173,19 +180,8 @@ export default function AppointmentsPage() {
                             <span className="hidden sm:inline">Lista</span>
                         </button>
                     </div>
-
-                    <button
-                        onClick={() => {
-                            setEditingAppointment(null)
-                            setIsModalOpen(true)
-                        }}
-                        className="flex items-center gap-2 bg-[#ff5e1e] text-white px-4 py-2 rounded-lg hover:bg-[#e04d13] transition-colors"
-                    >
-                        <LucidePlus size={20} />
-                        {TEXTS.NEW_APPOINTMENT}
-                    </button>
-                </div>
-            </div>
+                }
+            />
 
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 <button

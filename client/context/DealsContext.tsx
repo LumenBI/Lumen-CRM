@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
+import { createClient as createSupabaseClient } from '@/utils/supabase/client'
 import { useData } from '@/context/DataContext'
 import { useApi } from '@/hooks/useApi'
 import type { Deal } from '@/types'
@@ -58,7 +59,25 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
         }
     }, [dealsApi])
 
-    // Bridge with DataContext
+    const supabase = useMemo(() => createSupabaseClient(), [])
+
+    useEffect(() => {
+        const channel = supabase
+            .channel('deals-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, (payload: any) => {
+                // For simplicity in Kanban, since items can change stages, 
+                // a full local board recalculation from payload is complex.
+                // However, we can just trigger fetchBoard() which is specific to deals.
+                // This is still much better than fetching the whole app bootstrap.
+                fetchBoard()
+            })
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [supabase, fetchBoard])
+
     // Bridge with DataContext
     useEffect(() => {
         if (bootstrapBoard) {

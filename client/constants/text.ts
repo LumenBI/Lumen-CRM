@@ -26,6 +26,9 @@ export const TEXTS = {
     NEW_USER: 'Nuevo usuario',
     INVITE_USER: 'Invitar usuario',
 
+    ADD_QUOTE: 'Agregar cotización',
+    WRITE_EMAIL: 'Redactar correo',
+
     // Common
     SEARCH: 'Buscar...',
     SEARCH_CLIENT: 'Buscar cliente...',
@@ -64,6 +67,7 @@ import {
     LucideSettings,
     LucideMail,
     LucideFileText,
+    LucideUserCog,
 } from 'lucide-react'
 
 export interface MenuItem {
@@ -83,7 +87,7 @@ export const MENU_ITEMS: MenuItem[] = [
 ]
 
 export const SYSTEM_ITEMS: MenuItem[] = [
-    { name: 'Usuarios', href: '/dashboard/users', icon: LucideSettings },
+    { name: 'Usuarios', href: '/dashboard/users', icon: LucideUserCog },
     { name: 'Configuración', href: '/dashboard/settings', icon: LucideSettings },
 ]
 

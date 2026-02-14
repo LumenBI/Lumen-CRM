@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuickActions } from '@/context/QuickActionsContext';
-import { Building2, User, Phone, Mail, Trash2, Pencil } from 'lucide-react';
+import { Building2, User, Phone, Mail, Trash2, Pencil, Plus } from 'lucide-react';
 import { useAuthFetch } from '@/hooks/useAuthFetch';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchBar from '@/components/ui/SearchBar';
@@ -112,6 +112,10 @@ export default function ClientsPage() {
             <PageHeader
                 title={TEXTS.CLIENTS_TITLE}
                 subtitle="Gestiona tu base de datos de clientes"
+                icon={Building2}
+                actionLabel={TEXTS.NEW_CLIENT}
+                actionIcon={<Plus size={20} />}
+                onAction={() => setIsCreateModalOpen(true)}
             />
             <SearchBar
                 value={searchTerm}

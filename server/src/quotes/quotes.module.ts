@@ -6,8 +6,8 @@ import { PdfStorageService } from './pdf-storage.service';
 import { CurrencyModule } from '../currency/currency.module';
 
 @Module({
-    imports: [CurrencyModule],
-    controllers: [ProductsController, QuotesController],
-    providers: [QuotesService, PdfStorageService],
+  imports: [CurrencyModule],
+  controllers: [ProductsController, QuotesController],
+  providers: [QuotesService, PdfStorageService],
 })
-export class QuotesModule { }
+export class QuotesModule {}

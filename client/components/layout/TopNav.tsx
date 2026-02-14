@@ -14,7 +14,9 @@ import {
     ChevronRight,
     Briefcase,
     Users,
-    Calendar
+    Calendar,
+    FileText,
+    Mail
 } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
 import { useQuickActions } from '@/context/QuickActionsContext'
@@ -35,12 +37,14 @@ const QUICK_ACTIONS = [
     { label: TEXTS.NEW_CLIENT, icon: Users, handler: 'requestNewClient' as const },
     { label: TEXTS.NEW_DEAL, icon: Briefcase, handler: 'requestNewDeal' as const },
     { label: TEXTS.SCHEDULE_APPOINTMENT, icon: Calendar, handler: 'requestNewAppointment' as const },
+    { label: TEXTS.ADD_QUOTE, icon: FileText, handler: 'requestNewQuote' as const },
+    { label: TEXTS.WRITE_EMAIL, icon: Mail, handler: 'requestNewEmail' as const },
 ]
 
 export default function TopNav() {
     const pathname = usePathname()
     const router = useRouter()
-    const { requestNewClient, requestNewDeal, requestNewAppointment } = useQuickActions()
+    const { requestNewClient, requestNewDeal, requestNewAppointment, requestNewQuote, requestNewEmail } = useQuickActions()
     const { profile, logout } = useUser()
     const [isUserOpen, setIsUserOpen] = useState(false)
     const [isQuickOpen, setIsQuickOpen] = useState(false)
@@ -99,7 +103,13 @@ export default function TopNav() {
                                 {TEXTS.QUICK_ACTIONS}
                             </div>
                             {QUICK_ACTIONS.map((action, idx) => {
-                                const handler = { requestNewClient, requestNewDeal, requestNewAppointment }[action.handler]
+                                const handler = {
+                                    requestNewClient,
+                                    requestNewDeal,
+                                    requestNewAppointment,
+                                    requestNewQuote,
+                                    requestNewEmail
+                                }[action.handler]
                                 return (
                                     <button
                                         key={idx}

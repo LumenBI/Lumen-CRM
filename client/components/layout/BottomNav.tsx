@@ -10,6 +10,8 @@ import {
     LucideMoreHorizontal,
     LucidePlus,
     LucideBriefcase,
+    LucideFileText,
+    LucideMail,
 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import MobileMoreSheet from './MobileMoreSheet'
@@ -27,11 +29,13 @@ const QUICK_ACTIONS = [
     { label: TEXTS.NEW_CLIENT, icon: LucideUsers, action: 'newClient' as const },
     { label: TEXTS.NEW_DEAL, icon: LucideBriefcase, action: 'newDeal' as const },
     { label: TEXTS.SCHEDULE_APPOINTMENT, icon: LucideCalendar, action: 'newAppointment' as const },
+    { label: TEXTS.ADD_QUOTE, icon: LucideFileText, action: 'newQuote' as const },
+    { label: TEXTS.WRITE_EMAIL, icon: LucideMail, action: 'newEmail' as const },
 ]
 
 export default function BottomNav() {
     const pathname = usePathname()
-    const { requestNewClient, requestNewDeal, requestNewAppointment } = useQuickActions()
+    const { requestNewClient, requestNewDeal, requestNewAppointment, requestNewQuote, requestNewEmail } = useQuickActions()
     const [isMoreOpen, setIsMoreOpen] = useState(false)
     const [isFabMenuOpen, setIsFabMenuOpen] = useState(false)
     const fabMenuRef = useRef<HTMLDivElement>(null)
@@ -66,11 +70,10 @@ export default function BottomNav() {
                                 key={item.href}
                                 href={item.href}
                                 prefetch={false}
-                                className={`flex flex-col items-center justify-center flex-1 min-w-0 py-2 px-0.5 transition-colors touch-manipulation ${
-                                    active
-                                        ? 'text-[#0066FF] dark:text-blue-400'
-                                        : 'text-gray-500 dark:text-slate-400'
-                                }`}
+                                className={`flex flex-col items-center justify-center flex-1 min-w-0 py-2 px-0.5 transition-colors touch-manipulation ${active
+                                    ? 'text-[#0066FF] dark:text-blue-400'
+                                    : 'text-gray-500 dark:text-slate-400'
+                                    }`}
                             >
                                 <Icon
                                     size={22}
@@ -86,15 +89,14 @@ export default function BottomNav() {
 
                     <button
                         onClick={() => setIsMoreOpen(true)}
-                        className={`flex flex-col items-center justify-center flex-1 min-w-0 py-2 px-0.5 transition-colors touch-manipulation ${
-                            isMoreOpen || pathname.startsWith('/dashboard/mail') ||
+                        className={`flex flex-col items-center justify-center flex-1 min-w-0 py-2 px-0.5 transition-colors touch-manipulation ${isMoreOpen || pathname.startsWith('/dashboard/mail') ||
                             pathname.startsWith('/dashboard/reports') ||
                             pathname.startsWith('/dashboard/quotes') ||
                             pathname.startsWith('/dashboard/users') ||
                             pathname.startsWith('/dashboard/settings')
-                                ? 'text-[#0066FF] dark:text-blue-400'
-                                : 'text-gray-500 dark:text-slate-400'
-                        }`}
+                            ? 'text-[#0066FF] dark:text-blue-400'
+                            : 'text-gray-500 dark:text-slate-400'
+                            }`}
                     >
                         <LucideMoreHorizontal size={22} strokeWidth={2} />
                         <span className="text-[10px] font-medium mt-0.5 truncate w-full text-center">
@@ -130,6 +132,8 @@ export default function BottomNav() {
                                 newClient: requestNewClient,
                                 newDeal: requestNewDeal,
                                 newAppointment: requestNewAppointment,
+                                newQuote: requestNewQuote,
+                                newEmail: requestNewEmail,
                             }
                             return (
                                 <button

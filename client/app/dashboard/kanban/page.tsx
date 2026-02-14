@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd'
 import PageHeader from '@/components/ui/PageHeader'
 import {
     Loader2,
@@ -34,6 +34,7 @@ import DealsListView from '@/components/kanban/DealsListView'
 import { STAGE_MAP } from '@/constants/stages'
 import { SHIPPING_TYPES, SHIPPING_TYPE_MAP } from '@/constants/shipping'
 import ConfirmModal from '@/components/ui/ConfirmModal'
+import KanbanCard from '@/components/kanban/KanbanCard'
 
 export default function KanbanPage() {
     const router = useRouter()
@@ -100,6 +101,22 @@ export default function KanbanPage() {
     })
 
     const [filterType, setFilterType] = useState('ALL')
+    const [searchQuery, setSearchQuery] = useState('')
+
+    const filteredBoard = useMemo(() => {
+        if (!board) return null
+        const result: KanbanBoard = {}
+        Object.keys(board).forEach(key => {
+            result[key] = board[key].filter(d => {
+                const matchesType = filterType === 'ALL' || d.type === filterType
+                const matchesSearch = !searchQuery ||
+                    d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (d.client as any)?.company_name?.toLowerCase().includes(searchQuery.toLowerCase())
+                return matchesType && matchesSearch
+            })
+        })
+        return result
+    }, [board, filterType, searchQuery])
 
     const [previousBoard, setPreviousBoard] = useState<KanbanBoard | null>(null)
 
@@ -233,12 +250,7 @@ export default function KanbanPage() {
         }
     }
 
-    const allDeals = board ? Object.values(board).flat() : []
-    const filteredDeals = allDeals.filter(deal => {
-        if (filterType === 'ALL') return true
-        return deal.type === filterType
-    })
-
+    const allFilteredDeals = filteredBoard ? Object.values(filteredBoard).flat() : []
 
     if (loading) {
         return (
@@ -253,12 +265,16 @@ export default function KanbanPage() {
 
     return (
         <div className="space-y-6 h-full flex flex-col p-4 md:p-6 bg-transparent dark:text-white transition-colors">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-[#000d42] dark:text-white">{TEXTS.SALES_FLOW_TITLE}</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Gestiona tus oportunidades comerciales</p>
-                </div>
+            <PageHeader
+                title={TEXTS.SALES_FLOW_TITLE}
+                subtitle="Gestiona tus oportunidades comerciales"
+                icon={LayoutGrid}
+                actionLabel="Nuevo seguimiento"
+                actionIcon={<Plus size={20} />}
+                onAction={() => setIsCreateModalOpen(true)}
+            />
 
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl flex items-center shadow-sm">
                         <button
@@ -302,14 +318,6 @@ export default function KanbanPage() {
                             </button>
                         ))}
                     </div>
-
-                    <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="flex items-center gap-2 bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-4 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors font-medium shadow-sm"
-                    >
-                        <Plus size={18} />
-                        {TEXTS.NEW_DEAL}
-                    </button>
                 </div>
             </div>
 
@@ -318,11 +326,12 @@ export default function KanbanPage() {
                     <DragDropContext onDragEnd={onDragEnd}>
                         <div className="flex gap-6 min-w-max h-full">
                             {KANBAN_COLUMNS.map(column => {
-                                const columnDeals = board?.[column.id]?.filter(d => filterType === 'ALL' || d.type === filterType) || []
+                                const columnDeals = filteredBoard?.[column.id] || []
                                 const totalValue = columnDeals.reduce((sum, deal) => sum + Number(deal.value || 0), 0)
 
                                 return (
                                     <div key={column.id} className="w-80 flex-shrink-0 flex flex-col h-full max-h-[calc(100vh-12rem)]">
+                                        {/* Column Header */}
                                         {(() => {
                                             const stageConfig = STAGE_MAP[column.id]
                                             const StageIcon = stageConfig?.icon
@@ -350,75 +359,15 @@ export default function KanbanPage() {
                                                         }`}
                                                 >
                                                     <div className="space-y-3">
-                                                        {columnDeals.map((deal, index) => {
-                                                            return (
-                                                                <Draggable key={deal.id} draggableId={deal.id} index={index}>
-                                                                    {(provided, snapshot) => (
-                                                                        <div
-                                                                            ref={provided.innerRef}
-                                                                            {...provided.draggableProps}
-                                                                            {...provided.dragHandleProps}
-                                                                            onClick={() => {
-                                                                            }}
-                                                                            onContextMenu={(e) => handleContextMenu(e, deal.id)}
-                                                                            className={`bg-white dark:bg-slate-800 p-4 rounded-xl border shadow-sm group hover:shadow-md transition-all relative ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl ring-2 ring-blue-500 z-50' : 'border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800'
-                                                                                }`}
-                                                                            style={provided.draggableProps.style}
-                                                                        >
-                                                                            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                <button
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation()
-                                                                                        setEditingDeal(deal)
-                                                                                    }}
-                                                                                    className="p-1 hover:bg-gray-100 rounded"
-                                                                                >
-                                                                                    <Pencil size={14} className="text-gray-400" />
-                                                                                </button>
-                                                                            </div>
-
-                                                                            <div className="mb-3">
-                                                                                {(() => {
-                                                                                    const shipConfig = SHIPPING_TYPE_MAP[deal.type]
-                                                                                    const ShipIcon = shipConfig?.icon
-                                                                                    return (
-                                                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${shipConfig?.badgeColor || 'bg-gray-50 dark:bg-slate-700 text-gray-700 dark:text-slate-300'}`}>
-                                                                                            {ShipIcon && <ShipIcon size={10} />}
-                                                                                            {shipConfig?.label || deal.type}
-                                                                                        </span>
-                                                                                    )
-                                                                                })()}
-                                                                            </div>
-
-                                                                            <h4 className="font-bold text-gray-800 dark:text-slate-100 text-sm mb-1 line-clamp-2 leading-relaxed">
-                                                                                {deal.title}
-                                                                            </h4>
-
-                                                                            <div className="flex items-center gap-2 mb-3">
-                                                                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase">
-                                                                                    {deal.client?.company_name?.substring(0, 1) || '?'}
-                                                                                </div>
-                                                                                <span className="text-xs text-gray-500 dark:text-slate-400 font-medium truncate max-w-[180px]">
-                                                                                    {deal.client?.company_name}
-                                                                                </span>
-                                                                            </div>
-
-                                                                            <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-slate-700">
-                                                                                <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                                                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: deal.currency, maximumFractionDigits: 0 }).format(deal.value)}
-                                                                                </span>
-                                                                                {deal.expected_close_date && (
-                                                                                    <div className="flex items-center gap-1 text-[10px] font-medium text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-700/50 px-2 py-1 rounded-full">
-                                                                                        <CalendarClock size={12} />
-                                                                                        {new Date(deal.expected_close_date).toLocaleDateString()}
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </Draggable>
-                                                            )
-                                                        })}
+                                                        {(filteredBoard?.[column.id] || []).map((deal, index) => (
+                                                            <KanbanCard
+                                                                key={deal.id}
+                                                                deal={deal}
+                                                                index={index}
+                                                                onEdit={setEditingDeal}
+                                                                onContextMenu={handleContextMenu}
+                                                            />
+                                                        ))}
                                                         {provided.placeholder}
                                                     </div>
                                                 </div>
@@ -432,16 +381,10 @@ export default function KanbanPage() {
                 </div>
             ) : (
                 <DealsListView
-                    deals={filteredDeals}
-                    onEdit={(deal) => setEditingDeal(deal)}
-                    onMove={(deal) => handleMoveFromContext(deal)}
-                    onDelete={async (deal) => {
-                        setDeleteModal({
-                            isOpen: true,
-                            dealId: deal.id,
-                            isDeleting: false
-                        })
-                    }}
+                    deals={allFilteredDeals}
+                    onEdit={setEditingDeal}
+                    onMove={handleMoveFromContext}
+                    onDelete={(deal) => setDeleteModal({ isOpen: true, dealId: deal.id, isDeleting: false })}
                 />
             )}
 

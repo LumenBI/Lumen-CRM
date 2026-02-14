@@ -154,12 +154,12 @@ export default function SettingsPage() {
             <PageHeader title="Configuración" subtitle="Administra tu perfil y preferencias" />
 
             {/* Tabs */}
-            <div className="flex border-b border-gray-200 dark:border-slate-800">
+            <div className="flex border-b border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === tab.id
+                        className={`flex items-center gap-2 px-4 md:px-6 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === tab.id
                             ? 'border-[#0066FF] text-[#0066FF]'
                             : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                             }`}
@@ -171,7 +171,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Content */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-8 min-h-[400px] transition-colors duration-300">
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 md:p-8 min-h-[400px] transition-colors duration-300">
 
                 {/* GENERAL TAB */}
                 {activeTab === 'general' && (

@@ -17,7 +17,7 @@ import { NotificationListener } from './listeners/notification.listener';
     ClientsService,
     DealsService,
     StatsService,
-    NotificationListener
+    NotificationListener,
   ],
 })
-export class DashboardModule { }
+export class DashboardModule {}

@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
+import { createClient as createSupabaseClient } from '@/utils/supabase/client'
 import { useData } from '@/context/DataContext'
 import { useApi } from '@/hooks/useApi'
 import type { Appointment } from '@/types'
@@ -33,6 +34,27 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
             setLoading(false)
         }
     }, [appointmentsApi])
+
+    const supabase = useMemo(() => createSupabaseClient(), [])
+
+    useEffect(() => {
+        const channel = supabase
+            .channel('appointments-realtime')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'appointments' }, (payload: any) => {
+                setAppointments(prev => [...prev, payload.new as Appointment])
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'appointments' }, (payload: any) => {
+                setAppointments(prev => prev.map(a => a.id === (payload.new as Appointment).id ? (payload.new as Appointment) : a))
+            })
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'appointments' }, (payload: any) => {
+                setAppointments(prev => prev.filter(a => a.id !== (payload.old as Appointment).id))
+            })
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [supabase])
 
     // Bridge with DataContext
     useEffect(() => {

@@ -10,11 +10,13 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter(app.get(HttpAdapterHost)));
 
   // Enable global validation pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   // Sanitize FRONTEND_URL to remove trailing slash if present
   const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '');
@@ -23,7 +25,7 @@ async function bootstrap() {
     throw new Error('FRONTEND_URL must be defined in production');
   }
 
-  const origins = [frontendUrl, 'http://localhost:3000'].filter(Boolean) as string[];
+  const origins = [frontendUrl, 'http://localhost:3000'].filter(Boolean);
 
   app.enableCors({
     origin: origins,
@@ -32,7 +34,9 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization, x-google-token',
   });
   await app.listen(process.env.PORT ?? 3001, '0.0.0.0');
-  console.log(`🚀 Backend running on: http://0.0.0.0:${process.env.PORT ?? 3001}`);
+  console.log(
+    `🚀 Backend running on: http://0.0.0.0:${process.env.PORT ?? 3001}`,
+  );
   console.log(`🌍 CORS Enabled for: ${frontendUrl}`);
 }
 bootstrap();

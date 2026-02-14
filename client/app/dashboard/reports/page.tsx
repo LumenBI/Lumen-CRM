@@ -10,6 +10,7 @@ const ReportsCharts = dynamic(() => import('@/components/dashboard/ReportsCharts
         <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 animate-pulse h-[380px]" />
     </div>
 })
+import { BarChart3 } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
 import { STAGES } from '@/constants/stages'
 
@@ -85,8 +86,8 @@ export default function ReportsPage() {
 
     if (loading) {
         return (
-            <div className="space-y-6">
-                <PageHeader title="Reportes y Analíticas" subtitle="Visualiza el rendimiento de tu equipo comercial" />
+            <div className="space-y-6 p-4 md:p-8">
+                <PageHeader title="Reportes y Analíticas" subtitle="Visualiza el rendimiento de tu equipo comercial" icon={BarChart3} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 animate-pulse h-[380px]" />
                     <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 animate-pulse h-[380px]" />
@@ -96,8 +97,8 @@ export default function ReportsPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <PageHeader title="Reportes y Analíticas" subtitle="Visualiza el rendimiento de tu equipo comercial" />
+        <div className="space-y-6 p-4 md:p-8">
+            <PageHeader title="Reportes y Analíticas" subtitle="Visualiza el rendimiento de tu equipo comercial" icon={BarChart3} />
 
             <ReportsCharts historyData={historyData} pipelineData={pipelineData} />
 

@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
-type QuickActionType = 'newClient' | 'newDeal' | 'newAppointment' | null
+type QuickActionType = 'newClient' | 'newDeal' | 'newAppointment' | 'newQuote' | 'newEmail' | null
 
 interface QuickActionsContextType {
     requestAction: QuickActionType
@@ -11,6 +11,8 @@ interface QuickActionsContextType {
     requestNewClient: () => void
     requestNewDeal: () => void
     requestNewAppointment: () => void
+    requestNewQuote: () => void
+    requestNewEmail: () => void
 }
 
 const QuickActionsContext = createContext<QuickActionsContextType | null>(null)
@@ -36,6 +38,16 @@ export function QuickActionsProvider({ children }: { children: React.ReactNode }
         router.push('/dashboard/citas')
     }, [router])
 
+    const requestNewQuote = useCallback(() => {
+        setRequestAction('newQuote')
+        router.push('/dashboard/quotes')
+    }, [router])
+
+    const requestNewEmail = useCallback(() => {
+        setRequestAction('newEmail')
+        router.push('/dashboard/mail')
+    }, [router])
+
     return (
         <QuickActionsContext.Provider
             value={{
@@ -44,6 +56,8 @@ export function QuickActionsProvider({ children }: { children: React.ReactNode }
                 requestNewClient,
                 requestNewDeal,
                 requestNewAppointment,
+                requestNewQuote,
+                requestNewEmail,
             }}
         >
             {children}

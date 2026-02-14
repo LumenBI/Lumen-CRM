@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useApi } from '@/hooks/useApi'
 import { useUser } from '@/context/UserContext'
+import { useQuickActions } from '@/context/QuickActionsContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Loader2,
@@ -21,6 +22,7 @@ import {
     X,
     AlertCircle
 } from 'lucide-react'
+import PageHeader from '@/components/ui/PageHeader'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Textarea } from '../../../components/ui/textarea'
@@ -79,6 +81,7 @@ function formatFileSize(bytes: number) {
 export default function MailPage() {
     const { mail } = useApi()
     const { reauthorizeGoogle } = useUser()
+    const { requestAction, clearAction } = useQuickActions()
     const [threads, setThreads] = useState<Thread[]>([])
     const [loading, setLoading] = useState(true)
     const [openCompose, setOpenCompose] = useState(false)
@@ -124,6 +127,14 @@ export default function MailPage() {
     useEffect(() => {
         fetchInbox()
     }, [limit])
+
+    useEffect(() => {
+        if (requestAction === 'newEmail') {
+            resetCompose()
+            setOpenCompose(true)
+            clearAction()
+        }
+    }, [requestAction, clearAction])
 
     const handleNextPage = () => {
         if (pageToken) {
@@ -256,25 +267,22 @@ export default function MailPage() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-140px)] bg-[#F8FAFC] dark:bg-slate-950">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <div className="px-2">
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                        <Inbox className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                        Buzón de Correos
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">Gestiona tus comunicaciones desde aquí.</p>
-                </div>
-                <div className="flex gap-2 w-full md:w-auto px-2">
+            {/* Standardized Header */}
+            <PageHeader
+                title="Buzón de Correos"
+                subtitle="Gestiona tus comunicaciones desde aquí."
+                icon={Inbox}
+            >
+                <div className="flex flex-wrap gap-2 w-full md:w-auto px-2">
                     <select
                         value={limit}
                         onChange={(e) => setLimit(parseInt(e.target.value))}
-                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 outline-none"
+                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[14px] px-2 md:px-3 py-1.5 md:py-2 text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-300 outline-none shadow-sm flex-1 md:flex-none"
                     >
-                        <option value={50}>50 por página</option>
-                        <option value={100}>100 por página</option>
+                        <option value={50}>50 / pág</option>
+                        <option value={100}>100 / pág</option>
                     </select>
-                    <Button variant="outline" size="icon" onClick={() => fetchInbox()} disabled={loading} className="bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all rounded-xl border-slate-200 dark:border-slate-800">
+                    <Button variant="outline" size="icon" onClick={() => fetchInbox()} disabled={loading} className="bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all rounded-[14px] border-slate-200 dark:border-slate-800 h-9 w-9 md:h-10 md:w-10">
                         <RefreshCw className={`h-4 w-4 text-slate-600 dark:text-slate-400 ${loading ? 'animate-spin' : ''}`} />
                     </Button>
                     <Button
@@ -282,13 +290,13 @@ export default function MailPage() {
                             resetCompose()
                             setOpenCompose(true)
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white gap-2 shadow-lg shadow-blue-200 dark:shadow-none py-6 px-6 rounded-2xl font-bold transition-all hover:scale-[1.02]"
+                        className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white gap-2 shadow-lg shadow-blue-200 dark:shadow-none py-1.5 md:py-6 px-4 md:px-6 rounded-[14px] md:rounded-2xl font-bold transition-all hover:scale-[1.02] flex-1 md:flex-none text-xs md:text-base h-9 md:h-auto"
                     >
-                        <Plus className="h-5 w-5" />
-                        Redactar
+                        <Plus className="h-4 w-4 md:h-5 md:w-5" />
+                        <span>Redactar</span>
                     </Button>
                 </div>
-            </div>
+            </PageHeader>
 
             <div className="flex flex-1 gap-6 overflow-hidden min-h-0 bg-white dark:bg-slate-900/50 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm p-3">
                 {/* Email List */}

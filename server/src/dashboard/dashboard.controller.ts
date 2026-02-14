@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AppointmentsService } from './services/appointments.service';
 import { NotificationsService } from './services/notifications.service';
@@ -15,7 +26,7 @@ export class DashboardController {
     private readonly statsService: StatsService,
     private readonly dealsService: DealsService,
     private readonly clientsService: ClientsService,
-  ) { }
+  ) {}
 
   private extractToken(req: any): string {
     const rawHeader = req.headers.authorization;
@@ -32,29 +43,49 @@ export class DashboardController {
     @Query('status') status: string,
   ) {
     const token = this.extractToken(req);
-    return this.appointmentsService.getAppointments(token, req.user.userId, { from, to, status });
+    return this.appointmentsService.getAppointments(token, req.user.userId, {
+      from,
+      to,
+      status,
+    });
   }
 
   @Get('appointments/upcoming')
   async getUpcomingAppointments(@Req() req, @Query('limit') limit: number) {
     const token = this.extractToken(req);
-    return this.appointmentsService.getUpcomingAppointments(token, req.user.userId, limit);
+    return this.appointmentsService.getUpcomingAppointments(
+      token,
+      req.user.userId,
+      limit,
+    );
   }
 
   @Post('appointments')
   async createAppointment(@Req() req, @Body() payload: any) {
     const token = this.extractToken(req);
-    return this.appointmentsService.createAppointment(token, req.user.userId, payload);
+    return this.appointmentsService.createAppointment(
+      token,
+      req.user.userId,
+      payload,
+    );
   }
 
   @Patch('appointments/:id')
-  async updateAppointment(@Req() req, @Param('id') id: string, @Body() payload: any) {
+  async updateAppointment(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() payload: any,
+  ) {
     const token = this.extractToken(req);
     return this.appointmentsService.updateAppointment(token, id, payload);
   }
 
   @Patch('appointments/:id/status')
-  async updateAppointmentStatus(@Req() req, @Param('id') id: string, @Body('status') status: string) {
+  async updateAppointmentStatus(
+    @Req() req,
+    @Param('id') id: string,
+    @Body('status') status: string,
+  ) {
     const token = this.extractToken(req);
     return this.appointmentsService.updateAppointmentStatus(token, id, status);
   }
@@ -70,7 +101,10 @@ export class DashboardController {
   @Get('notifications/check')
   async checkSystemNotifications(@Req() req) {
     const token = this.extractToken(req);
-    return this.notificationsService.checkSystemNotifications(token, req.user.userId);
+    return this.notificationsService.checkSystemNotifications(
+      token,
+      req.user.userId,
+    );
   }
 
   // ==================== STATS & REPORTS ====================
@@ -97,17 +131,35 @@ export class DashboardController {
   }
 
   @Patch('deals/:id/move')
-  async moveCard(@Req() req, @Param('id') dealId: string, @Body('status') newStatus: string) {
+  async moveCard(
+    @Req() req,
+    @Param('id') dealId: string,
+    @Body('status') newStatus: string,
+  ) {
     const token = this.extractToken(req);
-    return this.dealsService.moveCard(token, req.user.userId, dealId, newStatus);
+    return this.dealsService.moveCard(
+      token,
+      req.user.userId,
+      dealId,
+      newStatus,
+    );
   }
 
   // ==================== CLIENTS ====================
 
   @Get('clients')
-  async getClients(@Req() req, @Query('query') query: string, @Query('mine') mine: string) {
+  async getClients(
+    @Req() req,
+    @Query('query') query: string,
+    @Query('mine') mine: string,
+  ) {
     const token = this.extractToken(req);
-    return this.clientsService.getClients(token, query, mine === 'true', req.user.userId);
+    return this.clientsService.getClients(
+      token,
+      query,
+      mine === 'true',
+      req.user.userId,
+    );
   }
 
   @Post('clients')
@@ -117,7 +169,11 @@ export class DashboardController {
   }
 
   @Patch('clients/:id')
-  async updateClient(@Req() req, @Param('id') id: string, @Body() payload: any) {
+  async updateClient(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() payload: any,
+  ) {
     const token = this.extractToken(req);
     return this.clientsService.updateClient(token, id, payload);
   }
@@ -155,15 +211,26 @@ export class DashboardController {
   }
 
   @Patch('profile/notifications')
-  async updateNotificationSettings(@Req() req, @Body('interval') interval: number) {
+  async updateNotificationSettings(
+    @Req() req,
+    @Body('interval') interval: number,
+  ) {
     const token = this.extractToken(req);
-    return this.notificationsService.updateNotificationInterval(token, req.user.userId, interval);
+    return this.notificationsService.updateNotificationInterval(
+      token,
+      req.user.userId,
+      interval,
+    );
   }
 
   @Patch('profile/preferences')
   async updatePreferences(@Req() req, @Body('preferences') preferences: any) {
     const token = this.extractToken(req);
-    return this.notificationsService.updateUserPreferences(token, req.user.userId, preferences);
+    return this.notificationsService.updateUserPreferences(
+      token,
+      req.user.userId,
+      preferences,
+    );
   }
 
   @Get('bootstrap')

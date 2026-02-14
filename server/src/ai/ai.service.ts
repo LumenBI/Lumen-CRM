@@ -4,22 +4,22 @@ import { SmartDraftDto } from './dto/ai.dto';
 
 @Injectable()
 export class AiService {
-    private readonly logger = new Logger(AiService.name);
-    private genAI: GoogleGenerativeAI;
+  private readonly logger = new Logger(AiService.name);
+  private genAI: GoogleGenerativeAI;
 
-    constructor() {
-        // Assuming GEMINI_API_KEY is in env
-        this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-    }
+  constructor() {
+    // Assuming GEMINI_API_KEY is in env
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+  }
 
-    private getModel() {
-        return this.genAI.getGenerativeModel({ model: 'gemini-pro' });
-    }
+  private getModel() {
+    return this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+  }
 
-    async generateQuoteEmail(data: SmartDraftDto): Promise<string> {
-        if (!process.env.GEMINI_API_KEY) return "AI Service not configured.";
+  async generateQuoteEmail(data: SmartDraftDto): Promise<string> {
+    if (!process.env.GEMINI_API_KEY) return 'AI Service not configured.';
 
-        const prompt = `
+    const prompt = `
             Actúa como un agente logístico experto de Star Cargo (Logística Internacional).
             Redacta un correo electrónico formal y profesional para enviar la cotización #${data.quote_number || 'Pendiente'}.
             
@@ -41,21 +41,21 @@ export class AiService {
             7. IMPORTANTE: Devuelve ÚNICAMENTE el cuerpo del mensaje. No incluyas asunto, despedidas automáticas de IA ni comentarios adicionales.
         `;
 
-        try {
-            const model = this.getModel();
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            return response.text().trim();
-        } catch (error) {
-            this.logger.error("Error generating email draft", error);
-            return `Estimado cliente de ${data.company_name},\n\nEs un gusto saludarle. Adjunto encontrará la cotización formal #${data.quote_number || ''} solicitada para sus servicios logísticos.\n\nQuedamos a su entera disposición para cualquier duda o para proceder con la reserva.\n\nSaludos cordiales,\nStar Cargo Service.`;
-        }
+    try {
+      const model = this.getModel();
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text().trim();
+    } catch (error) {
+      this.logger.error('Error generating email draft', error);
+      return `Estimado cliente de ${data.company_name},\n\nEs un gusto saludarle. Adjunto encontrará la cotización formal #${data.quote_number || ''} solicitada para sus servicios logísticos.\n\nQuedamos a su entera disposición para cualquier duda o para proceder con la reserva.\n\nSaludos cordiales,\nStar Cargo Service.`;
     }
+  }
 
-    async checkPriceAnomalies(items: any[]): Promise<string | null> {
-        if (!process.env.GEMINI_API_KEY) return null;
+  async checkPriceAnomalies(items: any[]): Promise<string | null> {
+    if (!process.env.GEMINI_API_KEY) return null;
 
-        const prompt = `
+    const prompt = `
             Analiza estos ítems de una cotización logística internacional y detecta posibles precios erróneos (muy bajos o absurdos):
             ${JSON.stringify(items)}
             
@@ -67,20 +67,22 @@ export class AiService {
             - Si hay alerta, responde con un mensaje corto de advertencia (máx 15 palabras).
         `;
 
-        try {
-            const model = this.getModel();
-            const result = await model.generateContent(prompt);
-            const text = result.response.text().trim();
-            return text === "OK" ? null : text;
-        } catch (error) {
-            return null;
-        }
+    try {
+      const model = this.getModel();
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().trim();
+      return text === 'OK' ? null : text;
+    } catch (error) {
+      return null;
     }
+  }
 
-    async explainQuoteTerms(items: any[]): Promise<{ term: string, definition: string }[]> {
-        if (!process.env.GEMINI_API_KEY) return [];
+  async explainQuoteTerms(
+    items: any[],
+  ): Promise<{ term: string; definition: string }[]> {
+    if (!process.env.GEMINI_API_KEY) return [];
 
-        const prompt = `
+    const prompt = `
             Identifica términos técnicos logísticos (Incoterms, recargos, siglas como THC, B/L, VGM) en esta lista:
             ${items.map((i: any) => i.description).join(', ')}
             
@@ -90,14 +92,18 @@ export class AiService {
             Responde SOLO EL JSON.
         `;
 
-        try {
-            const model = this.getModel();
-            const result = await model.generateContent(prompt);
-            const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-            return JSON.parse(text);
-        } catch (error) {
-            this.logger.error("Error generating glossary", error);
-            return [];
-        }
+    try {
+      const model = this.getModel();
+      const result = await model.generateContent(prompt);
+      const text = result.response
+        .text()
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+      return JSON.parse(text);
+    } catch (error) {
+      this.logger.error('Error generating glossary', error);
+      return [];
     }
+  }
 }
