@@ -7,6 +7,7 @@ import { ClientsProvider } from '@/context/ClientsContext'
 import { QuickActionsProvider } from '@/context/QuickActionsContext'
 import { AppointmentsProvider } from '@/context/AppointmentsContext'
 import { UserProvider } from '@/context/UserContext'
+import { DataProvider } from '@/context/DataContext'
 
 export function Providers({ children }: { children: ReactNode }) {
     const [queryClient] = useState(() => new QueryClient({
@@ -22,15 +23,17 @@ export function Providers({ children }: { children: ReactNode }) {
     return (
         <QueryClientProvider client={queryClient}>
             <UserProvider>
-                <QuickActionsProvider>
-                    <DealsProvider>
-                        <ClientsProvider>
-                            <AppointmentsProvider>
-                                {children}
-                            </AppointmentsProvider>
-                        </ClientsProvider>
-                    </DealsProvider>
-                </QuickActionsProvider>
+                <DataProvider>
+                    <QuickActionsProvider>
+                        <DealsProvider>
+                            <ClientsProvider>
+                                <AppointmentsProvider>
+                                    {children}
+                                </AppointmentsProvider>
+                            </ClientsProvider>
+                        </DealsProvider>
+                    </QuickActionsProvider>
+                </DataProvider>
             </UserProvider>
         </QueryClientProvider>
     )
