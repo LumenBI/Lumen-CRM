@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AppointmentsService } from './services/appointments.service';
-import { NotificationsService } from './services/notifications.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { StatsService } from './services/stats.service';
 import { DealsService } from './services/deals.service';
 import { ClientsService } from './services/clients.service';
@@ -26,7 +26,7 @@ export class DashboardController {
     private readonly statsService: StatsService,
     private readonly dealsService: DealsService,
     private readonly clientsService: ClientsService,
-  ) {}
+  ) { }
 
   private extractToken(req: any): string {
     const rawHeader = req.headers.authorization;

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { SupabaseService } from './supabase.service';
-import { NotificationsService } from './notifications.service';
+import { SupabaseService } from '../../common/supabase/supabase.service';
+import { NotificationsService } from '../../notifications/notifications.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DealCreatedEvent } from '../events/dashboard.events';
 
@@ -11,7 +11,7 @@ export class DealsService {
     private readonly supabaseService: SupabaseService,
     private readonly notificationsService: NotificationsService,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   async getKanbanBoard(token: string, userId: string) {
     const supabase = this.supabaseService.getClient(token);

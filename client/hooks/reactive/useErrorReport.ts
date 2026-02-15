@@ -16,9 +16,6 @@ export function useErrorReport() {
                 device: typeof window !== 'undefined' ? window.navigator.userAgent : 'Server-side',
             };
 
-            // Try to get user from localStorage or similar if needed
-            // const userData = localStorage.getItem('supabase.auth.token');
-
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/client-error`, {
                 method: 'POST',
                 headers: {
@@ -32,6 +29,8 @@ export function useErrorReport() {
     }, []);
 
     useEffect(() => {
+        if (process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true') return;
+
         const handleGlobalError = (event: ErrorEvent) => {
             reportError(event.error || new Error(event.message));
         };

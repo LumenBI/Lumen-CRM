@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { SupabaseService } from './supabase.service';
-import { NotificationsService } from './notifications.service';
+import { SupabaseService } from '../../common/supabase/supabase.service';
+import { NotificationsService } from '../../notifications/notifications.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AppointmentCreatedEvent } from '../events/dashboard.events';
 
@@ -10,7 +10,7 @@ export class AppointmentsService {
     private readonly supabaseService: SupabaseService,
     private readonly notificationsService: NotificationsService,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   async getAppointments(
     token: string,

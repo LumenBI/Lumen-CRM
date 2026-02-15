@@ -30,6 +30,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient()
     const router = useRouter()
 
+
     const fetchProfile = async () => {
         try {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession()

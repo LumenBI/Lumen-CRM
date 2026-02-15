@@ -52,7 +52,7 @@ export class NotificationsController {
         if (command === '/anuncio') {
             await this.notificationsService.notifyAllUsers(
                 'SYSTEM_UPDATE',
-                `${text} (Enviado por ${user_name} desde Slack)`,
+                text,
                 '/dashboard'
             );
             return {

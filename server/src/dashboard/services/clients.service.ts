@@ -4,15 +4,15 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { SupabaseService } from './supabase.service';
-import { NotificationsService } from './notifications.service';
+import { SupabaseService } from '../../common/supabase/supabase.service';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 @Injectable()
 export class ClientsService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   async getClients(
     token: string,
@@ -223,8 +223,8 @@ export class ClientsService {
         category: payload.category,
         modality:
           payload.modality === 'N_A' ||
-          payload.modality === 'OTHER' ||
-          !payload.modality
+            payload.modality === 'OTHER' ||
+            !payload.modality
             ? 'VIRTUAL'
             : payload.modality,
         summary: payload.summary,

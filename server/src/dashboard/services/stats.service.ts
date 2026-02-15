@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SupabaseService } from './supabase.service';
+import { SupabaseService } from '../../common/supabase/supabase.service';
 import { AppointmentsService } from './appointments.service';
 import { ClientsService } from './clients.service';
 import { DealsService } from './deals.service';
@@ -11,7 +11,7 @@ export class StatsService {
     private readonly appointmentsService: AppointmentsService,
     private readonly clientsService: ClientsService,
     private readonly dealsService: DealsService,
-  ) {}
+  ) { }
 
   async getAgents(token: string) {
     const supabase = this.supabaseService.getClient(token);

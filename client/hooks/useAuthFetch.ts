@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 export function useAuthFetch() {
     const supabase = createClient()
 
+
     const authFetch = useCallback(async (url: string, options?: RequestInit): Promise<Response> => {
         const { data: { session }, error } = await supabase.auth.getSession()
 

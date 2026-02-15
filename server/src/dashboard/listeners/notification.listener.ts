@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { SupabaseService } from '../services/supabase.service';
+import { SupabaseService } from '../../common/supabase/supabase.service';
 import {
   AppointmentCreatedEvent,
   DealCreatedEvent,
@@ -10,7 +10,7 @@ import {
 export class NotificationListener {
   private readonly logger = new Logger(NotificationListener.name);
 
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   @OnEvent('appointment.created')
   async handleAppointmentCreated(event: AppointmentCreatedEvent) {
