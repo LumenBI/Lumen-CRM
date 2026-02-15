@@ -5,7 +5,7 @@ import { useUser } from '@/context/UserContext'
 import { createBrowserClient } from '@supabase/ssr'
 
 export function useSessionGuard() {
-    const { profile, signOut } = useUser()
+    const { profile, logout } = useUser()
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -27,7 +27,7 @@ export function useSessionGuard() {
                 (payload) => {
                     const newProfile = payload.new as any
                     if (newProfile.role !== profile.role || newProfile.status === 'inactive') {
-                        signOut()
+                        logout()
                     }
                 }
             )
@@ -36,5 +36,5 @@ export function useSessionGuard() {
         return () => {
             supabase.removeChannel(channel)
         }
-    }, [profile, signOut, supabase])
+    }, [profile, logout, supabase])
 }
