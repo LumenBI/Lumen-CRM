@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { SupabaseService } from './supabase.service';
-import { AppConfigService } from '../../common/config/app-config.service';
+import { SupabaseService } from '../common/supabase/supabase.service';
+import { AppConfigService } from '../common/config/app-config.service';
 import axios from 'axios';
 
 @Injectable()
@@ -11,33 +11,106 @@ export class NotificationsService {
     private readonly config: AppConfigService,
   ) { }
 
-  async notifySlackError(error: any, context: string) {
+  async notifySlackError(
+    error: any,
+    context: string,
+    metadata?: {
+      module?: 'DEALS' | 'CLIENTS' | 'APPOINTMENTS' | 'AUTH' | 'GENERAL' | 'STATS';
+      type?: 'DATABASE' | 'VALIDATION' | 'AUTH' | 'SERVER' | 'FRONTEND';
+      severity?: 'CRITICAL' | 'WARN' | 'INFO';
+    },
+  ) {
     const webhookUrl = this.config.slackWebhookUrl;
     if (!webhookUrl) return;
 
+    const timestamp = new Date().toLocaleString('es-GT', {
+      timeZone: 'America/Guatemala',
+    });
+
+    const icons = {
+      DATABASE: '🗄️',
+      VALIDATION: '📝',
+      AUTH: '🔐',
+      SERVER: '⚙️',
+      FRONTEND: '💻',
+      GENERAL: '🚨',
+    };
+
+    const colors = {
+      CRITICAL: '#E01E5A',
+      WARN: '#ECB22E',
+      INFO: '#2EB67D',
+    };
+
+    const type = metadata?.type || 'GENERAL';
+    const severity = metadata?.severity || 'CRITICAL';
+    const moduleName = metadata?.module || 'GENERAL';
+
     const payload = {
-      blocks: [
+      attachments: [
         {
-          type: 'header',
-          text: {
-            type: 'plain_text',
-            text: '🚨 Backend Error Detected',
-            emoji: true,
-          },
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `*Context:* ${context}\n*Message:* ${error.message || error}`,
-          },
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `\`\`\`${error.stack || 'No stack trace available'}\`\`\``,
-          },
+          color: colors[severity],
+          blocks: [
+            {
+              type: 'header',
+              text: {
+                type: 'plain_text',
+                text: `${icons[type]} Error: ${type}`,
+                emoji: true,
+              },
+            },
+            {
+              type: 'section',
+              fields: [
+                {
+                  type: 'mrkdwn',
+                  text: `*Módulo:*\n${moduleName}`,
+                },
+                {
+                  type: 'mrkdwn',
+                  text: `*Severidad:*\n${severity}`,
+                },
+                {
+                  type: 'mrkdwn',
+                  text: `*Contexto:*\n${context}`,
+                },
+                {
+                  type: 'mrkdwn',
+                  text: `*Fecha/Hora (GT):*\n${timestamp}`,
+                },
+              ],
+            },
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `*Mensaje:*\n\`${error.message || error}\``,
+              },
+            },
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: '*Stack Trace:*',
+              },
+            },
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `\`\`\`${(error.stack || 'No disponible').slice(0, 1500)}\`\`\``,
+              },
+            },
+            {
+              type: 'context',
+              elements: [
+                {
+                  type: 'mrkdwn',
+                  text: '📧 _Reporte automático de Star-CRM - Trazabilidad Total_',
+                },
+              ],
+            },
+          ],
         },
       ],
     };
@@ -46,6 +119,51 @@ export class NotificationsService {
       await axios.post(webhookUrl, payload);
     } catch (slackError) {
       console.error('Failed to send Slack notification:', slackError.message);
+    }
+  }
+
+  async notifySystemUpdate(title: string, message: string, type: 'MAINTENANCE' | 'UPDATE' | 'INFO' = 'INFO') {
+    const webhookUrl = this.config.slackWebhookUrl;
+    if (!webhookUrl) return;
+
+    const icons = {
+      MAINTENANCE: '🚧',
+      UPDATE: '🚀',
+      INFO: '📢'
+    };
+
+    const payload = {
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `${icons[type]} *${title}*`
+          }
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: message
+          }
+        },
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `Categoría: ${type} | Envío manual desde CRM`
+            }
+          ]
+        }
+      ]
+    };
+
+    try {
+      await axios.post(webhookUrl, payload);
+    } catch (slackError) {
+      console.error('Failed to send Slack system update:', slackError.message);
     }
   }
 
@@ -71,6 +189,33 @@ export class NotificationsService {
         );
     } catch (error) {
       console.error('[NOTIFY_FLOW] Catch error creating notification:', error);
+    }
+  }
+
+  async notifyAllUsers(
+    type: string,
+    message: string,
+    link: string = '#',
+  ) {
+    try {
+      const { data: users, error: fetchError } = await this.supabaseService
+        .getAdminClient()
+        .from('profiles')
+        .select('id');
+
+      if (fetchError) throw fetchError;
+
+      if (users) {
+        // We use a separate supabase client for insertions to avoid token issues
+        const adminClient = this.supabaseService.getAdminClient();
+        await Promise.all(
+          users.map((u) =>
+            this.createNotification(adminClient, u.id, type, message, link),
+          ),
+        );
+      }
+    } catch (error) {
+      console.error('Error notifying all users:', error);
     }
   }
 
