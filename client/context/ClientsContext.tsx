@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useCallback } from 'react'
+import { createContext, useContext, useMemo, useState, useCallback } from 'react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/useApi'
 import { useUser } from '@/context/UserContext'
@@ -7,16 +7,18 @@ import type { Client } from '@/types'
 import { toast } from 'sonner'
 
 interface ClientsContextType {
-    allClients: Client[]
-    myClients: Client[]
-    searchClients: (query: string) => Client[]
-    searchAllClients: (query: string) => Client[]
-    refreshClients: () => void
-    createClient: (clientData: Partial<Client>) => Promise<Client>
-    updateClient: (id: string, clientData: Partial<Client>) => Promise<Client>
+    clients: Client[]
     loading: boolean
+    searchTerm: string
+    setSearchTerm: (term: string) => void
+    showMine: boolean
+    setShowMine: (show: boolean) => void
+    refreshClients: () => void
     fetchNextPage: () => void
     hasNextPage: boolean
+    isFetchingNextPage: boolean
+    createClient: (clientData: Partial<Client>) => Promise<Client>
+    updateClient: (id: string, clientData: Partial<Client>) => Promise<Client>
 }
 
 const ClientsContext = createContext<ClientsContextType | undefined>(undefined)
@@ -26,53 +28,31 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
     const { profile } = useUser()
     const queryClient = useQueryClient()
 
+    const [searchTerm, setSearchTerm] = useState('')
+    const [showMine, setShowMine] = useState(false)
+
     // Realtime invalidation
     useServerSubscription('clients', [['clients', 'list']])
 
-    // Use Infinite Query for clients
+    // Use Infinite Query for clients with server-side filtering
     const {
         data,
         isLoading: loading,
         fetchNextPage,
         hasNextPage,
+        isFetchingNextPage,
         refetch
     } = useInfiniteQuery({
-        queryKey: ['clients', 'list'],
-        queryFn: ({ pageParam }) => clientsApi.getAll('', false, pageParam as string, 50),
+        queryKey: ['clients', 'list', { searchTerm, showMine }],
+        queryFn: ({ pageParam }) => clientsApi.getAll(searchTerm, showMine, pageParam as string | undefined, 50),
         getNextPageParam: (lastPage: any) => lastPage.nextCursor || undefined,
         initialPageParam: undefined,
-        staleTime: 0,
+        staleTime: 5000,
     })
 
-    const allClients = useMemo(() => {
+    const clients = useMemo(() => {
         return data?.pages.flatMap(page => (page as any).items) || []
     }, [data])
-
-    const myClients = useMemo(() => {
-        if (!profile) return []
-        if (['ADMIN', 'MANAGER'].includes(profile.role?.toUpperCase())) {
-            return allClients
-        }
-        return allClients.filter((c: Client) => c.assigned_agent_id === profile.id)
-    }, [allClients, profile])
-
-    const searchClients = useCallback((query: string): Client[] => {
-        if (!query || query.length < 2) return myClients
-        const q = query.toLowerCase()
-        return myClients.filter((c: Client) =>
-            c.company_name.toLowerCase().includes(q) ||
-            c.contact_name.toLowerCase().includes(q)
-        )
-    }, [myClients])
-
-    const searchAllClients = useCallback((query: string): Client[] => {
-        if (!query || query.length < 2) return allClients
-        const q = query.toLowerCase()
-        return allClients.filter((c: Client) =>
-            c.company_name.toLowerCase().includes(q) ||
-            c.contact_name.toLowerCase().includes(q)
-        )
-    }, [allClients])
 
     const createClientMutation = useMutation({
         mutationFn: (clientData: Partial<Client>) => clientsApi.create(clientData),
@@ -89,17 +69,19 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
     })
 
     const value = useMemo(() => ({
-        allClients,
-        myClients,
-        searchClients,
-        searchAllClients,
-        refreshClients: () => queryClient.invalidateQueries({ queryKey: ['clients'] }),
-        createClient: createClientMutation.mutateAsync,
-        updateClient: (id: string, data: Partial<Client>) => updateClientMutation.mutateAsync({ id, data }),
+        clients,
         loading,
+        searchTerm,
+        setSearchTerm,
+        showMine,
+        setShowMine,
+        refreshClients: () => queryClient.invalidateQueries({ queryKey: ['clients'] }),
         fetchNextPage,
-        hasNextPage
-    }), [allClients, myClients, searchClients, searchAllClients, queryClient, createClientMutation, updateClientMutation, loading, fetchNextPage, hasNextPage])
+        hasNextPage,
+        isFetchingNextPage,
+        createClient: (data: any) => createClientMutation.mutateAsync(data),
+        updateClient: (id: string, data: Partial<Client>) => updateClientMutation.mutateAsync({ id, data }),
+    }), [clients, loading, searchTerm, showMine, queryClient, createClientMutation, updateClientMutation, fetchNextPage, hasNextPage, isFetchingNextPage])
 
     return (
         <ClientsContext.Provider value={value}>

@@ -24,9 +24,10 @@ import NewDealModal from '@/components/kanban/NewDealModal'
 import EditDealModal from '@/components/kanban/EditDealModal'
 import StageChangeModal, { STAGE_ID_COTIZANDO } from '@/components/kanban/StageChangeModal'
 import ContextMenu from '@/components/ContextMenu'
-import { useDeals, KANBAN_COLUMNS, type KanbanBoard } from '@/context/DealsContext'
+import { useDeals, KANBAN_COLUMNS } from '@/context/DealsContext'
 import { useQuickActions } from '@/context/QuickActionsContext'
 import { useApi } from '@/hooks/useApi'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Deal } from '@/types'
 import { toast } from 'sonner'
 import { TEXTS } from '@/constants/text'
@@ -34,11 +35,12 @@ import DealsListView from '@/components/kanban/DealsListView'
 import { STAGE_MAP } from '@/constants/stages'
 import { SHIPPING_TYPES, SHIPPING_TYPE_MAP } from '@/constants/shipping'
 import ConfirmModal from '@/components/ui/ConfirmModal'
-import KanbanCard from '@/components/kanban/KanbanCard'
+import SmartKanbanColumn from '@/components/kanban/SmartKanbanColumn'
 
 export default function KanbanPage() {
     const router = useRouter()
-    const { board, loading, refreshBoard, moveDeal, updateBoard } = useDeals()
+    const { refreshBoard, moveDeal } = useDeals()
+    const queryClient = useQueryClient()
     const { deals: dealsApi } = useApi()
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
     const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
@@ -58,6 +60,7 @@ export default function KanbanPage() {
             clearAction()
         }
     }, [requestAction, clearAction])
+
     const [deleteModal, setDeleteModal] = useState<{
         isOpen: boolean
         dealId: string | null
@@ -103,45 +106,28 @@ export default function KanbanPage() {
     const [filterType, setFilterType] = useState('ALL')
     const [searchQuery, setSearchQuery] = useState('')
 
-    const filteredBoard = useMemo(() => {
-        if (!board) return null
-        const result: KanbanBoard = {}
-        Object.keys(board).forEach(key => {
-            result[key] = board[key].filter(d => {
-                const matchesType = filterType === 'ALL' || d.type === filterType
-                const matchesSearch = !searchQuery ||
-                    d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    (d.client as any)?.company_name?.toLowerCase().includes(searchQuery.toLowerCase())
-                return matchesType && matchesSearch
-            })
-        })
-        return result
-    }, [board, filterType, searchQuery])
-
-    const [previousBoard, setPreviousBoard] = useState<KanbanBoard | null>(null)
-
-    const onDragEnd = (result: DropResult) => {
+    const onDragEnd = async (result: DropResult) => {
         const { source, destination, draggableId } = result
 
         if (!destination || (source.droppableId === destination.droppableId && source.index === destination.index)) {
             return
         }
 
-        if (!board) return
-        setPreviousBoard({ ...board })
+        // Get the deal object from the source column cache
+        const sourceData = queryClient.getQueryData<any>(['deals', 'column', source.droppableId])
+        if (!sourceData) return
 
-        // Optimistic Move for Instant UI feedback
-        const newBoard = { ...board }
-        const sourceCol = [...newBoard[source.droppableId]]
-        const destCol = source.droppableId === destination.droppableId ? sourceCol : [...newBoard[destination.droppableId]]
+        let movedDeal: Deal | undefined
+        sourceData.pages.some((page: any) => {
+            const found = page.items.find((d: Deal) => d.id === draggableId)
+            if (found) {
+                movedDeal = found
+                return true
+            }
+            return false
+        })
 
-        const [movedDeal] = sourceCol.splice(source.index, 1)
-        destCol.splice(destination.index, 0, movedDeal)
-
-        newBoard[source.droppableId] = sourceCol
-        newBoard[destination.droppableId] = destCol
-
-        updateBoard(newBoard) // Update the context board immediately
+        if (!movedDeal) return
 
         setStageModal({
             isOpen: true,
@@ -157,10 +143,6 @@ export default function KanbanPage() {
     }
 
     const handleCancelMove = () => {
-        if (previousBoard) {
-            updateBoard(previousBoard)
-            setPreviousBoard(null)
-        }
         setStageModal(prev => ({ ...prev, isOpen: false }))
     }
 
@@ -168,7 +150,7 @@ export default function KanbanPage() {
         interactionData: { interactionType: string, summary: string, nextStep?: string },
         options?: { prepareQuote?: boolean }
     ) => {
-        if (!stageModal.dealId || !stageModal.pendingDest || !board) return
+        if (!stageModal.dealId || !stageModal.pendingDest) return
 
         const newStatus = stageModal.pendingDest.droppableId
         const deal = stageModal.deal
@@ -207,17 +189,28 @@ export default function KanbanPage() {
     }
 
     const getContextDeal = () => {
-        if (!contextMenu.dealId || !board) return null
-        return Object.values(board).flat().find(d => d.id === contextMenu.dealId)
+        if (!contextMenu.dealId) return null
+        for (const col of KANBAN_COLUMNS) {
+            const data = queryClient.getQueryData<any>(['deals', 'column', col.id])
+            if (data) {
+                for (const page of data.pages) {
+                    const deal = page.items.find((d: Deal) => d.id === contextMenu.dealId)
+                    if (deal) return deal
+                }
+            }
+        }
+        return null
     }
 
     const handleMoveFromContext = (deal: Deal) => {
         let currentStageId = ''
-        Object.keys(board || {}).forEach(key => {
-            if (board?.[key].some(d => d.id === deal.id)) {
-                currentStageId = key
+        for (const col of KANBAN_COLUMNS) {
+            const data = queryClient.getQueryData<any>(['deals', 'column', col.id])
+            if (data?.pages.some((p: any) => p.items.some((d: Deal) => d.id === deal.id))) {
+                currentStageId = col.id
+                break
             }
-        })
+        }
 
         const currentIndex = KANBAN_COLUMNS.findIndex(c => c.id === currentStageId)
         if (currentIndex !== -1 && currentIndex < KANBAN_COLUMNS.length - 1) {
@@ -253,19 +246,6 @@ export default function KanbanPage() {
         }
     }
 
-    const allFilteredDeals = filteredBoard ? Object.values(filteredBoard).flat() : []
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="animate-spin text-blue-600" size={40} />
-                    <p className="text-gray-500 font-medium">Cargando tablero...</p>
-                </div>
-            </div>
-        )
-    }
-
     return (
         <div className="space-y-6 h-full flex flex-col p-4 md:p-6 bg-transparent dark:text-white transition-colors">
             <PageHeader
@@ -275,120 +255,79 @@ export default function KanbanPage() {
                 actionLabel="Nuevo seguimiento"
                 actionIcon={<Plus size={20} />}
                 onAction={() => setIsCreateModalOpen(true)}
-            />
-
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl flex items-center shadow-sm">
-                        <button
-                            onClick={() => setViewMode('kanban')}
-                            className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'kanban'
-                                ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0056fc] dark:text-blue-400'
-                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                                }`}
-                            title="Vista de Tablero"
-                        >
-                            <LayoutGrid size={18} />
-                            <span className="hidden sm:inline">Tablero</span>
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'list'
-                                ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0056fc] dark:text-blue-400'
-                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                                }`}
-                            title="Vista de Lista"
-                        >
-                            <List size={18} />
-                            <span className="hidden sm:inline">Lista</span>
-                        </button>
-                    </div>
-
-                    <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
-                        <button
-                            onClick={() => setFilterType('ALL')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === 'ALL' ? 'bg-[#000d42] dark:bg-blue-600 text-white shadow-md' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
-                        >
-                            Ver todos
-                        </button>
-                        {SHIPPING_TYPES.map(st => (
+                extraActions={
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl flex items-center shadow-sm">
                             <button
-                                key={st.id}
-                                onClick={() => setFilterType(st.id)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterType === st.id ? `${st.filterColor} text-white shadow-md` : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                                onClick={() => setViewMode('kanban')}
+                                className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'kanban'
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0056fc] dark:text-blue-400'
+                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                    }`}
+                                title="Vista de Tablero"
                             >
-                                {st.label}
+                                <LayoutGrid size={18} />
+                                <span className="hidden sm:inline">Tablero</span>
                             </button>
-                        ))}
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'list'
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0056fc] dark:text-blue-400'
+                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                    }`}
+                                title="Vista de Lista"
+                            >
+                                <List size={18} />
+                                <span className="hidden sm:inline">Lista</span>
+                            </button>
+                        </div>
+
+                        <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-x-auto scrollbar-hide">
+                            <button
+                                onClick={() => setFilterType('ALL')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${filterType === 'ALL' ? 'bg-[#000d42] dark:bg-blue-600 text-white shadow-md' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                            >
+                                Ver todos
+                            </button>
+                            {SHIPPING_TYPES.map(st => (
+                                <button
+                                    key={st.id}
+                                    onClick={() => setFilterType(st.id)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${filterType === st.id ? `${st.filterColor} text-white shadow-md` : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                                >
+                                    {st.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </div>
+                }
+            />
 
             {viewMode === 'kanban' ? (
                 <div className="flex-1 overflow-x-auto pb-4">
                     <DragDropContext onDragEnd={onDragEnd}>
                         <div className="flex gap-6 min-w-max h-full">
-                            {KANBAN_COLUMNS.map(column => {
-                                const columnDeals = filteredBoard?.[column.id] || []
-                                const totalValue = columnDeals.reduce((sum, deal) => sum + Number(deal.value || 0), 0)
-
-                                return (
-                                    <div key={column.id} className="w-80 flex-shrink-0 flex flex-col h-full max-h-[calc(100vh-12rem)]">
-                                        {/* Column Header */}
-                                        {(() => {
-                                            const stageConfig = STAGE_MAP[column.id]
-                                            const StageIcon = stageConfig?.icon
-                                            return (
-                                                <div className={`p-4 rounded-t-xl mb-0 border-b-4 ${stageConfig ? `${stageConfig.headerBg} ${stageConfig.headerBorder} text-white` : 'bg-gray-500 border-gray-600 text-white'} shadow-sm`}>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <div className="flex items-center gap-2 font-bold uppercase tracking-wide text-xs">
-                                                            {StageIcon && <StageIcon size={14} />}
-                                                            {column.title}
-                                                        </div>
-                                                        <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs font-bold">
-                                                            {columnDeals.length}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })()}
-
-                                        <Droppable droppableId={column.id}>
-                                            {(provided, snapshot) => (
-                                                <div
-                                                    {...provided.droppableProps}
-                                                    ref={provided.innerRef}
-                                                    className={`flex-1 p-2 bg-gray-50/50 dark:bg-slate-900/20 rounded-b-xl border border-gray-100 dark:border-slate-800 overflow-y-auto transition-colors ${snapshot.isDraggingOver ? 'bg-blue-50/50 dark:bg-blue-900/10 ring-2 ring-blue-100 dark:ring-blue-900 ring-inset' : ''
-                                                        }`}
-                                                >
-                                                    <div className="space-y-3">
-                                                        {(filteredBoard?.[column.id] || []).map((deal, index) => (
-                                                            <KanbanCard
-                                                                key={deal.id}
-                                                                deal={deal}
-                                                                index={index}
-                                                                onEdit={setEditingDeal}
-                                                                onContextMenu={handleContextMenu}
-                                                            />
-                                                        ))}
-                                                        {provided.placeholder}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </Droppable>
-                                    </div>
-                                )
-                            })}
+                            {KANBAN_COLUMNS.map((column: any) => (
+                                <SmartKanbanColumn
+                                    key={column.id}
+                                    stageId={column.id}
+                                    title={column.title}
+                                    onEditDeal={setEditingDeal}
+                                    onOpenContextMenu={handleContextMenu}
+                                />
+                            ))}
                         </div>
                     </DragDropContext>
                 </div>
             ) : (
-                <DealsListView
-                    deals={allFilteredDeals}
-                    onEdit={setEditingDeal}
-                    onMove={handleMoveFromContext}
-                    onDelete={(deal) => setDeleteModal({ isOpen: true, dealId: deal.id, isDeleting: false })}
-                />
+                <div className="flex-1 overflow-hidden">
+                    <DealsListView
+                        deals={[]}
+                        onEdit={setEditingDeal}
+                        onMove={handleMoveFromContext}
+                        onDelete={(deal) => setDeleteModal({ isOpen: true, dealId: deal.id, isDeleting: false })}
+                    />
+                </div>
             )}
 
             {selectedClientId && (
@@ -417,7 +356,7 @@ export default function KanbanPage() {
                 fromStage={stageModal.fromStage}
                 toStage={stageModal.toStage}
                 toStageId={stageModal.toStageId}
-                loading={stageModal.isOpen && !board} // Simple loading check
+                loading={false}
             />
 
             {contextMenu.isOpen && getContextDeal() && (

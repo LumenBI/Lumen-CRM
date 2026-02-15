@@ -1,19 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { generateText } from 'ai';
 import { SmartDraftDto } from './dto/ai.dto';
 
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  private genAI: GoogleGenerativeAI;
+  private google;
 
   constructor() {
-    // Assuming GEMINI_API_KEY is in env
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-  }
-
-  private getModel() {
-    return this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+    this.google = createGoogleGenerativeAI({
+      apiKey: process.env.GEMINI_API_KEY || '',
+    });
   }
 
   async generateQuoteEmail(data: SmartDraftDto): Promise<string> {
@@ -42,10 +40,11 @@ export class AiService {
         `;
 
     try {
-      const model = this.getModel();
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text().trim();
+      const { text } = await generateText({
+        model: this.google('gemini-pro'),
+        prompt: prompt,
+      });
+      return text.trim();
     } catch (error) {
       this.logger.error('Error generating email draft', error);
       return `Estimado cliente de ${data.company_name},\n\nEs un gusto saludarle. Adjunto encontrará la cotización formal #${data.quote_number || ''} solicitada para sus servicios logísticos.\n\nQuedamos a su entera disposición para cualquier duda o para proceder con la reserva.\n\nSaludos cordiales,\nStar Cargo Service.`;
@@ -68,10 +67,12 @@ export class AiService {
         `;
 
     try {
-      const model = this.getModel();
-      const result = await model.generateContent(prompt);
-      const text = result.response.text().trim();
-      return text === 'OK' ? null : text;
+      const { text } = await generateText({
+        model: this.google('gemini-pro'),
+        prompt: prompt,
+      });
+      const result = text.trim();
+      return result === 'OK' ? null : result;
     } catch (error) {
       return null;
     }
@@ -93,14 +94,15 @@ export class AiService {
         `;
 
     try {
-      const model = this.getModel();
-      const result = await model.generateContent(prompt);
-      const text = result.response
-        .text()
+      const { text } = await generateText({
+        model: this.google('gemini-pro'),
+        prompt: prompt,
+      });
+      const cleanedText = text
         .replace(/```json/g, '')
         .replace(/```/g, '')
         .trim();
-      return JSON.parse(text);
+      return JSON.parse(cleanedText);
     } catch (error) {
       this.logger.error('Error generating glossary', error);
       return [];

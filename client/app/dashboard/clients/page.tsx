@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuickActions } from '@/context/QuickActionsContext';
-import { Building2, User, Phone, Mail, Trash2, Pencil, Plus } from 'lucide-react';
+import { Building2, User, Phone, Mail, Trash2, Pencil, Plus, Loader2 } from 'lucide-react';
 import { useAuthFetch } from '@/hooks/useAuthFetch';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchBar from '@/components/ui/SearchBar';
@@ -18,8 +18,18 @@ import { toast } from 'sonner'
 import { TEXTS, NAVIGATION_LABELS } from '@/constants/text'
 
 export default function ClientsPage() {
-    const { allClients, searchAllClients, loading, refreshClients } = useClients();
-    const [searchTerm, setSearchTerm] = useState('');
+    const {
+        clients: displayedClients,
+        loading,
+        refreshClients,
+        searchTerm,
+        setSearchTerm,
+        showMine,
+        setShowMine,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage
+    } = useClients();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -51,14 +61,33 @@ export default function ClientsPage() {
     const { profile } = useUser();
     const { requestAction, clearAction } = useQuickActions();
 
-    const displayedClients = searchTerm ? searchAllClients(searchTerm) : allClients;
-
     useEffect(() => {
         if (requestAction === 'newClient') {
             setIsCreateModalOpen(true);
             clearAction();
         }
     }, [requestAction, clearAction]);
+
+    // Intersection Observer for Infinite Scroll
+    const loadMoreRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!hasNextPage || isFetchingNextPage) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    fetchNextPage();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (loadMoreRef.current) {
+            observer.observe(loadMoreRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     const handleDeleteClick = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -117,11 +146,27 @@ export default function ClientsPage() {
                 actionIcon={<Plus size={20} />}
                 onAction={() => setIsCreateModalOpen(true)}
             />
-            <SearchBar
-                value={searchTerm}
-                onChange={setSearchTerm}
-                placeholder="Buscar por nombre de empresa, contacto o email..."
-            />
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="flex-1 w-full">
+                    <SearchBar
+                        value={searchTerm}
+                        onChange={setSearchTerm}
+                        placeholder="Buscar por nombre de empresa, contacto o email..."
+                    />
+                </div>
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-4 py-2 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm self-stretch md:self-auto">
+                    <input
+                        type="checkbox"
+                        id="showMine"
+                        checked={showMine}
+                        onChange={(e) => setShowMine(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="showMine" className="text-sm font-medium text-gray-700 dark:text-slate-300 cursor-pointer">
+                        Solo mis clientes
+                    </label>
+                </div>
+            </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
                 {/* Vista cards - móvil */}
@@ -131,7 +176,7 @@ export default function ClientsPage() {
                     ) : displayedClients.length === 0 ? (
                         <div className="text-center py-8 text-gray-500 dark:text-slate-400 font-medium">No se encontraron clientes</div>
                     ) : (
-                        displayedClients.map((client) => (
+                        displayedClients.map((client: Client) => (
                             <div
                                 key={client.id}
                                 onClick={() => setSelectedClientId(client.id)}
@@ -216,7 +261,7 @@ export default function ClientsPage() {
                                 <tr><td colSpan={5} className="text-center py-8 text-gray-500 dark:text-slate-400">Cargando clientes...</td></tr>
                             ) : displayedClients.length === 0 ? (
                                 <tr><td colSpan={5} className="text-center py-8 text-gray-500 dark:text-slate-400 font-medium">No se encontraron clientes</td></tr>
-                            ) : displayedClients.map((client) => (
+                            ) : displayedClients.map((client: Client) => (
                                 <tr
                                     key={client.id}
                                     className="group hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all cursor-pointer border-b border-gray-100 dark:border-slate-800 hover:shadow-md hover:scale-[1.01]"
@@ -296,6 +341,19 @@ export default function ClientsPage() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Infinite Scroll Trigger */}
+                <div ref={loadMoreRef} className="h-10 flex items-center justify-center p-4">
+                    {isFetchingNextPage && (
+                        <div className="flex items-center gap-2 text-blue-600 font-medium">
+                            <Loader2 className="animate-spin" size={20} />
+                            <span>Cargando más clientes...</span>
+                        </div>
+                    )}
+                    {!hasNextPage && displayedClients.length > 0 && (
+                        <p className="text-gray-400 text-sm">Has llegado al final de la lista</p>
+                    )}
                 </div>
             </div>
 

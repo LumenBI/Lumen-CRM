@@ -7,10 +7,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
+import { Turnstile } from '@marsidev/react-turnstile'
+import ParticleBackground from '@/components/ui/ParticleBackground'
 
 function LoginForm() {
     const [loading, setLoading] = useState(false)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null)
     const supabase = createClient()
     const searchParams = useSearchParams()
 
@@ -23,19 +26,34 @@ function LoginForm() {
     }, [searchParams])
 
     const handleGoogleLogin = async () => {
+        if (!captchaToken) {
+            setErrorMessage('Por favor completa la verificación de seguridad')
+            return
+        }
+
         setLoading(true)
+
+        // Definimos las opciones en una variable para evitar el "Excess Property Check" de TS
+        // y respetar la tipificación estricta sin usar 'any'.
+        const authOptions = {
+            captchaToken,
+            redirectTo: `${window.location.origin}/auth/callback`,
+            queryParams: {
+                access_type: 'offline',
+                prompt: 'consent',
+                scope: 'openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly'
+            },
+        }
+
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-                queryParams: {
-                    access_type: 'offline',
-                    prompt: 'consent',
-                    scope: 'openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly'
-                },
-            },
+            options: authOptions,
         })
-        if (error) setLoading(false)
+
+        if (error) {
+            setLoading(false)
+            setErrorMessage(error.message)
+        }
     }
 
     return (
@@ -79,12 +97,27 @@ function LoginForm() {
                 )}
             </AnimatePresence>
 
+            <div className="flex justify-center mb-6 min-h-[65px]">
+                <Turnstile
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                    onSuccess={(token) => {
+                        setCaptchaToken(token)
+                        setErrorMessage(null)
+                    }}
+                    onError={() => setErrorMessage('Error verificando seguridad')}
+                    options={{
+                        theme: 'light',
+                        size: 'normal',
+                    }}
+                />
+            </div>
+
             <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full relative group flex items-center justify-center gap-3 bg-white border-2 border-gray-100 hover:border-blue-100 hover:bg-blue-50/50 text-base-900 font-bold py-4 px-4 rounded-xl transition-all duration-300 disabled:opacity-50 overflow-hidden"
+                disabled={loading || !captchaToken}
+                className="w-full relative group flex items-center justify-center gap-3 bg-white border-2 border-gray-100 hover:border-blue-100 hover:bg-blue-50/50 text-base-900 font-bold py-4 px-4 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
             >
                 <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
@@ -121,8 +154,6 @@ function LoginForm() {
         </motion.div>
     )
 }
-
-import ParticleBackground from '@/components/ui/ParticleBackground'
 
 export default function LoginPage() {
     const [mounted, setMounted] = useState(false);

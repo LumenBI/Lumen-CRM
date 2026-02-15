@@ -268,49 +268,56 @@ export default function MailPage() {
     return (
         <div className="flex flex-col h-[calc(100vh-140px)] bg-[#F8FAFC] dark:bg-slate-950">
             {/* Standardized Header */}
+            {/* Standardized Header */}
             <PageHeader
                 title="Buzón de Correos"
                 subtitle="Gestiona tus comunicaciones desde aquí."
                 icon={Inbox}
-            >
-                <div className="flex flex-wrap gap-2 w-full md:w-auto px-2">
-                    <select
-                        value={limit}
-                        onChange={(e) => setLimit(parseInt(e.target.value))}
-                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[14px] px-2 md:px-3 py-1.5 md:py-2 text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-300 outline-none shadow-sm flex-1 md:flex-none"
-                    >
-                        <option value={50}>50 / pág</option>
-                        <option value={100}>100 / pág</option>
-                    </select>
-                    <Button variant="outline" size="icon" onClick={() => fetchInbox()} disabled={loading} className="bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all rounded-[14px] border-slate-200 dark:border-slate-800 h-9 w-9 md:h-10 md:w-10">
-                        <RefreshCw className={`h-4 w-4 text-slate-600 dark:text-slate-400 ${loading ? 'animate-spin' : ''}`} />
-                    </Button>
-                    <Button
-                        onClick={() => {
-                            resetCompose()
-                            setOpenCompose(true)
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white gap-2 shadow-lg shadow-blue-200 dark:shadow-none py-1.5 md:py-6 px-4 md:px-6 rounded-[14px] md:rounded-2xl font-bold transition-all hover:scale-[1.02] flex-1 md:flex-none text-xs md:text-base h-9 md:h-auto"
-                    >
-                        <Plus className="h-4 w-4 md:h-5 md:w-5" />
-                        <span>Redactar</span>
-                    </Button>
-                </div>
-            </PageHeader>
+                actionLabel="Redactar"
+                actionIcon={<Plus className="h-4 w-4 md:h-5 md:w-5" />}
+                onAction={() => {
+                    resetCompose()
+                    setOpenCompose(true)
+                }}
+                actionClassName="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 shadow-lg shadow-blue-200 dark:shadow-none"
+                extraActions={
+                    <div className="flex items-center gap-2">
+                        {/* Pagination Controls */}
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl flex items-center shadow-sm h-10">
+                            <Button variant="ghost" size="icon" onClick={handlePrevPage} disabled={historyTokens.length === 0 || loading} className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+                                <ChevronLeft className="w-4 h-4 text-slate-500" />
+                            </Button>
+                            <span className="text-[10px] font-bold text-slate-400 px-2 min-w-[50px] text-center">Pág. {historyTokens.length + 1}</span>
+                            <Button variant="ghost" size="icon" onClick={handleNextPage} disabled={!pageToken || loading} className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+                                <ChevronRight className="w-4 h-4 text-slate-500" />
+                            </Button>
+                        </div>
+
+                        {/* Limit Selector */}
+                        <select
+                            value={limit}
+                            onChange={(e) => setLimit(parseInt(e.target.value))}
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 h-10 text-xs font-bold text-slate-600 dark:text-slate-300 outline-none shadow-sm cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
+                        >
+                            <option value={50}>50 / pág</option>
+                            <option value={100}>100 / pág</option>
+                        </select>
+
+                        {/* Refresh Button */}
+                        <Button variant="outline" size="icon" onClick={() => fetchInbox()} disabled={loading} className="bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all rounded-xl border-slate-200 dark:border-slate-800 h-10 w-10">
+                            <RefreshCw className={`h-4 w-4 text-slate-600 dark:text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+                        </Button>
+                    </div>
+                }
+            />
 
             <div className="flex flex-1 gap-6 overflow-hidden min-h-0 bg-white dark:bg-slate-900/50 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm p-3">
                 {/* Email List */}
                 <div className={`flex flex-col bg-white dark:bg-slate-900 overflow-hidden ${selectedMessageId ? 'hidden lg:flex lg:w-80 lg:shrink-0 border-r border-slate-50 dark:border-slate-800' : 'flex-1'}`}>
-                    <div className="p-4 flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] ml-2">Inbox</span>
+                    <div className="p-4 flex items-center justify-between mb-2 border-b border-slate-50 dark:border-slate-800/50">
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">Bandeja de Entrada</span>
                         <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" onClick={handlePrevPage} disabled={historyTokens.length === 0 || loading} className="h-6 w-6 rounded-lg">
-                                <ChevronLeft className="w-3 h-3 text-slate-400" />
-                            </Button>
-                            <span className="text-[10px] font-bold text-slate-400">Pág. {historyTokens.length + 1}</span>
-                            <Button variant="ghost" size="icon" onClick={handleNextPage} disabled={!pageToken || loading} className="h-6 w-6 rounded-lg">
-                                <ChevronRight className="w-3 h-3 text-slate-400" />
-                            </Button>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total: {threads.length}</span>
                         </div>
                     </div>
 
