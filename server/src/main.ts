@@ -5,7 +5,7 @@ import { NotificationsService } from './notifications/notifications.service';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   const { httpAdapter } = app.get(HttpAdapterHost);
   const notificationsService = app.get(NotificationsService);
