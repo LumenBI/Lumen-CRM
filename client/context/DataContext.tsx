@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/useApi'
+import { useUser } from '@/context/UserContext'
 import { createClient } from '@/utils/supabase/client'
 import type { Client, Deal, Appointment, Interaction } from '@/types'
 
@@ -28,7 +29,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [appointments, setAppointments] = useState<Appointment[]>([])
     const [agents, setAgents] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-
+    const { user } = useUser()
     const { bootstrap } = useApi()
     const supabase = createClient()
 
@@ -50,8 +51,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, [bootstrap])
 
     useEffect(() => {
-        fetchData()
-    }, [fetchData])
+        if (user) {
+            fetchData()
+        } else {
+            setLoading(false)
+        }
+    }, [fetchData, user])
 
     useEffect(() => {
         const channel = supabase

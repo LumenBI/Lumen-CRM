@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useMemo } 
 import { createClient as createSupabaseClient } from '@/utils/supabase/client'
 import { useData } from '@/context/DataContext'
 import { useApi } from '@/hooks/useApi'
+import { useUser } from '@/context/UserContext'
 import type { Appointment } from '@/types'
 
 interface AppointmentsContextType {
@@ -22,9 +23,11 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
     const [appointments, setAppointments] = useState<Appointment[]>([])
     const [loading, setLoading] = useState(true)
     const { appointments: bootstrapAppointments, loading: dataLoading } = useData()
+    const { user } = useUser()
     const { appointments: appointmentsApi } = useApi()
 
     const fetchAppointments = useCallback(async () => {
+        if (!user) return
         try {
             const data = await appointmentsApi.getAll()
             setAppointments(data)
@@ -33,7 +36,7 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
         } finally {
             setLoading(false)
         }
-    }, [appointmentsApi])
+    }, [appointmentsApi, user])
 
     const supabase = useMemo(() => createSupabaseClient(), [])
 
@@ -58,13 +61,18 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
 
     // Bridge with DataContext
     useEffect(() => {
+        if (!user) {
+            setLoading(false)
+            return
+        }
+
         if (bootstrapAppointments && bootstrapAppointments.length > 0) {
             setAppointments(bootstrapAppointments)
             setLoading(false)
         } else if (!dataLoading) {
             fetchAppointments()
         }
-    }, [bootstrapAppointments, dataLoading, fetchAppointments])
+    }, [bootstrapAppointments, dataLoading, fetchAppointments, user])
 
     const createAppointment = useCallback(async (appointment: Partial<Appointment>) => {
         try {

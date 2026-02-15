@@ -48,6 +48,7 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
         getNextPageParam: (lastPage: any) => lastPage.nextCursor || undefined,
         initialPageParam: undefined,
         staleTime: 5000,
+        enabled: !!profile,
     })
 
     const clients = useMemo(() => {
