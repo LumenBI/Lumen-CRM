@@ -9,6 +9,7 @@ import { useUser } from '@/context/UserContext'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { APPOINTMENT_TYPES } from '@/constants/appointments'
 import { toast } from 'sonner'
+import type { Client } from '@/types'
 
 interface CreateAppointmentModalProps {
     isOpen: boolean
@@ -41,7 +42,7 @@ export default function CreateAppointmentModal({
     const [showResults, setShowResults] = useState(false)
 
     const { appointments: appointmentsApi } = useApi()
-    const { myClients } = useClients()
+    const { clients } = useClients()
     const { agents } = useAgents()
     const { profile } = useUser()
 
@@ -186,7 +187,7 @@ export default function CreateAppointmentModal({
                                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-900/30 transition-all"
                             >
                                 <option value="">Seleccionar cliente...</option>
-                                {myClients.map((client) => (
+                                {clients.map((client: Client) => (
                                     <option key={client.id} value={client.id}>
                                         {client.company_name} - {client.contact_name}
                                     </option>

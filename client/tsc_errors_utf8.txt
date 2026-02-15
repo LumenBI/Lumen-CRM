@@ -1,0 +1,8 @@
+﻿app/dashboard/kanban/page.tsx(313,37): error TS2322: Type '{ key: any; stageId: any; title: any; onEditDeal: Dispatch<SetStateAction<Deal | null>>; onOpenContextMenu: (e: MouseEvent<Element, MouseEvent>, dealId: string) => void; }' is not assignable to type 'IntrinsicAttributes & SmartKanbanColumnProps'.
+  Property 'stageId' does not exist on type 'IntrinsicAttributes & SmartKanbanColumnProps'.
+components/appointments/CreateAppointmentModal.tsx(44,13): error TS2339: Property 'myClients' does not exist on type 'ClientsContextType'.
+components/appointments/CreateAppointmentModal.tsx(189,49): error TS7006: Parameter 'client' implicitly has an 'any' type.
+components/kanban/NewDealModal.tsx(34,13): error TS2339: Property 'searchClients' does not exist on type 'ClientsContextType'.
+components/kanban/NewDealModal.tsx(34,28): error TS2339: Property 'allClients' does not exist on type 'ClientsContextType'.
+components/kanban/NewTrackingModal.tsx(62,13): error TS2339: Property 'searchClients' does not exist on type 'ClientsContextType'.
+components/kanban/NewTrackingModal.tsx(62,42): error TS2339: Property 'allClients' does not exist on type 'ClientsContextType'.

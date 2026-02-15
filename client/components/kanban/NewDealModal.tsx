@@ -17,10 +17,7 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
     const [loading, setLoading] = useState(false)
     const [step, setStep] = useState<'client' | 'details'>('client')
 
-    const [searchTerm, setSearchTerm] = useState('')
-    const [searchResults, setSearchResults] = useState<Client[]>([])
     const [selectedClient, setSelectedClient] = useState<Client | null>(null)
-    const [searching, setSearching] = useState(false)
 
     const [dealForm, setDealForm] = useState({
         title: '',
@@ -31,15 +28,9 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
     })
 
     const { deals: dealsApi } = useApi()
-    const { searchClients, allClients } = useClients()
+    const { clients: searchResults, searchTerm, setSearchTerm, loading: searching } = useClients()
 
-    useEffect(() => {
-        if (searchTerm.trim() === '') {
-            setSearchResults(allClients)
-        } else {
-            setSearchResults(searchClients(searchTerm))
-        }
-    }, [searchTerm, selectedClient, searchClients, allClients])
+    // No local effect needed as context handles search
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -107,7 +98,6 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
                                                 onClick={() => {
                                                     setSelectedClient(client)
                                                     setSearchTerm(client.company_name)
-                                                    setSearchResults([])
                                                 }}
                                                 className="p-3 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700 last:border-0"
                                             >

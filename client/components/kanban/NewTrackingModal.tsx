@@ -31,10 +31,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
     const [loading, setLoading] = useState(false)
     const [mode, setMode] = useState<'select' | 'create'>(initialMode)
 
-    const [searchTerm, setSearchTerm] = useState('')
-    const [searchResults, setSearchResults] = useState<Client[]>([])
     const [selectedClient, setSelectedClient] = useState<Client | null>(null)
-    const [searching, setSearching] = useState(false)
 
     const [clientForm, setClientForm] = useState({
         company_name: '',
@@ -59,19 +56,11 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
     const [location, setLocation] = useState('')
 
     const { clients: clientsApi, appointments: appointmentsApi, interactions: interactionsApi } = useApi()
-    const { searchClients, createClient, allClients } = useClients()
+    const { clients: searchResults, searchTerm, setSearchTerm, createClient, loading: searching } = useClients()
     const { profile } = useUser()
     const { agents } = useAgents()
 
-    useEffect(() => {
-        if (mode === 'create') return
-
-        if (searchTerm.trim() === '') {
-            setSearchResults(allClients)
-        } else {
-            setSearchResults(searchClients(searchTerm))
-        }
-    }, [searchTerm, selectedClient, searchClients, mode, allClients])
+    // No local effect needed as context handles search
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -231,7 +220,6 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                                                 onClick={() => {
                                                                     setSelectedClient(client)
                                                                     setSearchTerm(client.company_name)
-                                                                    setSearchResults([])
                                                                 }}
                                                                 className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-gray-50 dark:border-slate-700 last:border-0"
                                                             >
