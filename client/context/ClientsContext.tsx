@@ -1,79 +1,56 @@
-'use client'
-
-import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
-import { createClient as createSupabaseClient } from '@/utils/supabase/client'
-import { useUser } from '@/context/UserContext'
+import { createContext, useContext, useMemo, useCallback } from 'react'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/useApi'
-import { useData } from '@/context/DataContext'
+import { useUser } from '@/context/UserContext'
+import { useServerSubscription } from '@/hooks/reactive/useServerSubscription'
 import type { Client } from '@/types'
+import { toast } from 'sonner'
 
 interface ClientsContextType {
     allClients: Client[]
     myClients: Client[]
     searchClients: (query: string) => Client[]
     searchAllClients: (query: string) => Client[]
-    refreshClients: () => Promise<void>
+    refreshClients: () => void
     createClient: (clientData: Partial<Client>) => Promise<Client>
     updateClient: (id: string, clientData: Partial<Client>) => Promise<Client>
     loading: boolean
+    fetchNextPage: () => void
+    hasNextPage: boolean
 }
 
 const ClientsContext = createContext<ClientsContextType | undefined>(undefined)
 
 export function ClientsProvider({ children }: { children: React.ReactNode }) {
-    const [allClients, setAllClients] = useState<Client[]>([])
-    const [loading, setLoading] = useState(true)
-    const { profile } = useUser()
-    const { clients: bootstrapClients, loading: dataLoading } = useData()
-    const supabase = createSupabaseClient()
-
     const { clients: clientsApi } = useApi()
+    const { profile } = useUser()
+    const queryClient = useQueryClient()
 
-    const fetchClients = useCallback(async () => {
-        try {
-            const data = await clientsApi.getAll()
-            setAllClients(data)
-        } catch (error) {
-            console.error('Error fetching clients:', error)
-        } finally {
-            setLoading(false)
-        }
-    }, [clientsApi])
+    // Realtime invalidation
+    useServerSubscription('clients', [['clients', 'list']])
 
-    // Bridge with DataContext
-    useEffect(() => {
-        if (bootstrapClients && bootstrapClients.length > 0) {
-            setAllClients(bootstrapClients)
-            setLoading(false)
-        } else if (!dataLoading) {
-            // Only fetch if bootstrap is done and empty (or if we really need a fresh copy)
-            fetchClients()
-        }
-    }, [bootstrapClients, dataLoading, fetchClients])
-    useEffect(() => {
-        const channel = supabase
-            .channel('clients-realtime')
-            .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'clients' }, (payload: any) => {
-                setAllClients((prev: Client[]) => [...prev, payload.new as Client])
-            })
-            .on('postgres_changes' as any, { event: 'UPDATE', schema: 'public', table: 'clients' }, (payload: any) => {
-                setAllClients((prev: Client[]) =>
-                    prev.map((c: Client) => c.id === (payload.new as Client).id ? (payload.new as Client) : c)
-                )
-            })
-            .on('postgres_changes' as any, { event: 'DELETE', schema: 'public', table: 'clients' }, (payload: any) => {
-                setAllClients((prev: Client[]) => prev.filter((c: Client) => c.id !== (payload.old as Client).id))
-            })
-            .subscribe()
+    // Use Infinite Query for clients
+    const {
+        data,
+        isLoading: loading,
+        fetchNextPage,
+        hasNextPage,
+        refetch
+    } = useInfiniteQuery({
+        queryKey: ['clients', 'list'],
+        queryFn: ({ pageParam }) => clientsApi.getAll('', false, pageParam as string, 50),
+        getNextPageParam: (lastPage: any) => lastPage.nextCursor || undefined,
+        initialPageParam: undefined,
+        staleTime: 0,
+    })
 
-        return () => {
-            supabase.removeChannel(channel)
-        }
-    }, [])
+    const allClients = useMemo(() => {
+        return data?.pages.flatMap(page => (page as any).items) || []
+    }, [data])
 
     const myClients = useMemo(() => {
         if (!profile) return []
-        if (['ADMIN', 'MANAGER'].includes(profile.role.toUpperCase())) {
+        if (['ADMIN', 'MANAGER'].includes(profile.role?.toUpperCase())) {
             return allClients
         }
         return allClients.filter((c: Client) => c.assigned_agent_id === profile.id)
@@ -97,54 +74,32 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
         )
     }, [allClients])
 
-    const createClient = useCallback(async (clientData: Partial<Client>) => {
-        const tempId = `temp-${Date.now()}`
-        const tempClient = {
-            ...clientData,
-            id: tempId,
-            created_at: new Date().toISOString(),
-            company_name: clientData.company_name || 'Nueva Empresa',
-            contact_name: clientData.contact_name || 'Nuevo Contacto',
-            assigned_agent_id: clientData.assigned_agent_id || null
-        } as Client
-
-        setAllClients((prev: Client[]) => [...prev, tempClient])
-
-        try {
-            const newClient = await clientsApi.create(clientData)
-            setAllClients((prev: Client[]) => prev.map((c: Client) => c.id === tempId ? newClient : c))
-            return newClient
-        } catch (error) {
-            setAllClients((prev: Client[]) => prev.filter((c: Client) => c.id !== tempId))
-            throw error
+    const createClientMutation = useMutation({
+        mutationFn: (clientData: Partial<Client>) => clientsApi.create(clientData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['clients'] })
         }
-    }, [clientsApi, profile])
+    })
 
-    const updateClient = useCallback(async (id: string, clientData: Partial<Client>) => {
-        const previousClients = [...allClients]
-
-        setAllClients((prev: Client[]) => prev.map((c: Client) => c.id === id ? { ...c, ...clientData } as Client : c))
-
-        try {
-            const updatedClient = await clientsApi.update(id, clientData)
-            return updatedClient
-
-        } catch (error) {
-            setAllClients(previousClients)
-            throw error
+    const updateClientMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string, data: Partial<Client> }) => clientsApi.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['clients'] })
         }
-    }, [clientsApi, allClients])
+    })
 
     const value = useMemo(() => ({
         allClients,
         myClients,
         searchClients,
         searchAllClients,
-        refreshClients: fetchClients,
-        createClient,
-        updateClient,
+        refreshClients: () => queryClient.invalidateQueries({ queryKey: ['clients'] }),
+        createClient: createClientMutation.mutateAsync,
+        updateClient: (id: string, data: Partial<Client>) => updateClientMutation.mutateAsync({ id, data }),
         loading,
-    }), [allClients, myClients, searchClients, searchAllClients, fetchClients, createClient, updateClient, loading])
+        fetchNextPage,
+        hasNextPage
+    }), [allClients, myClients, searchClients, searchAllClients, queryClient, createClientMutation, updateClientMutation, loading, fetchNextPage, hasNextPage])
 
     return (
         <ClientsContext.Provider value={value}>

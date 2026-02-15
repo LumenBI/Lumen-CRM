@@ -175,7 +175,10 @@ export default function KanbanPage() {
         const shouldOpenQuotes = options?.prepareQuote === true && newStatus === STAGE_ID_COTIZANDO && deal
 
         try {
-            await moveDeal(stageModal.dealId, newStatus, interactionData)
+            await moveDeal(stageModal.dealId, newStatus, {
+                ...interactionData,
+                clientId: deal?.client?.id || (deal as any)?.client_id || ''
+            })
             setStageModal(prev => ({ ...prev, isOpen: false }))
             toast.success('Seguimiento actualizado')
             if (shouldOpenQuotes) {

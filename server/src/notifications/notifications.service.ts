@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { SupabaseService } from './supabase.service';
-import { AppConfigService } from '../../common/config/app-config.service';
+import { SupabaseService } from '../common/supabase/supabase.service';
+import { AppConfigService } from '../common/config/app-config.service';
 import axios from 'axios';
 
 @Injectable()
@@ -15,29 +15,65 @@ export class NotificationsService {
     const webhookUrl = this.config.slackWebhookUrl;
     if (!webhookUrl) return;
 
+    const timestamp = new Date().toLocaleString('es-GT', {
+      timeZone: 'America/Guatemala',
+    });
+
     const payload = {
       blocks: [
         {
           type: 'header',
           text: {
             type: 'plain_text',
-            text: '🚨 Backend Error Detected',
+            text: '🚨 Error detectado en el Backend',
             emoji: true,
           },
         },
         {
           type: 'section',
+          fields: [
+            {
+              type: 'mrkdwn',
+              text: `*Contexto:*\n${context}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `*Fecha/Hora (GT):*\n${timestamp}`,
+            },
+          ],
+        },
+        {
+          type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `*Context:* ${context}\n*Message:* ${error.message || error}`,
+            text: `*Mensaje:*\n\`${error.message || error}\``,
           },
         },
         {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `\`\`\`${error.stack || 'No stack trace available'}\`\`\``,
+            text: '*Stack Trace:*',
           },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `\`\`\`${(error.stack || 'No disponible').slice(0, 2000)}\`\`\``,
+          },
+        },
+        {
+          type: 'divider',
+        },
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: '📧 _Este es un reporte automático del sistema Star-CRM_',
+            },
+          ],
         },
       ],
     };
@@ -46,6 +82,51 @@ export class NotificationsService {
       await axios.post(webhookUrl, payload);
     } catch (slackError) {
       console.error('Failed to send Slack notification:', slackError.message);
+    }
+  }
+
+  async notifySystemUpdate(title: string, message: string, type: 'MAINTENANCE' | 'UPDATE' | 'INFO' = 'INFO') {
+    const webhookUrl = this.config.slackWebhookUrl;
+    if (!webhookUrl) return;
+
+    const icons = {
+      MAINTENANCE: '🚧',
+      UPDATE: '🚀',
+      INFO: '📢'
+    };
+
+    const payload = {
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `${icons[type]} *${title}*`
+          }
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: message
+          }
+        },
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `Categoría: ${type} | Envío manual desde CRM`
+            }
+          ]
+        }
+      ]
+    };
+
+    try {
+      await axios.post(webhookUrl, payload);
+    } catch (slackError) {
+      console.error('Failed to send Slack system update:', slackError.message);
     }
   }
 

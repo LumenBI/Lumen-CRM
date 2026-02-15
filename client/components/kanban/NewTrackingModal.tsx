@@ -107,7 +107,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                 }
 
             } else if (clientId && status !== 'PENDING') {
-                await clientsApi.move(clientId, status)
+                await clientsApi.update(clientId, { status })
             }
 
             if (status !== 'PENDING' && interaction.summary && selectedType) {

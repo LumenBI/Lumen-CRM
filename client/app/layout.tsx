@@ -25,6 +25,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { Providers } from "@/components/providers/Providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,12 +35,14 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${mulish.variable} font-sans antialiased`}>
-        <ThemeProvider>
-          {children}
-          <Toaster />
-          <SpeedInsights />
-          <Analytics />
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider>
+            {children}
+            <Toaster />
+            <SpeedInsights />
+            <Analytics />
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

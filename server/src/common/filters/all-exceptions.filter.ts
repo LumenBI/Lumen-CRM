@@ -7,12 +7,16 @@ import {
   Logger,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+  constructor(
+    private readonly httpAdapterHost: HttpAdapterHost,
+    private readonly notificationsService: NotificationsService,
+  ) { }
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const { httpAdapter } = this.httpAdapterHost;
@@ -23,26 +27,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : 'Internal server error';
-
-    // Log the actual error for the developer
-    this.logger.error(
-      `Exception: ${exception instanceof Error ? exception.message : JSON.stringify(exception)}`,
-      exception instanceof Error ? exception.stack : '',
-    );
+    const request = ctx.getRequest();
+    const url = request.url;
+    const user = request.user;
 
     const responseBody = {
       statusCode: httpStatus,
       timestamp: new Date().toISOString(),
       path: httpAdapter.getRequestUrl(ctx.getRequest()),
-      message:
-        typeof message === 'string'
-          ? message
-          : (message as any).message || 'Internal server error',
     };
+
+    if (httpStatus === HttpStatus.INTERNAL_SERVER_ERROR) {
+      const context = `Route: ${url}\nUser: ${user?.userId || 'Guest'}`;
+      this.notificationsService.notifySlackError(exception, context);
+    }
 
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
   }

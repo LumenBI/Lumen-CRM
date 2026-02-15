@@ -1,169 +1,107 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
-import { createClient as createSupabaseClient } from '@/utils/supabase/client'
-import { useData } from '@/context/DataContext'
+import { createContext, useContext, useCallback, useMemo } from 'react'
+import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/useApi'
+import { useServerSubscription } from '@/hooks/reactive/useServerSubscription'
+import { useAuthFetch } from '@/hooks/useAuthFetch'
 import type { Deal } from '@/types'
 import { STAGES } from '@/constants/stages'
+import { toast } from 'sonner'
 
 export type KanbanBoard = {
     [key: string]: Deal[]
 }
 
-// Re-export for backwards compatibility
 export const KANBAN_COLUMNS = STAGES.map(s => ({ id: s.id, title: s.title }))
 
 interface DealsContextType {
-    board: KanbanBoard | null
+    board: KanbanBoard
     loading: boolean
-    refreshBoard: () => Promise<void>
-    moveDeal: (dealId: string, newStatus: Deal['status'], interactionData?: { interactionType: string, summary: string, nextStep?: string }) => Promise<void>
+    refreshBoard: () => void
+    moveDeal: (dealId: string, newStatus: Deal['status'], interactionData?: { interactionType: string, summary: string, nextStep?: string, clientId: string }) => Promise<void>
     updateBoard: (newBoard: KanbanBoard) => void
+    // fetchNextPage: (columnId: string) => void // Temporarily removed as per instruction focus
+    // hasNextPage: (columnId: string) => boolean // Temporarily removed as per instruction focus
 }
 
 const DealsContext = createContext<DealsContextType | undefined>(undefined)
 
 export function DealsProvider({ children }: { children: React.ReactNode }) {
-    const [board, setBoard] = useState<KanbanBoard | null>(null)
-    const [loading, setLoading] = useState(true)
-    const { deals: bootstrapBoard, loading: dataLoading } = useData()
-
     const { deals: dealsApi, interactions: interactionsApi } = useApi()
+    const queryClient = useQueryClient()
 
-    const fetchBoard = useCallback(async () => {
-        try {
-            console.log("Fetching Kanban Board from API...");
-            const data: KanbanBoard = await dealsApi.getKanban()
-            console.log("Kanban API Response:", data);
+    // Realtime invalidation - when anything in 'deals' changes, 
+    // we invalidate all deal-related queries
+    useServerSubscription('deals', [['deals']])
 
-            const splitBoard = { ...data }
+    // For the Kanban board, we'll fetch the initial view of all columns.
+    // To maintain the 'board' object interface for the existing KanbanPage.
+    const { data: boardData, isLoading: loading } = useQuery({
+        queryKey: ['deals', 'board'],
+        queryFn: async () => {
+            // We'll fetch all columns concurrently for the initial board
+            const results = await Promise.all(
+                KANBAN_COLUMNS.map(col => dealsApi.getColumna(col.id, undefined, 50))
+            );
 
-            if (splitBoard.CERRADO) {
-                splitBoard.CERRADO_GANADO = splitBoard.CERRADO.filter((d: Deal) => d.status === 'CERRADO_GANADO')
-                splitBoard.CERRADO_PERDIDO = splitBoard.CERRADO.filter((d: Deal) => d.status === 'CERRADO_PERDIDO')
-                delete splitBoard.CERRADO
-            }
+            const board: KanbanBoard = {};
+            results.forEach((res, index) => {
+                board[KANBAN_COLUMNS[index].id] = res.items;
+            });
+            return board;
+        },
+        staleTime: 0,
+    });
 
-            KANBAN_COLUMNS.forEach(col => {
-                if (!splitBoard[col.id]) splitBoard[col.id] = []
-            })
+    const board = useMemo(() => boardData || {}, [boardData]);
 
-            console.log("Processed Board:", splitBoard);
+    const moveDealMutation = useMutation({
+        mutationFn: async ({ dealId, newStatus, interactionData }: {
+            dealId: string,
+            newStatus: Deal['status'],
+            interactionData?: any
+        }) => {
+            const promises: Promise<any>[] = [dealsApi.move(dealId, newStatus)];
 
-            setBoard(splitBoard)
-        } catch (error) {
-            console.error("Error cargando kanban:", error)
-        } finally {
-            setLoading(false)
-        }
-    }, [dealsApi])
-
-    const supabase = useMemo(() => createSupabaseClient(), [])
-
-    useEffect(() => {
-        const channel = supabase
-            .channel('deals-realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, (payload: any) => {
-                // For simplicity in Kanban, since items can change stages, 
-                // a full local board recalculation from payload is complex.
-                // However, we can just trigger fetchBoard() which is specific to deals.
-                // This is still much better than fetching the whole app bootstrap.
-                fetchBoard()
-            })
-            .subscribe()
-
-        return () => {
-            supabase.removeChannel(channel)
-        }
-    }, [supabase, fetchBoard])
-
-    // Bridge with DataContext
-    useEffect(() => {
-        if (bootstrapBoard) {
-            console.log("Using Bootstrap Kanban Data:", bootstrapBoard);
-            const splitBoard = { ...bootstrapBoard }
-            // Handle splitting CERRADO if not already handled by backend
-            if (splitBoard.CERRADO) {
-                splitBoard.CERRADO_GANADO = splitBoard.CERRADO.filter((d: Deal) => d.status === 'CERRADO_GANADO')
-                splitBoard.CERRADO_PERDIDO = splitBoard.CERRADO.filter((d: Deal) => d.status === 'CERRADO_PERDIDO')
-                delete splitBoard.CERRADO
-            }
-            KANBAN_COLUMNS.forEach(col => {
-                if (!splitBoard[col.id]) splitBoard[col.id] = []
-            })
-            setBoard(splitBoard)
-            setLoading(false)
-        } else if (!dataLoading) {
-            console.log("No Bootstrap Data, calling fetchBoard directly");
-            fetchBoard()
-        }
-    }, [bootstrapBoard, dataLoading, fetchBoard])
-
-    const moveDeal = useCallback(async (dealId: string, newStatus: Deal['status'], interactionData?: { interactionType: string, summary: string, nextStep?: string }) => {
-        if (!board) return
-
-        const previousBoard = { ...board }
-
-        const newBoard = { ...board }
-        let movedDeal: Deal | undefined = undefined
-
-        for (const colId in newBoard) {
-            const index = newBoard[colId].findIndex((d: Deal) => d.id === dealId)
-            if (index !== -1) {
-                movedDeal = newBoard[colId][index]
-                newBoard[colId] = [...newBoard[colId]]
-                newBoard[colId].splice(index, 1)
-                break
-            }
-        }
-
-        if (!movedDeal) return
-
-        movedDeal = { ...movedDeal, status: newStatus }
-        if (!newBoard[newStatus]) newBoard[newStatus] = []
-        else newBoard[newStatus] = [...newBoard[newStatus]]
-
-        newBoard[newStatus].push(movedDeal)
-
-        setBoard(newBoard)
-
-        try {
-            const promises: Promise<any>[] = []
-
-            promises.push(dealsApi.move(dealId, newStatus))
-
-            if (interactionData) {
+            if (interactionData?.clientId) {
                 promises.push(interactionsApi.create({
-                    clientId: movedDeal.client?.id || movedDeal.client_id!,
+                    clientId: interactionData.clientId, // Should be passed in
                     category: interactionData.interactionType,
-                    summary: `[CAMBIO DE ETAPA: ${newStatus}] ${interactionData.summary}` + (interactionData.nextStep ? `\nPróximo paso: ${interactionData.nextStep}` : ''),
+                    summary: `[CAMBIO DE ETAPA: ${newStatus}] ${interactionData.summary}` +
+                        (interactionData.nextStep ? `\nPróximo paso: ${interactionData.nextStep}` : ''),
                     modality: 'VIRTUAL'
-                }))
+                }));
             }
 
-            await Promise.all(promises)
-
-        } catch (error) {
-            console.error("Error executing move/log:", error)
-            alert("Hubo un error al guardar los cambios. Revertiendo...")
-
-            setBoard(previousBoard)
+            return Promise.all(promises);
+        },
+        onSuccess: () => {
+            // Invalidate all deal queries for fresh data
+            queryClient.invalidateQueries({ queryKey: ['deals'] });
         }
-    }, [board, dealsApi, interactionsApi])
+    });
 
+    const moveDeal = useCallback(async (
+        dealId: string,
+        newStatus: Deal['status'],
+        interactionData?: any
+    ) => {
+        await moveDealMutation.mutateAsync({ dealId, newStatus, interactionData });
+    }, [moveDealMutation]);
 
     const updateBoard = useCallback((newBoard: KanbanBoard) => {
-        setBoard(newBoard)
-    }, [])
+        // Optimistic update - manual cache modification
+        queryClient.setQueryData(['deals', 'board'], newBoard);
+    }, [queryClient]);
 
     const value = useMemo(() => ({
         board,
         loading,
-        refreshBoard: fetchBoard,
+        refreshBoard: () => queryClient.invalidateQueries({ queryKey: ['deals', 'board'] }),
         moveDeal,
         updateBoard
-    }), [board, loading, fetchBoard, moveDeal, updateBoard])
+    }), [board, loading, moveDeal, updateBoard, queryClient]);
 
     return (
         <DealsContext.Provider value={value}>

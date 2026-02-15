@@ -12,16 +12,18 @@ export const useApi = () => {
 
     const api = useMemo(() => ({
         clients: {
-            getAll: async (query: string = '', mine: boolean = false) => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients?query=${query}&mine=${mine}`, {
+            getAll: async (query: string = '', mine: boolean = false, cursor?: string, limit: number = 50) => {
+                let url = `${process.env.NEXT_PUBLIC_API_URL}/clients/list?query=${query}&mine=${mine}&limit=${limit}`;
+                if (cursor) url += `&cursor=${cursor}`;
+                const res = await authFetch(url, {
                     cache: 'no-store'
                 })
                 if (!res.ok) throw new Error('Failed to fetch clients')
-                return res.json() as Promise<Client[]>
+                return res.json()
             },
 
             getById: async (id: string) => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients/${id}`)
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/clients/${id}`)
                 if (!res.ok) throw new Error('Failed to fetch client')
                 return res.json() as Promise<{ client: Client, interactions: Interaction[], deals: Deal[] }>
             },
@@ -30,7 +32,7 @@ export const useApi = () => {
                 try {
                     ClientSchema.parse(data)
 
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients`, {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
@@ -40,7 +42,6 @@ export const useApi = () => {
                     return res.json() as Promise<Client>
                 } catch (error) {
                     if (error instanceof ZodError) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const message = (error as any).issues[0].message
                         toast.error(message)
                     } else {
@@ -54,7 +55,7 @@ export const useApi = () => {
                 try {
                     ClientSchema.partial().parse(data)
 
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients/${id}`, {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/clients/${id}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
@@ -64,7 +65,6 @@ export const useApi = () => {
                     return res.json() as Promise<Client>
                 } catch (error) {
                     if (error instanceof ZodError) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const message = (error as any).issues[0].message
                         toast.error(message)
                     } else {
@@ -76,7 +76,7 @@ export const useApi = () => {
 
             delete: async (id: string) => {
                 try {
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients/${id}`, {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/clients/${id}`, {
                         method: 'DELETE'
                     })
                     if (!res.ok) throw new Error('Failed to delete client')
@@ -84,21 +84,6 @@ export const useApi = () => {
                     return res.json()
                 } catch (error) {
                     toast.error('Error al eliminar cliente')
-                    throw error
-                }
-            },
-
-            move: async (id: string, status: string) => {
-                try {
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients/${id}/move`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status })
-                    })
-                    if (!res.ok) throw new Error('Failed to move client')
-                    return res.json() as Promise<Client>
-                } catch (error) {
-                    toast.error('Error al mover cliente')
                     throw error
                 }
             },
@@ -127,12 +112,10 @@ export const useApi = () => {
                 }
             },
 
-            updateNotificationInterval: async (interval: number) => {
+            updateNotificationInterval: async (minutes: number) => {
                 try {
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/profile/notifications`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ interval })
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/interval?minutes=${minutes}`, {
+                        method: 'PATCH'
                     })
                     if (!res.ok) throw new Error('Failed to update notification settings')
                     return res.json()
@@ -158,11 +141,13 @@ export const useApi = () => {
         },
 
         deals: {
-            getKanban: async () => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/kanban`, {
+            getColumna: async (columnId: string, cursor?: string, limit: number = 20) => {
+                let url = `${process.env.NEXT_PUBLIC_API_URL}/deals/column?columnId=${columnId}&limit=${limit}`;
+                if (cursor) url += `&cursor=${cursor}`;
+                const res = await authFetch(url, {
                     cache: 'no-store'
                 })
-                if (!res.ok) throw new Error('Failed to fetch kanban')
+                if (!res.ok) throw new Error('Failed to fetch kanban column')
                 return res.json()
             },
 
@@ -170,17 +155,15 @@ export const useApi = () => {
                 try {
                     DealSchema.partial().parse(data)
 
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals`, {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/deals`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
                     })
                     if (!res.ok) throw new Error('Failed to create deal')
-                    // toast handled in UI
                     return res.json() as Promise<Deal>
                 } catch (error) {
                     if (error instanceof ZodError) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const message = (error as any).issues[0].message
                         toast.error(message)
                     }
@@ -190,7 +173,7 @@ export const useApi = () => {
 
             move: async (id: string, status: string) => {
                 try {
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals/${id}/move`, {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/deals/${id}/move`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status })
@@ -202,8 +185,9 @@ export const useApi = () => {
                     throw error
                 }
             },
+
             update: async (id: string, data: Partial<Deal>) => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals/${id}`, {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/deals/${id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -214,7 +198,7 @@ export const useApi = () => {
             },
 
             delete: async (id: string) => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/deals/${id}`, {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/deals/${id}`, {
                     method: 'DELETE'
                 })
                 if (!res.ok) throw new Error('Failed to delete deal')
@@ -224,7 +208,7 @@ export const useApi = () => {
 
         appointments: {
             getAll: async () => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`)
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/appointments`)
                 if (!res.ok) throw new Error('Failed to fetch appointments')
                 return res.json() as Promise<Appointment[]>
             },
@@ -233,7 +217,7 @@ export const useApi = () => {
                 try {
                     AppointmentSchema.partial().parse(data)
 
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments`, {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/appointments`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
@@ -243,7 +227,6 @@ export const useApi = () => {
                     return res.json() as Promise<Appointment>
                 } catch (error) {
                     if (error instanceof ZodError) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const message = (error as any).issues[0].message
                         toast.error(message)
                     } else {
@@ -257,7 +240,7 @@ export const useApi = () => {
                 try {
                     AppointmentSchema.partial().parse(data)
 
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${id}`, {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/appointments/${id}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
@@ -267,7 +250,6 @@ export const useApi = () => {
                     return res.json() as Promise<Appointment>
                 } catch (error) {
                     if (error instanceof ZodError) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const message = (error as any).issues[0].message
                         toast.error(message)
                     } else {
@@ -279,7 +261,7 @@ export const useApi = () => {
 
             delete: async (id: string) => {
                 try {
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${id}`, {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/appointments/${id}`, {
                         method: 'DELETE'
                     })
                     if (!res.ok) throw new Error('Failed to delete appointment')
@@ -293,7 +275,7 @@ export const useApi = () => {
 
             updateStatus: async (id: string, status: string) => {
                 try {
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/appointments/${id}/status`, {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/appointments/${id}/status`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status })
@@ -313,7 +295,7 @@ export const useApi = () => {
                 try {
                     InteractionSchema.parse(data)
 
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/interactions`, {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/clients/interactions`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
@@ -322,7 +304,6 @@ export const useApi = () => {
                     return res.json() as Promise<Interaction>
                 } catch (error) {
                     if (error instanceof ZodError) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const message = (error as any).issues[0].message
                         toast.error(message)
                     } else {
@@ -333,37 +314,28 @@ export const useApi = () => {
             },
         },
 
-        history: {
-            get: async () => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/history`)
-                if (!res.ok) throw new Error('Failed to fetch history')
-                return res.json()
-            },
-        },
-
-        activities: {
-            get: async () => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/activities`)
-                if (!res.ok) throw new Error('Failed to fetch activities')
-                return res.json()
-            },
-        },
-
         stats: {
             get: async () => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/stats`)
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/stats`)
                 if (!res.ok) throw new Error('Failed to fetch stats')
                 return res.json()
             },
         },
         bootstrap: {
             get: async () => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/bootstrap`, {
-                    cache: 'no-store'
-                })
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/stats`)
                 if (!res.ok) throw new Error('Failed to fetch bootstrap data')
                 return res.json()
             },
+        },
+        notifications: {
+            check: async () => {
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/check`, {
+                    cache: 'no-store'
+                })
+                if (!res.ok) throw new Error('Failed to check notifications')
+                return res.json()
+            }
         },
 
         quotes: {

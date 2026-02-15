@@ -1,13 +1,17 @@
 import { NestFactory, HttpAdapterHost } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { NotificationsService } from './notifications/notifications.service';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const { httpAdapter } = app.get(HttpAdapterHost);
-  app.useGlobalFilters(new AllExceptionsFilter(app.get(HttpAdapterHost)));
+  const notificationsService = app.get(NotificationsService);
+  app.useGlobalFilters(
+    new AllExceptionsFilter(app.get(HttpAdapterHost), notificationsService),
+  );
 
   // Enable global validation pipe
   app.useGlobalPipes(
