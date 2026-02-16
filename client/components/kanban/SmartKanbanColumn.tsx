@@ -14,16 +14,18 @@ interface SmartKanbanColumnProps {
     title: string
     stageId?: string
     filters?: { agentId: string | 'ALL' }
-    onEdit?: (deal: any) => void
     onEditDeal?: (deal: any) => void
     onContextMenu?: (e: any, id: string) => void
     onOpenContextMenu?: (e: any, id: string) => void
+    onApprove: (dealId: string) => void
+    onReject: (dealId: string) => void
 }
 
 export default function SmartKanbanColumn(props: SmartKanbanColumnProps) {
     const id = props.id || props.stageId || ''
-    const onEdit = props.onEdit || props.onEditDeal || (() => { })
+    const onEdit = props.onEditDeal || (() => { })
     const onContextMenu = props.onContextMenu || props.onOpenContextMenu || (() => { })
+    const { onApprove, onReject } = props
     const filters = props.filters || { agentId: 'ALL' }
 
     const { deals: dealsApi } = useApi()
@@ -99,6 +101,8 @@ export default function SmartKanbanColumn(props: SmartKanbanColumnProps) {
                                         index={index}
                                         onEdit={onEdit}
                                         onContextMenu={onContextMenu}
+                                        onApprove={onApprove}
+                                        onReject={onReject}
                                     />
                                 ))
                             )}

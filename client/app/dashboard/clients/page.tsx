@@ -2,7 +2,22 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useQuickActions } from '@/context/QuickActionsContext';
-import { Building2, User, Phone, Mail, Trash2, Pencil, Plus, Loader2 } from 'lucide-react';
+import type { Client } from '@/types';
+import ContextMenu from '@/components/ContextMenu';
+import AssignAgentModal from '@/components/clients/AssignAgentModal';
+import {
+    Building2,
+    User,
+    Phone,
+    Mail,
+    Trash2,
+    Pencil,
+    Plus,
+    Loader2,
+    Eye,
+    UserCheck,
+    PhoneCall
+} from 'lucide-react';
 import { useAuthFetch } from '@/hooks/useAuthFetch';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchBar from '@/components/ui/SearchBar';
@@ -11,7 +26,6 @@ import ClientModal from '@/components/ClientModal';
 import EditClientModal from '@/components/clients/EditClientModal';
 import AlertModal, { AlertType } from '@/components/ui/AlertModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import type { Client } from '@/types';
 import { useClients } from '@/context/ClientsContext';
 import { useUser } from '@/context/UserContext';
 import { toast } from 'sonner'
@@ -58,6 +72,20 @@ export default function ClientsPage() {
 
     const [isDeleting, setIsDeleting] = useState(false);
 
+    const [contextMenu, setContextMenu] = useState<{
+        isOpen: boolean;
+        x: number;
+        y: number;
+        client: Client | null;
+    }>({
+        isOpen: false,
+        x: 0,
+        y: 0,
+        client: null
+    });
+
+    const [assignModalClient, setAssignModalClient] = useState<Client | null>(null);
+
     const { authFetch } = useAuthFetch();
     const { profile } = useUser();
     const { requestAction, clearAction } = useQuickActions();
@@ -98,6 +126,16 @@ export default function ClientsPage() {
     const handleEditClick = (e: React.MouseEvent, client: Client) => {
         e.stopPropagation();
         setClientToEdit(client);
+    }
+
+    const handleContextMenu = (e: React.MouseEvent, client: Client) => {
+        e.preventDefault();
+        setContextMenu({
+            isOpen: true,
+            x: e.clientX,
+            y: e.clientY,
+            client
+        });
     }
 
     const executeDelete = async () => {
@@ -178,7 +216,8 @@ export default function ClientsPage() {
                             <div
                                 key={client.id}
                                 onClick={() => setSelectedClientId(client.id)}
-                                className="p-4 rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 active:bg-blue-50/50 dark:active:bg-blue-900/10 transition-colors"
+                                onContextMenu={(e) => handleContextMenu(e, client)}
+                                className="p-4 rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 active:bg-blue-50/50 dark:active:bg-blue-900/10 transition-colors cursor-pointer"
                             >
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -264,6 +303,7 @@ export default function ClientsPage() {
                                     key={client.id}
                                     className="group hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all cursor-pointer border-b border-gray-100 dark:border-slate-800 hover:shadow-md hover:scale-[1.01]"
                                     onClick={() => setSelectedClientId(client.id)}
+                                    onContextMenu={(e) => handleContextMenu(e, client)}
                                 >
                                     <td className="px-8 py-6 w-[35%]">
                                         <div className="flex items-center gap-4">
@@ -406,6 +446,75 @@ export default function ClientsPage() {
                     onSuccess={() => {
                         refreshClients();
                         setClientToEdit(null);
+                    }}
+                />
+            )}
+
+            {contextMenu.isOpen && contextMenu.client && (
+                <ContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    title={contextMenu.client.company_name}
+                    onClose={() => setContextMenu(prev => ({ ...prev, isOpen: false }))}
+                    items={[
+                        {
+                            label: 'Ver cliente',
+                            icon: Eye,
+                            action: () => setSelectedClientId(contextMenu.client!.id)
+                        },
+                        {
+                            label: 'Editar',
+                            icon: Pencil,
+                            action: () => setClientToEdit(contextMenu.client)
+                        },
+                        ...(profile?.role === 'ADMIN' || profile?.role === 'MANAGER' ? [
+                            {
+                                label: 'Asignar agente',
+                                icon: UserCheck,
+                                action: () => setAssignModalClient(contextMenu.client)
+                            },
+                        ] : []),
+                        {
+                            label: 'Contactar',
+                            icon: PhoneCall,
+                            subItems: [
+                                {
+                                    label: `Llamar (${contextMenu.client.phone || 'N/A'})`,
+                                    icon: Phone,
+                                    action: () => {
+                                        if (contextMenu.client?.phone) window.location.href = `tel:${contextMenu.client.phone}`
+                                        else toast.error('No hay teléfono registrado')
+                                    }
+                                },
+                                {
+                                    label: `Email (${contextMenu.client.email || 'N/A'})`,
+                                    icon: Mail,
+                                    action: () => {
+                                        if (contextMenu.client?.email) window.location.href = `mailto:${contextMenu.client.email}`
+                                        else toast.error('No hay email registrado')
+                                    }
+                                }
+                            ]
+                        },
+                        ...(profile?.role === 'ADMIN' || profile?.role === 'MANAGER' ? [
+                            {
+                                label: 'Eliminar client',
+                                icon: Trash2,
+                                className: 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20',
+                                action: () => setConfirmState({ isOpen: true, clientId: contextMenu.client!.id })
+                            }
+                        ] : [])
+                    ]}
+                />
+            )}
+
+            {assignModalClient && (
+                <AssignAgentModal
+                    client={assignModalClient}
+                    onClose={() => setAssignModalClient(null)}
+                    onSuccess={() => {
+                        refreshClients();
+                        setAssignModalClient(null);
                     }}
                 />
             )}

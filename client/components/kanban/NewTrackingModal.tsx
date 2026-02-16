@@ -43,11 +43,12 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
         contact_name: '',
         email: '',
         phone: '',
+        commodity: '',
         origin: 'APP COBUS',
         assigned_agent_id: ''
     })
 
-    const [status, setStatus] = useState('PENDING')
+    const [status, setStatus] = useState('PROSPECT')
     const [interaction, setInteraction] = useState({
         category: 'CALL',
         summary: ''
@@ -106,7 +107,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                 await clientsApi.update(clientId, { status })
             }
 
-            if (status !== 'PENDING' && interaction.summary && selectedType) {
+            if (status !== 'PROSPECT' && status !== 'PENDING' && interaction.summary && selectedType) {
                 if (scheduleFuture) {
                     if (!futureDate || !futureTime) {
                         toast.error('Debes seleccionar fecha y hora para agendar.')
@@ -268,10 +269,19 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                             />
                                         </div>
                                         <div>
+                                            <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 block">Mercancía (Commodity)</label>
+                                            <input
+                                                className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-sm text-gray-900 dark:text-white outline-none focus:border-blue-500"
+                                                placeholder="Ej. Electrónicos, Textiles..."
+                                                value={clientForm.commodity}
+                                                onChange={e => setClientForm({ ...clientForm, commodity: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
                                             <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 block">Contacto</label>
                                             <input
                                                 className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-sm text-gray-900 dark:text-white outline-none focus:border-blue-500"
-                                                placeholder="Nombre del encargado"
+                                                placeholder="Nombre del encargado (Opcional)"
                                                 value={clientForm.contact_name}
                                                 onChange={e => setClientForm({ ...clientForm, contact_name: e.target.value })}
                                             />
@@ -280,7 +290,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                             <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 block">Email</label>
                                             <input
                                                 className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-sm text-gray-900 dark:text-white outline-none focus:border-blue-500"
-                                                placeholder="correo@ejemplo.com"
+                                                placeholder="Opcional"
                                                 type="email"
                                                 value={clientForm.email}
                                                 onChange={e => setClientForm({ ...clientForm, email: e.target.value })}
@@ -290,7 +300,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                             <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 block">Teléfono</label>
                                             <input
                                                 className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-sm text-gray-900 dark:text-white outline-none focus:border-blue-500"
-                                                placeholder="+506 ..."
+                                                placeholder="Opcional"
                                                 value={clientForm.phone}
                                                 onChange={e => setClientForm({ ...clientForm, phone: e.target.value })}
                                             />
@@ -349,7 +359,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                     ))}
                                 </div>
 
-                                {mode === 'create' && status !== 'PENDING' && (
+                                {mode === 'create' && status !== 'PROSPECT' && status !== 'PENDING' && (
                                     <div className="animate-in fade-in slide-in-from-top-2 duration-300 bg-emerald-50/50 dark:bg-emerald-900/5 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/20 mb-4">
                                         <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-400 mb-3 flex items-center gap-2">
                                             <LucideBriefcase size={16} /> Detalles de la Oportunidad
@@ -410,7 +420,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                     </div>
                                 )}
 
-                                {status !== 'PENDING' && (
+                                {status !== 'PROSPECT' && status !== 'PENDING' && (
                                     <div className="animate-in fade-in slide-in-from-top-2 duration-300 bg-blue-50/50 dark:bg-blue-900/5 p-4 rounded-xl border border-blue-100 dark:border-blue-900/20">
                                         <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-400 mb-3 flex items-center gap-2">
                                             <LucideMessageSquare size={16} /> Detalles del Contacto
@@ -533,7 +543,7 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                             </button>
                             <button
                                 type="submit"
-                                disabled={loading || (status !== 'PENDING' && !interaction.summary) || (mode === 'select' && !selectedClient)}
+                                disabled={loading || (status !== 'PROSPECT' && status !== 'PENDING' && !interaction.summary) || (mode === 'select' && !selectedClient)}
                                 className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 {loading && <LucideLoader2 className="animate-spin" size={18} />}

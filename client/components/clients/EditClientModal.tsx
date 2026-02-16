@@ -23,6 +23,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
         contact_name: client.contact_name || '',
         email: client.email || '',
         phone: client.phone || '',
+        commodity: client.commodity || '',
         origin: client.origin || 'MANUAL',
         assigned_agent_id: client.assigned_agent_id || '',
     })
@@ -40,6 +41,7 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
             contact_name: client.contact_name || '',
             email: client.email || '',
             phone: client.phone || '',
+            commodity: client.commodity || '',
             origin: client.origin || 'MANUAL',
             assigned_agent_id: client.assigned_agent_id || '',
         })
@@ -110,6 +112,15 @@ export default function EditClientModal({ client, onClose, onSuccess }: EditClie
                                         required
                                         value={formData.company_name}
                                         onChange={e => setFormData({ ...formData, company_name: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 outline-none text-sm transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Mercancía (Commodity)</label>
+                                    <input
+                                        value={formData.commodity}
+                                        onChange={e => setFormData({ ...formData, commodity: e.target.value })}
                                         className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 outline-none text-sm transition-all"
                                     />
                                 </div>

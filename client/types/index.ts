@@ -5,9 +5,10 @@ import { STAGE_IDS } from '@/constants/stages'
 export interface Client {
     id: string
     company_name: string
-    contact_name: string
-    email: string
+    contact_name?: string
+    email?: string
     phone?: string
+    commodity?: string
     origin?: string
     status?: string
     created_at?: string
@@ -32,7 +33,7 @@ export interface Appointment {
     client: {
         id: string
         company_name: string
-        contact_name: string
+        contact_name?: string
         phone?: string
         email?: string
     }
@@ -50,13 +51,14 @@ export type Deal = {
     client?: {
         id: string
         company_name: string
-        contact_name: string
+        contact_name?: string
         phone?: string
         email?: string
     }
     created_at: string // Added to match API response
     updated_at: string
     expected_close_date?: string
+    rejection_reason?: string
 }
 
 export interface Interaction {

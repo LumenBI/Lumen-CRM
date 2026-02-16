@@ -19,6 +19,15 @@ export interface Stage {
 
 export const STAGES: Stage[] = [
     {
+        id: 'PROSPECT',
+        title: 'Prospecto',
+        badgeColor: 'bg-indigo-100 text-indigo-600',
+        headerBg: 'bg-indigo-500',
+        headerBorder: 'border-indigo-600',
+        chartColor: '#6366f1',
+        icon: Briefcase,
+    },
+    {
         id: 'PENDING',
         title: 'No contactado',
         badgeColor: 'bg-gray-100 text-gray-600',
@@ -86,7 +95,7 @@ export const STAGES: Stage[] = [
 // Lookup helpers
 export const STAGE_MAP = Object.fromEntries(STAGES.map(s => [s.id, s])) as Record<string, Stage>
 
-export const STAGE_IDS = ['PENDING', 'CONTACTADO', 'CITA', 'PROCESO_COTIZACION', 'COTIZACION_ENVIADA', 'CERRADO_GANADO', 'CERRADO_PERDIDO'] as const
+export const STAGE_IDS = ['PROSPECT', 'PENDING', 'CONTACTADO', 'CITA', 'PROCESO_COTIZACION', 'COTIZACION_ENVIADA', 'CERRADO_GANADO', 'CERRADO_PERDIDO'] as const
 
 export function getStageLabel(stageId: string): string {
     return STAGE_MAP[stageId]?.title || stageId

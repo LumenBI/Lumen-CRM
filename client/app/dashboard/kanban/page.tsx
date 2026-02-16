@@ -37,6 +37,7 @@ import { STAGE_MAP } from '@/constants/stages'
 import { SHIPPING_TYPES, SHIPPING_TYPE_MAP } from '@/constants/shipping'
 import ConfirmModal from '@/components/ui/ConfirmModal'
 import SmartKanbanColumn from '@/components/kanban/SmartKanbanColumn'
+import RejectionModal from '@/components/kanban/RejectionModal'
 
 export default function KanbanPage() {
     const router = useRouter()
@@ -102,6 +103,16 @@ export default function KanbanPage() {
         x: 0,
         y: 0,
         dealId: null
+    })
+
+    const [rejectionModal, setRejectionModal] = useState<{
+        isOpen: boolean
+        dealId: string | null
+        isLoading: boolean
+    }>({
+        isOpen: false,
+        dealId: null,
+        isLoading: false
     })
 
     const [filterType, setFilterType] = useState('ALL')
@@ -253,6 +264,50 @@ export default function KanbanPage() {
         }
     }
 
+    const handleApprove = async (dealId: string) => {
+        try {
+            await moveDeal(dealId, 'PENDING')
+            toast.success('Prospecto aprobado')
+            refreshBoard()
+        } catch (error) {
+            console.error(error)
+            toast.error('Error al aprobar prospecto')
+        }
+    }
+
+    const handleReject = (dealId: string) => {
+        setRejectionModal({ isOpen: true, dealId, isLoading: false })
+    }
+
+    const confirmReject = async (reason: string) => {
+        if (!rejectionModal.dealId) return
+
+        setRejectionModal(prev => ({ ...prev, isLoading: true }))
+        try {
+            // Updated to pass rejection_reason in the payload.
+            // Note: The moveDeal function in context/DealsContext calls dealsApi.move, which calls dealsService.moveCard.
+            // dealsService.moveCard updates status and payload.
+            // We need to ensure moveDeal supports extra payload or use updateDeal first?
+            // checking deals.service.ts moveCard: 
+            // async moveCard(token: string, userId: string, dealId: string, newStatus: string) -> updates status and updated_at.
+            // IT DOES NOT ACCEPT EXTRA PAYLOAD FOR UPDATE! 
+            // So we should use dealsApi.update first to save the reason, then move it.
+            // OR checks dealsApi.move implementation. 
+            // Let's assume we need to update the deal first with the reason.
+
+            await dealsApi.update(rejectionModal.dealId, { rejection_reason: reason })
+            await moveDeal(rejectionModal.dealId, 'CERRADO_PERDIDO')
+
+            toast.success('Prospecto rechazado')
+            refreshBoard()
+            setRejectionModal({ isOpen: false, dealId: null, isLoading: false })
+        } catch (error) {
+            console.error(error)
+            toast.error('Error al rechazar prospecto')
+            setRejectionModal(prev => ({ ...prev, isLoading: false }))
+        }
+    }
+
     return (
         <div className="space-y-6 h-full flex flex-col p-4 md:p-6 bg-transparent dark:text-white transition-colors">
             <PageHeader
@@ -296,6 +351,8 @@ export default function KanbanPage() {
                                     title={column.title}
                                     onEditDeal={setEditingDeal}
                                     onOpenContextMenu={handleContextMenu}
+                                    onApprove={handleApprove}
+                                    onReject={handleReject}
                                 />
                             ))}
                         </div>
@@ -433,6 +490,13 @@ export default function KanbanPage() {
                 message="¿Estás seguro de que deseas eliminar este seguimiento? Esta acción no se puede deshacer."
                 confirmText="Eliminar"
                 isDestructive={true}
+            />
+
+            <RejectionModal
+                isOpen={rejectionModal.isOpen}
+                onClose={() => setRejectionModal({ isOpen: false, dealId: null, isLoading: false })}
+                onConfirm={confirmReject}
+                isLoading={rejectionModal.isLoading}
             />
         </div >
     )
