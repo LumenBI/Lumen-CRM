@@ -55,10 +55,6 @@ export default function LandingPage() {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return <div className="min-h-screen bg-white" />;
-  }
-
   function handleMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
     const { left, top, width, height } = currentTarget.getBoundingClientRect();
     const xPoint = (clientX - left) / width;
@@ -70,7 +66,7 @@ export default function LandingPage() {
 
   return (
     <div
-      className="min-h-screen bg-white overflow-x-hidden"
+      className={`min-h-screen bg-white overflow-x-hidden transition-opacity duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'}`}
       onMouseMove={handleMouseMove}
     >
 

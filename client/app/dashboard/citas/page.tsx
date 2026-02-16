@@ -12,6 +12,7 @@ import { TEXTS } from '@/constants/text'
 import { APPOINTMENT_STATUSES, getTypeLabel } from '@/constants/appointments'
 import { toast } from 'sonner'
 import ConfirmModal from '@/components/ui/ConfirmModal'
+import SegmentedControl from '@/components/ui/SegmentedControl'
 import {
     LucideCalendar,
     LucidePlus,
@@ -156,59 +157,29 @@ export default function AppointmentsPage() {
                     setEditingAppointment(null)
                     setIsModalOpen(true)
                 }}
-                actionClassName="bg-[#ff5e1e] hover:bg-[#e04d13] shadow-orange-100 dark:shadow-none"
                 extraActions={
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl flex items-center shadow-sm">
-                        <button
-                            onClick={() => setViewMode('calendar')}
-                            className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'calendar'
-                                ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0056fc] dark:text-blue-400'
-                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                                }`}
-                        >
-                            <LucideCalendar size={18} />
-                            <span className="hidden sm:inline">Calendario</span>
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'list'
-                                ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0056fc] dark:text-blue-400'
-                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                                }`}
-                        >
-                            <LucideList size={18} />
-                            <span className="hidden sm:inline">Lista</span>
-                        </button>
-                    </div>
+                    <SegmentedControl
+                        value={viewMode}
+                        onChange={(val: string) => setViewMode(val as 'calendar' | 'list')}
+                        options={[
+                            { label: 'Calendario', value: 'calendar', icon: LucideCalendar },
+                            { label: 'Lista', value: 'list', icon: LucideList }
+                        ]}
+                    />
                 }
             />
 
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                <button
-                    onClick={() => setFilter('all' as any)}
-                    className={`px-4 py-2 rounded-xl whitespace-nowrap transition text-sm font-medium border ${filter === 'all'
-                        ? 'bg-[#0056fc] text-white border-[#0056fc]'
-                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                        }`}
-                >
-                    Todas
-                </button>
-                {APPOINTMENT_STATUSES.map((status) => (
-                    <button
-                        key={status.id}
-                        onClick={() => setFilter(status.id as any)}
-                        className={`px-4 py-2 rounded-xl whitespace-nowrap transition text-sm font-medium border ${filter === status.id
-                            ? 'bg-[#0056fc] text-white border-[#0056fc]'
-                            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                            }`}
-                    >
-                        {status.label}
-                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${filter === status.id ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
-                            {appointments.filter(a => a.status === status.id).length}
-                        </span>
-                    </button>
-                ))}
-            </div>
+            <SegmentedControl
+                value={filter || 'all'}
+                onChange={(val: string) => setFilter(val === 'all' ? 'all' as any : val as any)}
+                options={[
+                    { label: `Todas (${appointments.length})`, value: 'all' },
+                    ...APPOINTMENT_STATUSES.map(status => ({
+                        label: `${status.label} (${appointments.filter(a => a.status === status.id).length})`,
+                        value: status.id
+                    }))
+                ]}
+            />
 
             {viewMode === 'calendar' ? (
                 <div className="animate-in fade-in duration-300">

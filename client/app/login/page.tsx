@@ -162,10 +162,8 @@ export default function LoginPage() {
         setMounted(true);
     }, []);
 
-    if (!mounted) return <div className="min-h-screen bg-[#F8FAFC]" />;
-
     return (
-        <div className="min-h-screen w-full flex relative bg-[#F8FAFC] overflow-hidden">
+        <div className={`min-h-screen w-full flex relative bg-[#F8FAFC] overflow-hidden transition-opacity duration-700 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
             <ParticleBackground />
 
             <div className="container mx-auto px-6 relative z-10 flex flex-col h-screen">

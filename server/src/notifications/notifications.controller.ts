@@ -33,6 +33,17 @@ export class NotificationsController {
         );
     }
 
+    @Patch('preferences')
+    @UseGuards(AuthGuard('jwt'))
+    async updatePreferences(@Req() req, @Body() preferences: any) {
+        const token = this.extractToken(req);
+        return this.notificationsService.updateUserPreferences(
+            token,
+            req.user.userId,
+            preferences,
+        );
+    }
+
     @Post('client-error')
     async reportClientError(@Body() payload: { message: string; stack: string; user?: string; device?: string }) {
         const context = `Modulo: FRONTEND\nUsuario: ${payload.user || 'Desconocido'}\nDispositivo: ${payload.device || 'N/A'}`;

@@ -168,7 +168,7 @@ export class StatsService {
       ] = await Promise.all([
         this.getUserStats(token, userId),
         this.clientsService.getClientsList(token, userId, '', undefined, 100, true),
-        this.dealsService.getDealsByColumn(token, userId, 'PENDING'), // Just one column for bootstrap? Or maybe I should refactor bootstrap
+        this.getKanban(token, userId),
         this.appointmentsService.getUpcomingAppointments(token, userId, 20),
         this.getHistory(token),
         this.clientsService.getRecentActivities(token),
@@ -188,5 +188,9 @@ export class StatsService {
       console.error('Error in getBootstrapData:', error);
       throw error;
     }
+  }
+
+  async getKanban(token: string, userId: string) {
+    return this.dealsService.getFullKanban(token, userId);
   }
 }

@@ -126,10 +126,10 @@ export const useApi = () => {
             },
             updatePreferences: async (preferences: any) => {
                 try {
-                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/profile/preferences`, {
+                    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/preferences`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ preferences })
+                        body: JSON.stringify(preferences)
                     })
                     if (!res.ok) throw new Error('Failed to update preferences')
                     return res.json()

@@ -7,6 +7,7 @@ import { useApi } from '@/hooks/useApi'
 import KanbanCard from './KanbanCard'
 import { Loader2 } from 'lucide-react'
 import { Droppable } from '@hello-pangea/dnd'
+import { STAGE_MAP } from '@/constants/stages'
 import { Deal } from '@/types'
 
 interface SmartKanbanColumnProps {
@@ -24,6 +25,7 @@ export default function SmartKanbanColumn({
 }: SmartKanbanColumnProps) {
     const { deals: dealsApi } = useApi()
     const { ref, inView } = useInView()
+    const stage = STAGE_MAP[stageId]
 
     const {
         data,
@@ -47,14 +49,20 @@ export default function SmartKanbanColumn({
     const deals = data?.pages.flatMap((page) => page.items) || []
 
     return (
-        <div className="flex flex-col h-full bg-surface-50/50 rounded-xl border border-border/50 min-w-[320px]">
-            <div className="p-4 border-b border-border/50 flex items-center justify-between">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                    {title}
-                    <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                        {deals.length}
-                    </span>
-                </h3>
+        <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900/30 rounded-2xl border border-border/40 min-w-[320px] overflow-hidden shadow-sm">
+            {/* Colored Header */}
+            <div className={`p-4 flex items-center justify-between border-b shadow-sm ${stage?.headerBg || 'bg-slate-600'} ${stage?.headerBorder || 'border-slate-700'}`}>
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/20 backdrop-blur-md">
+                        {stage?.icon ? <stage.icon className="w-4 h-4 text-white" /> : <Loader2 className="w-4 h-4 text-white" />}
+                    </div>
+                    <h3 className="font-bold text-white uppercase tracking-wider text-xs">
+                        {title}
+                    </h3>
+                </div>
+                <span className="text-xs font-bold text-white bg-white/20 px-2.5 py-1 rounded-lg backdrop-blur-md">
+                    {deals.length}
+                </span>
             </div>
 
             <Droppable droppableId={stageId}>

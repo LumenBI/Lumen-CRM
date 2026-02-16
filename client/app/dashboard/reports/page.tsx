@@ -44,7 +44,7 @@ export default function ReportsPage() {
         const fetchData = async () => {
             try {
                 // 1. Fetch History for Time Series
-                const historyRes = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/history`)
+                const historyRes = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/stats/history`)
                 const historyJson: HistoryRecord[] = await historyRes.json()
 
                 // Process History: Aggregate by Month
@@ -62,7 +62,7 @@ export default function ReportsPage() {
                 const historyChartData = Object.values(aggregated).sort((a, b) => a.name.localeCompare(b.name))
 
                 // 2. Fetch Kanban for Pipeline Snapshot — built from centralized STAGES
-                const kanbanRes = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/kanban`)
+                const kanbanRes = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/stats/kanban`)
                 const kanbanJson = await kanbanRes.json()
 
                 const visibleStages = STAGES.filter(s => s.id !== 'PENDING' && s.id !== 'CERRADO_PERDIDO')

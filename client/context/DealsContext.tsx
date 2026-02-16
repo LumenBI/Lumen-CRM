@@ -6,10 +6,10 @@ import { toast } from 'sonner'
 import type { Deal } from '@/types'
 
 export const KANBAN_COLUMNS = [
-    { id: 'PROSPECTO', title: 'Prospecto' },
     { id: 'CONTACTADO', title: 'Contactado' },
-    { id: 'COTIZANDO', title: 'Cotizando' },
-    { id: 'NEGOCIANDO', title: 'Negociando' },
+    { id: 'CITA', title: 'Cita / Reunión' },
+    { id: 'PROCESO_COTIZACION', title: 'Cotizando' },
+    { id: 'COTIZACION_ENVIADA', title: 'Cotización Enviada' },
     { id: 'CERRADO_GANADO', title: 'Cerrado' },
     { id: 'CERRADO_PERDIDO', title: 'Perdido' }
 ] as const

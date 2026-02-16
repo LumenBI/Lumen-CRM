@@ -16,6 +16,7 @@ import { useClients } from '@/context/ClientsContext';
 import { useUser } from '@/context/UserContext';
 import { toast } from 'sonner'
 import { TEXTS, NAVIGATION_LABELS } from '@/constants/text'
+import SegmentedControl from '@/components/ui/SegmentedControl';
 
 export default function ClientsPage() {
     const {
@@ -104,7 +105,7 @@ export default function ClientsPage() {
 
         setIsDeleting(true);
         try {
-            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/clients/${confirmState.clientId}`, {
+            const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/clients/${confirmState.clientId}`, {
                 method: 'DELETE',
             });
 
@@ -143,30 +144,27 @@ export default function ClientsPage() {
                 subtitle="Gestiona tu base de datos de clientes"
                 icon={Building2}
                 actionLabel={TEXTS.NEW_CLIENT}
-                actionIcon={<Plus size={20} />}
+                actionIcon={<Plus size={18} />}
                 onAction={() => setIsCreateModalOpen(true)}
-            />
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-                <div className="flex-1 w-full">
+                extraActions={
+                    <SegmentedControl
+                        value={showMine ? 'mine' : 'all'}
+                        onChange={(val: string) => setShowMine(val === 'mine')}
+                        options={[
+                            { label: 'Todos', value: 'all' },
+                            { label: 'Asignados', value: 'mine' }
+                        ]}
+                    />
+                }
+            >
+                <div className="max-w-2xl">
                     <SearchBar
                         value={searchTerm}
                         onChange={setSearchTerm}
-                        placeholder="Buscar por nombre de empresa, contacto o email..."
+                        placeholder="Buscar por nombre de empresa o contacto..."
                     />
                 </div>
-                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-4 py-2 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm self-stretch md:self-auto">
-                    <input
-                        type="checkbox"
-                        id="showMine"
-                        checked={showMine}
-                        onChange={(e) => setShowMine(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                    <label htmlFor="showMine" className="text-sm font-medium text-gray-700 dark:text-slate-300 cursor-pointer">
-                        Solo mis clientes
-                    </label>
-                </div>
-            </div>
+            </PageHeader>
 
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
                 {/* Vista cards - móvil */}

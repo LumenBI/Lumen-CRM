@@ -68,7 +68,7 @@ export default function NotificationBell() {
             if (session) {
                 if (process.env.NEXT_PUBLIC_API_URL) {
                     try {
-                        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/notifications/check`, {
+                        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/check`, {
                             headers: { 'Authorization': `Bearer ${session.access_token}` }
                         })
                     } catch (err) {

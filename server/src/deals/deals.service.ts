@@ -119,4 +119,22 @@ export class DealsService {
         if (error) throw new Error(error.message);
         return { success: true };
     }
+
+    async getFullKanban(token: string, userId: string) {
+        const supabase = this.supabaseService.getClient(token);
+        const { data, error } = await supabase
+            .from('deals')
+            .select('id, status');
+
+        if (error) throw new Error(error.message);
+
+        // Group by status
+        const grouped = data.reduce((acc: Record<string, any[]>, deal) => {
+            if (!acc[deal.status]) acc[deal.status] = [];
+            acc[deal.status].push(deal);
+            return acc;
+        }, {});
+
+        return grouped;
+    }
 }

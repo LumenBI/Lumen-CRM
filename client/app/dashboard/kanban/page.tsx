@@ -24,6 +24,7 @@ import NewDealModal from '@/components/kanban/NewDealModal'
 import EditDealModal from '@/components/kanban/EditDealModal'
 import StageChangeModal, { STAGE_ID_COTIZANDO } from '@/components/kanban/StageChangeModal'
 import ContextMenu from '@/components/ContextMenu'
+import SegmentedControl from '@/components/ui/SegmentedControl'
 import { useDeals, KANBAN_COLUMNS } from '@/context/DealsContext'
 import { useQuickActions } from '@/context/QuickActionsContext'
 import { useApi } from '@/hooks/useApi'
@@ -253,52 +254,27 @@ export default function KanbanPage() {
                 subtitle="Gestiona tus oportunidades comerciales"
                 icon={LayoutGrid}
                 actionLabel="Nuevo seguimiento"
-                actionIcon={<Plus size={20} />}
+                actionIcon={<Plus size={18} />}
                 onAction={() => setIsCreateModalOpen(true)}
                 extraActions={
                     <div className="flex flex-wrap items-center gap-3">
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl flex items-center shadow-sm">
-                            <button
-                                onClick={() => setViewMode('kanban')}
-                                className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'kanban'
-                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0056fc] dark:text-blue-400'
-                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                                    }`}
-                                title="Vista de Tablero"
-                            >
-                                <LayoutGrid size={18} />
-                                <span className="hidden sm:inline">Tablero</span>
-                            </button>
-                            <button
-                                onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${viewMode === 'list'
-                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0056fc] dark:text-blue-400'
-                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                                    }`}
-                                title="Vista de Lista"
-                            >
-                                <List size={18} />
-                                <span className="hidden sm:inline">Lista</span>
-                            </button>
-                        </div>
+                        <SegmentedControl
+                            value={viewMode}
+                            onChange={(val: string) => setViewMode(val as 'kanban' | 'list')}
+                            options={[
+                                { label: 'Tablero', value: 'kanban', icon: LayoutGrid },
+                                { label: 'Lista', value: 'list', icon: List }
+                            ]}
+                        />
 
-                        <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-x-auto scrollbar-hide">
-                            <button
-                                onClick={() => setFilterType('ALL')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${filterType === 'ALL' ? 'bg-[#000d42] dark:bg-blue-600 text-white shadow-md' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
-                            >
-                                Ver todos
-                            </button>
-                            {SHIPPING_TYPES.map(st => (
-                                <button
-                                    key={st.id}
-                                    onClick={() => setFilterType(st.id)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${filterType === st.id ? `${st.filterColor} text-white shadow-md` : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
-                                >
-                                    {st.label}
-                                </button>
-                            ))}
-                        </div>
+                        <SegmentedControl
+                            value={filterType}
+                            onChange={(val: string) => setFilterType(val)}
+                            options={[
+                                { label: 'Ver todos', value: 'ALL' },
+                                ...SHIPPING_TYPES.map(st => ({ label: st.label, value: st.id }))
+                            ]}
+                        />
                     </div>
                 }
             />
