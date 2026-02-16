@@ -350,4 +350,28 @@ export class AppointmentsService {
     if (error) throw new Error(error.message);
     return { success: true };
   }
+
+  async cancelAppointment(token: string, id: string) {
+    return this.updateAppointmentStatus(token, id, 'cancelada');
+  }
+
+  async finishAppointment(token: string, id: string) {
+    return this.updateAppointmentStatus(token, id, 'completada');
+  }
+
+  async rateAppointment(token: string, id: string, payload: { rating: number; notes?: string }) {
+    const supabase = this.supabaseService.getClient(token);
+    const { data, error } = await supabase
+      .from('appointments')
+      .update({
+        rating: payload.rating,
+        notes: payload.notes,
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
 }
