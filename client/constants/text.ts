@@ -81,9 +81,9 @@ export const MENU_ITEMS: MenuItem[] = [
     { name: 'Seguimientos', href: '/dashboard/kanban', icon: LucideKanban },
     { name: 'Agenda', href: '/dashboard/citas', icon: LucideCalendar },
     { name: 'Clientes', href: '/dashboard/clients', icon: LucideUsers },
-    { name: 'Buzón', href: '/dashboard/mail', icon: LucideMail },
-    { name: 'Reportes', href: '/dashboard/reports', icon: LucideBarChart3 },
-    { name: 'Cotizaciones', href: '/dashboard/quotes', icon: LucideFileText },
+    // { name: 'Buzón', href: '/dashboard/mail', icon: LucideMail },
+    // { name: 'Reportes', href: '/dashboard/reports', icon: LucideBarChart3 },
+    // { name: 'Cotizaciones', href: '/dashboard/quotes', icon: LucideFileText },
 ]
 
 export const SYSTEM_ITEMS: MenuItem[] = [

@@ -8,9 +8,9 @@ import type { MenuItem } from '@/constants/text'
 import { MENU_ITEMS, SYSTEM_ITEMS } from '@/constants/text'
 
 const MORE_ITEMS: MenuItem[] = [
-    MENU_ITEMS[4], // Buzón
-    MENU_ITEMS[5], // Reportes
-    MENU_ITEMS[6], // Cotizaciones
+    // MENU_ITEMS[4], // Buzón
+    // MENU_ITEMS[5], // Reportes
+    // MENU_ITEMS[6], // Cotizaciones
 ]
 const ADMIN_ITEMS = SYSTEM_ITEMS
 
@@ -46,11 +46,10 @@ export default function MobileMoreSheet({ isOpen, onClose, pathname }: MobileMor
                 href={item.href}
                 prefetch={false}
                 onClick={onClose}
-                className={`flex items-center gap-3 rounded-lg px-4 py-3.5 text-sm font-medium transition-all ${
-                    active
+                className={`flex items-center gap-3 rounded-lg px-4 py-3.5 text-sm font-medium transition-all ${active
                         ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0066FF] dark:text-blue-400'
                         : 'text-gray-600 dark:text-slate-400 active:bg-gray-50 dark:active:bg-slate-800'
-                }`}
+                    }`}
             >
                 <Icon size={22} className={active ? 'text-[#0066FF] dark:text-blue-400' : 'text-gray-400 dark:text-slate-500'} />
                 {item.name}

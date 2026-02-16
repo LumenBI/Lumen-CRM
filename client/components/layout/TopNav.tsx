@@ -38,8 +38,8 @@ const QUICK_ACTIONS = [
     { label: TEXTS.NEW_CLIENT, icon: Users, handler: 'requestNewClient' as const },
     { label: TEXTS.NEW_DEAL, icon: Briefcase, handler: 'requestNewDeal' as const },
     { label: TEXTS.SCHEDULE_APPOINTMENT, icon: Calendar, handler: 'requestNewAppointment' as const },
-    { label: TEXTS.ADD_QUOTE, icon: FileText, handler: 'requestNewQuote' as const },
-    { label: TEXTS.WRITE_EMAIL, icon: Mail, handler: 'requestNewEmail' as const },
+    // { label: TEXTS.ADD_QUOTE, icon: FileText, handler: 'requestNewQuote' as const },
+    // { label: TEXTS.WRITE_EMAIL, icon: Mail, handler: 'requestNewEmail' as const },
 ]
 
 const SEARCHABLE_MODULES = [
@@ -47,9 +47,9 @@ const SEARCHABLE_MODULES = [
     { label: 'Seguimientos', href: '/dashboard/kanban', icon: Briefcase },
     { label: 'Agenda', href: '/dashboard/citas', icon: Calendar },
     { label: 'Clientes', href: '/dashboard/clients', icon: Users },
-    { label: 'Buzón', href: '/dashboard/mail', icon: Mail },
-    { label: 'Reportes', href: '/dashboard/reports', icon: FileText },
-    { label: 'Cotizaciones', href: '/dashboard/quotes', icon: FileText },
+    // { label: 'Buzón', href: '/dashboard/mail', icon: Mail },
+    // { label: 'Reportes', href: '/dashboard/reports', icon: FileText },
+    // { label: 'Cotizaciones', href: '/dashboard/quotes', icon: FileText },
     { label: 'Usuarios', href: '/dashboard/users', icon: Settings },
     { label: 'Configuración', href: '/dashboard/settings', icon: Settings },
 ]

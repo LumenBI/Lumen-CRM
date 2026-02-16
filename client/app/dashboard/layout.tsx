@@ -94,6 +94,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setMounted(true)
     }, [])
 
+    useEffect(() => {
+        const blockedRoutes = ['/dashboard/mail', '/dashboard/reports', '/dashboard/quotes']
+        if (blockedRoutes.some(route => pathname?.startsWith(route))) {
+            router.push('/dashboard')
+        }
+    }, [pathname, router])
+
     const handleLogout = async () => {
         await supabase.auth.signOut()
         router.push('/')
