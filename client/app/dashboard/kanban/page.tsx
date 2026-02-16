@@ -286,7 +286,7 @@ export default function KanbanPage() {
                             {KANBAN_COLUMNS.map((column: any) => (
                                 <SmartKanbanColumn
                                     key={column.id}
-                                    stageId={column.id}
+                                    id={column.id}
                                     title={column.title}
                                     onEditDeal={setEditingDeal}
                                     onOpenContextMenu={handleContextMenu}

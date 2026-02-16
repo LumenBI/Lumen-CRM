@@ -20,7 +20,6 @@ import { DealsProvider } from '@/context/DealsContext'
 import { QuickActionsProvider } from '@/context/QuickActionsContext'
 import { useTheme } from 'next-themes'
 
-// Memoized Sidebar component to prevent unnecessary re-renders during navigation
 const Sidebar = React.memo(({ pathname, menuItems, systemItems, logoSrc, onLogout }: {
     pathname: string,
     menuItems: any[],
@@ -103,31 +102,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const menuItems = useMemo(() => MENU_ITEMS, [])
     const systemItems = useMemo(() => SYSTEM_ITEMS, [])
 
-    // Logo resolution: resolveTheme is usually 'light' or 'dark'
     const logoSrc = mounted && resolvedTheme === 'dark'
         ? "/logos/star-wide-w.png"
         : "/logos/star-wide-b.png"
 
     return (
-        <AgentsProvider>
-            <div className="flex h-screen w-full bg-[#f5f6f8] dark:bg-slate-950 transition-colors duration-300">
-                <Sidebar
-                    pathname={pathname}
-                    menuItems={menuItems}
-                    systemItems={systemItems}
-                    logoSrc={logoSrc}
-                    onLogout={handleLogout}
-                />
+        <UserProvider>
+            <DataProvider>
+                <AgentsProvider>
+                    <ClientsProvider>
+                        <AppointmentsProvider>
+                            <DealsProvider>
+                                <QuickActionsProvider>
+                                    <div className="flex h-screen w-full bg-[#f5f6f8] dark:bg-slate-950 transition-colors duration-300">
+                                        <Sidebar
+                                            pathname={pathname}
+                                            menuItems={menuItems}
+                                            systemItems={systemItems}
+                                            logoSrc={logoSrc}
+                                            onLogout={handleLogout}
+                                        />
 
-                <main className="flex-1 flex flex-col h-screen overflow-hidden">
-                    <TopNav />
-                    <div className="flex-1 overflow-y-auto bg-[#f5f6f8] dark:bg-slate-950 p-4 md:p-6 pb-20 md:pb-6 transition-colors duration-300">
-                        {children}
-                    </div>
-                    <BottomNav />
-                </main>
-            </div>
-            <Toaster />
-        </AgentsProvider>
+                                        <main className="flex-1 flex flex-col h-screen overflow-hidden">
+                                            <TopNav />
+                                            <div className="flex-1 overflow-y-auto bg-[#f5f6f8] dark:bg-slate-950 p-4 md:p-6 pb-20 md:pb-6 transition-colors duration-300">
+                                                {children}
+                                            </div>
+                                            <BottomNav />
+                                        </main>
+                                    </div>
+                                    <Toaster />
+                                </QuickActionsProvider>
+                            </DealsProvider>
+                        </AppointmentsProvider>
+                    </ClientsProvider>
+                </AgentsProvider>
+            </DataProvider>
+        </UserProvider>
     )
 }

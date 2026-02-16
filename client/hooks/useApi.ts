@@ -141,9 +141,17 @@ export const useApi = () => {
         },
 
         deals: {
-            getColumna: async (columnId: string, cursor?: string, limit: number = 20) => {
+            getColumna: async (columnId: string, cursor?: string | number, limit: number = 20, agentId?: string) => {
                 let url = `${process.env.NEXT_PUBLIC_API_URL}/deals/column?columnId=${columnId}&limit=${limit}`;
-                if (cursor) url += `&cursor=${cursor}`;
+
+                if (cursor !== undefined && cursor !== null) {
+                    url += `&cursor=${cursor}`;
+                }
+
+                if (agentId && agentId !== 'ALL') {
+                    url += `&agentId=${agentId}`;
+                }
+
                 const res = await authFetch(url, {
                     cache: 'no-store'
                 })
