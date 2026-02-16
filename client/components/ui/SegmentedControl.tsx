@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 interface Option {
     label: string
     value: string
+    icon?: React.ElementType
 }
 
 interface SegmentedControlProps {
@@ -18,11 +19,13 @@ export default function SegmentedControl({ options, value, onChange }: Segmented
         <div className="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-lg relative">
             {options.map((option) => {
                 const isActive = value === option.value
+                const Icon = option.icon
+
                 return (
                     <button
                         key={option.value}
                         onClick={() => onChange(option.value)}
-                        className={`relative flex-1 py-1.5 text-sm font-medium transition-colors z-10 ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                        className={`relative flex-1 py-1.5 px-3 text-sm font-medium transition-colors z-10 flex items-center justify-center gap-2 ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
                             }`}
                     >
                         {isActive && (
@@ -33,7 +36,8 @@ export default function SegmentedControl({ options, value, onChange }: Segmented
                                 style={{ zIndex: -1 }}
                             />
                         )}
-                        {option.label}
+                        {Icon && <Icon className="w-4 h-4" />}
+                        <span>{option.label}</span>
                     </button>
                 )
             })}

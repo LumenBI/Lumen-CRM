@@ -13,19 +13,25 @@ import { STAGE_MAP } from '@/constants/stages'
 interface SmartKanbanColumnProps {
     id: string
     title: string
-    filters: { agentId: string | 'ALL' }
-    onEdit: (deal: any) => void
-    onContextMenu: (e: any, id: string) => void
+    stageId?: string
+    filters?: { agentId: string | 'ALL' }
+    onEdit?: (deal: any) => void
+    onEditDeal?: (deal: any) => void
+    onContextMenu?: (e: any, id: string) => void
+    onOpenContextMenu?: (e: any, id: string) => void
 }
 
-export default function SmartKanbanColumn({ id, title, filters, onEdit, onContextMenu }: SmartKanbanColumnProps) {
+export default function SmartKanbanColumn(props: SmartKanbanColumnProps) {
+    const id = props.id || props.stageId || ''
+    const onEdit = props.onEdit || props.onEditDeal || (() => { })
+    const onContextMenu = props.onContextMenu || props.onOpenContextMenu || (() => { })
+    const filters = props.filters || { agentId: 'ALL' }
+
     const { deals: dealsApi } = useApi()
     const { ref, inView } = useInView()
 
-    // 1. Reactividad: Si cambia algo en 'deals', esta columna se entera.
     useServerSubscription('deals', [['kanban-column', id]])
 
-    // 2. Data Fetching Infinito
     const {
         data,
         fetchNextPage,
@@ -35,16 +41,14 @@ export default function SmartKanbanColumn({ id, title, filters, onEdit, onContex
     } = useInfiniteQuery({
         queryKey: ['kanban-column', id, filters.agentId],
         queryFn: async ({ pageParam = 0 }) => {
-            // Usamos el endpoint paginado
-            const res = await dealsApi.getColumna(id, pageParam as number, 20, filters.agentId === 'ALL' ? undefined : filters.agentId)
-            return res
+            const cursorVal = typeof pageParam === 'number' ? pageParam : 0
+            return await dealsApi.getColumna(id, cursorVal, 20, filters.agentId === 'ALL' ? undefined : filters.agentId)
         },
         getNextPageParam: (lastPage: any) => lastPage.nextCursor,
         initialPageParam: 0,
         staleTime: 0,
     })
 
-    // 3. Scroll Infinito Automático
     useEffect(() => {
         if (inView && hasNextPage) {
             fetchNextPage()
@@ -57,12 +61,11 @@ export default function SmartKanbanColumn({ id, title, filters, onEdit, onContex
 
     return (
         <div className="w-80 flex-shrink-0 flex flex-col h-full max-h-[calc(100vh-12rem)]">
-            {/* Header */}
             <div className={`p-4 rounded-t-xl mb-0 border-b-4 ${stageConfig ? `${stageConfig.headerBg} ${stageConfig.headerBorder} text-white` : 'bg-gray-500 border-gray-600 text-white'} shadow-sm`}>
                 <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2 font-bold uppercase tracking-wide text-xs">
                         {StageIcon && <StageIcon size={14} />}
-                        {title}
+                        {props.title}
                     </div>
                     <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs font-bold">
                         {deals.length}{hasNextPage ? '+' : ''}
@@ -70,7 +73,6 @@ export default function SmartKanbanColumn({ id, title, filters, onEdit, onContex
                 </div>
             </div>
 
-            {/* Área de Drop */}
             <Droppable droppableId={id}>
                 {(provided, snapshot) => (
                     <div
@@ -81,7 +83,6 @@ export default function SmartKanbanColumn({ id, title, filters, onEdit, onContex
                     >
                         <div className="space-y-3">
                             {status === 'pending' ? (
-                                // Skeleton simple
                                 [1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-200 dark:bg-slate-800 animate-pulse rounded-lg" />)
                             ) : (
                                 deals.map((deal: any, index: number) => (
@@ -96,7 +97,6 @@ export default function SmartKanbanColumn({ id, title, filters, onEdit, onContex
                             )}
                             {provided.placeholder}
 
-                            {/* Trigger de carga infinita */}
                             <div ref={ref} className="h-4 w-full flex justify-center py-2">
                                 {isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                             </div>
