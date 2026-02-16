@@ -47,7 +47,8 @@ const KanbanCard = React.memo(({ deal, index, onEdit, onContextMenu, onApprove, 
                     </div>
 
                     <div className="mb-3">
-                        {(() => {
+                        {/* Hide shipping badge as requested - 
+                        (() => {
                             const shipConfig = SHIPPING_TYPE_MAP[deal.type]
                             const ShipIcon = shipConfig?.icon
                             return (
@@ -58,7 +59,8 @@ const KanbanCard = React.memo(({ deal, index, onEdit, onContextMenu, onApprove, 
                                     </span>
                                 </div>
                             )
-                        })()}
+                        })()
+                        */}
                     </div>
 
                     <h4 className="font-bold text-gray-800 dark:text-slate-100 text-sm mb-1 line-clamp-2 leading-relaxed">

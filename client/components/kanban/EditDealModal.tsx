@@ -96,6 +96,7 @@ export default function EditDealModal({ deal, onClose, onSuccess }: EditDealModa
                             </div>
                         </div>
 
+                        {/* Hide Service Type as requested - 
                         <div className="space-y-1.5">
                             <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tipo de Servicio</label>
                             <select
@@ -108,6 +109,7 @@ export default function EditDealModal({ deal, onClose, onSuccess }: EditDealModa
                                 <option value="AEREO">Aéreo</option>
                             </select>
                         </div>
+                        */}
 
                         <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30">
                             <div className="flex items-center gap-2 px-2 text-blue-700 dark:text-blue-400 font-medium text-sm">

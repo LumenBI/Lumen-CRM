@@ -328,6 +328,7 @@ export default function KanbanPage() {
                             ]}
                         />
 
+                        {/* 
                         <SegmentedControl
                             value={filterType}
                             onChange={(val: string) => setFilterType(val)}
@@ -335,7 +336,8 @@ export default function KanbanPage() {
                                 { label: 'Ver todos', value: 'ALL' },
                                 ...SHIPPING_TYPES.map(st => ({ label: st.label, value: st.id }))
                             ]}
-                        />
+                        /> 
+                        */}
                     </div>
                 }
             />

@@ -393,29 +393,31 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div>
-                                                <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 block">Tipo de Operación</label>
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    {[
-                                                        { id: 'FCL', label: 'FCL', icon: LucideContainer },
-                                                        { id: 'LCL', label: 'LCL', icon: LucideBriefcase },
-                                                        { id: 'AEREO', label: 'Aéreo', icon: LucidePlane },
-                                                    ].map(type => (
-                                                        <button
-                                                            key={type.id}
-                                                            type="button"
-                                                            onClick={() => setDealMetadata({ ...dealMetadata, type: type.id })}
-                                                            className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${dealMetadata.type === type.id
-                                                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
-                                                                : 'border-gray-200 dark:border-slate-700 hover:border-emerald-200 dark:hover:border-emerald-500/50 text-gray-600 dark:text-slate-400'
-                                                                }`}
-                                                        >
-                                                            <type.icon size={16} />
-                                                            <span className="text-[10px] font-bold">{type.label}</span>
-                                                        </button>
-                                                    ))}
+                                            {/* Hide Operation Type as requested - false && (
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 block">Tipo de Operación</label>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {[
+                                                            { id: 'FCL', label: 'FCL', icon: LucideContainer },
+                                                            { id: 'LCL', label: 'LCL', icon: LucideBriefcase },
+                                                            { id: 'AEREO', label: 'Aéreo', icon: LucidePlane },
+                                                        ].map(type => (
+                                                            <button
+                                                                key={type.id}
+                                                                type="button"
+                                                                onClick={() => setDealMetadata({ ...dealMetadata, type: type.id })}
+                                                                className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${dealMetadata.type === type.id
+                                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                                                                    : 'border-gray-200 dark:border-slate-700 hover:border-emerald-200 dark:hover:border-emerald-500/50 text-gray-600 dark:text-slate-400'
+                                                                    }`}
+                                                            >
+                                                                <type.icon size={16} />
+                                                                <span className="text-[10px] font-bold">{type.label}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            ) */}
                                         </div>
                                     </div>
                                 )}
