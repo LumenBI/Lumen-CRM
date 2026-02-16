@@ -59,16 +59,25 @@ export default function NotificationBell() {
                             toast.info(newNotif.message, {
                                 description: 'Nueva notificación recibida',
                                 duration: 8000,
+                                action: newNotif.link ? {
+                                    label: 'Ver',
+                                    onClick: () => window.location.href = newNotif.link!
+                                } : undefined
                             });
 
+                            setUnreadCount(prevCount => prevCount + 1);
                             return [newNotif, ...prev].slice(0, 10);
                         });
-                        setUnreadCount(prevCount => prevCount + 1);
                     }
                 )
                 .subscribe((status: string, err?: any) => {
                     console.log(`[REALTIME] Subscription status for ${userId}:`, status);
                     if (err) console.error('[REALTIME] Subscription error:', err);
+
+                    // If Realtime is not joined, trigger a manual fetch once as a warm-up
+                    if (status !== 'SUBSCRIBED') {
+                        setTimeout(() => fetchInitialNotifications(userId), 2000);
+                    }
                 });
         };
 
