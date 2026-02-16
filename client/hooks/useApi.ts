@@ -18,7 +18,10 @@ export const useApi = () => {
                 const res = await authFetch(url, {
                     cache: 'no-store'
                 })
-                if (!res.ok) throw new Error('Failed to fetch clients')
+                if (!res.ok) {
+                    toast.error('Error al obtener clientes')
+                    throw new Error('Failed to fetch clients')
+                }
                 return res.json()
             },
 
@@ -155,7 +158,10 @@ export const useApi = () => {
                 const res = await authFetch(url, {
                     cache: 'no-store'
                 })
-                if (!res.ok) throw new Error('Failed to fetch kanban column')
+                if (!res.ok) {
+                    toast.error('Error al obtener Kanban')
+                    throw new Error('Failed to fetch kanban column')
+                }
                 return res.json()
             },
 
@@ -212,12 +218,26 @@ export const useApi = () => {
                 if (!res.ok) throw new Error('Failed to delete deal')
                 return res.json()
             },
+
+            getAll: async (clientId?: string) => {
+                let url = `${process.env.NEXT_PUBLIC_API_URL}/deals`
+                if (clientId) url += `?clientId=${clientId}`
+
+                const res = await authFetch(url, {
+                    cache: 'no-store'
+                })
+                if (!res.ok) throw new Error('Failed to fetch deals')
+                return res.json() as Promise<Deal[]>
+            },
         },
 
         appointments: {
             getAll: async () => {
                 const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/appointments`)
-                if (!res.ok) throw new Error('Failed to fetch appointments')
+                if (!res.ok) {
+                    toast.error('Error al obtener citas')
+                    throw new Error('Failed to fetch appointments')
+                }
                 return res.json() as Promise<Appointment[]>
             },
 
@@ -424,6 +444,9 @@ export const useApi = () => {
                 const res = await authFetch(url.toString())
 
                 if (!res.ok) {
+                    if (res.status === 401) {
+                        throw new Error('401 Unauthorized')
+                    }
                     const errorBody = await res.json().catch(() => ({}))
                     throw new Error(errorBody.message || 'Failed to fetch inbox')
                 }

@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { Bell } from 'lucide-react'
+import { Bell, LucideX, MessageSquare, DollarSign } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 type Notification = {
     id: string
@@ -22,70 +23,150 @@ export default function NotificationBell() {
     const supabase = createClient()
 
     useEffect(() => {
-        let channel: any
+        let channel: any;
 
-        const setup = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
-
-            const { data } = await supabase
-                .from('notifications')
-                .select('*')
-                .eq('user_id', session.user.id)
-                .eq('is_read', false)
-                .order('created_at', { ascending: false })
-                .limit(10)
-
-            if (data) {
-                setNotifications(data)
-                setUnreadCount(data.length)
+        const subscribeToNotifications = (userId: string) => {
+            if (channel) {
+                console.log('Removing existing channel before resubscribing...');
+                supabase.removeChannel(channel);
             }
 
+            console.log(`[REALTIME] Setting up subscription for user: ${userId}`);
+
             channel = supabase
-                .channel('notifications-changes')
+                .channel(`notifications-${userId}`)
                 .on(
                     'postgres_changes',
                     {
                         event: 'INSERT',
                         schema: 'public',
                         table: 'notifications',
-                        filter: `user_id=eq.${session.user.id}`
+                        filter: `user_id=eq.${userId}`
                     },
-                    (payload) => {
-                        const newNotif = payload.new as Notification
-                        setNotifications(prev => [newNotif, ...prev])
-                        setUnreadCount(prev => prev + 1)
+                    (payload: any) => {
+                        console.log('[REALTIME] Payload received:', payload);
+                        const newNotif = payload.new as Notification;
+
+                        setNotifications(prev => {
+                            const exists = prev.some(n => n.id === newNotif.id);
+                            if (exists) {
+                                console.log('[REALTIME] Duplicate notification ignored:', newNotif.id);
+                                return prev;
+                            }
+                            console.log('[REALTIME] Adding new notification to state:', newNotif.id);
+
+                            // Show toast for new notification
+                            toast.info(newNotif.message, {
+                                description: 'Nueva notificación recibida',
+                                duration: 8000,
+                            });
+
+                            return [newNotif, ...prev].slice(0, 10);
+                        });
+                        setUnreadCount(prevCount => prevCount + 1);
                     }
                 )
-                .subscribe()
-        }
+                .subscribe((status: string, err?: any) => {
+                    console.log(`[REALTIME] Subscription status for ${userId}:`, status);
+                    if (err) console.error('[REALTIME] Subscription error:', err);
+                });
+        };
 
-        setup()
+        const fetchInitialNotifications = async (userId: string) => {
+            console.log('[NOTIF] Fetching initial notifications for:', userId);
+            const { data, error } = await supabase
+                .from('notifications')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('is_read', false)
+                .order('created_at', { ascending: false })
+                .limit(10);
 
-        // Initial check and then every 5 minutes
-        const checkReminders = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (session) {
-                if (process.env.NEXT_PUBLIC_API_URL) {
-                    try {
-                        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/check`, {
-                            headers: { 'Authorization': `Bearer ${session.access_token}` }
-                        })
-                    } catch (err) {
-                        console.error('Failed to fetch notifications check:', err)
-                    }
+            if (error) {
+                console.error('[NOTIF] Fetch error:', error);
+                return;
+            }
+
+            if (data) {
+                console.log('[NOTIF] Notifications fetched:', data.length);
+                setNotifications(data);
+                setUnreadCount(data.length);
+            }
+        };
+
+        const checkReminders = async (accessToken: string) => {
+            if (process.env.NEXT_PUBLIC_API_URL) {
+                try {
+                    // This endpoint triggers server-to-db logic for reminders
+                    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/check`, {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                } catch (err) {
+                    console.error('[SERVER] Failed to trigger notification check:', err);
                 }
             }
-        }
+        };
 
-        checkReminders() // Initial call
-        const interval = setInterval(checkReminders, 5 * 60 * 1000)
+        // 1. Initial Load
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                fetchInitialNotifications(session.user.id);
+                subscribeToNotifications(session.user.id);
+                checkReminders(session.access_token);
+            }
+        });
+
+        // 2. Auth State Listener
+        const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                fetchInitialNotifications(session.user.id);
+                subscribeToNotifications(session.user.id);
+            } else {
+                setNotifications([]);
+                setUnreadCount(0);
+                if (channel) supabase.removeChannel(channel);
+            }
+        });
+
+        // 3. Fallback Polling (Every 10 seconds for robustness)
+        const pollingInterval = setInterval(async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                const { data } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', session.user.id)
+                    .eq('is_read', false)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (data) {
+                    setNotifications(prev => {
+                        const newOnes = data.filter(d => !prev.some(p => p.id === d.id));
+                        if (newOnes.length > 0) {
+                            console.log(`[BACKUP] Found ${newOnes.length} new notifications via polling`);
+                            setUnreadCount(prevUnread => prevUnread + newOnes.length);
+                            return [...newOnes, ...prev].slice(0, 10);
+                        }
+                        return prev;
+                    });
+                }
+            }
+        }, 10000);
+
+        // 4. Server Check Interval (Reminders/Expiration)
+        const serverInterval = setInterval(async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) checkReminders(session.access_token);
+        }, 5 * 60 * 1000);
 
         return () => {
-            if (channel) supabase.removeChannel(channel)
-            clearInterval(interval)
-        }
-    }, [])
+            if (channel) supabase.removeChannel(channel);
+            authListener.unsubscribe();
+            clearInterval(pollingInterval);
+            clearInterval(serverInterval);
+        };
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {

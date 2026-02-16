@@ -23,7 +23,7 @@ export class AppointmentsController {
         return rawHeader ? rawHeader.split(' ')[1] : '';
     }
 
-    @Get('list')
+    @Get()
     async getAppointments(
         @Req() req,
         @Query('from') from?: string,
@@ -94,5 +94,15 @@ export class AppointmentsController {
     ) {
         const token = this.extractToken(req);
         return this.appointmentsService.rateAppointment(token, id, payload);
+    }
+
+    @Patch(':id/status')
+    async updateStatus(
+        @Req() req,
+        @Param('id') id: string,
+        @Body('status') status: string,
+    ) {
+        const token = this.extractToken(req);
+        return this.appointmentsService.updateAppointmentStatus(token, id, status);
     }
 }

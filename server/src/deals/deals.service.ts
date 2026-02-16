@@ -22,17 +22,23 @@ export class DealsService {
             .select('*, client:clients(id, company_name, email, phone)')
             .eq('status', stageId);
 
-        // If agentId is provided, filter by it. If not, manager/admin can see all, but agents might be restricted by RLS
         if (agentId) {
             query = query.eq('assigned_agent_id', agentId);
         }
 
-        // Cursor Pagination
-        // We use 'updated_at' and 'id' for deterministic ordering
-        if (cursor) {
-            // In a real scenario, cursor usually encodes both updated_at and id
-            // For simplicity, we'll use ID if it's a simple UUID cursor
-            query = query.gt('id', cursor);
+        // this.logger.debug(`Fetching deals for stage: ${stageId}, cursor: ${cursor}, agentId: ${agentId}`);
+
+        if (cursor && cursor !== '0' && cursor !== 'undefined' && cursor !== 'null') {
+            try {
+                // Only use gt if cursor is a valid UUID to avoid Postgres errors
+                if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cursor)) {
+                    query = query.gt('id', cursor);
+                } else {
+                    this.logger.warn(`Invalid UUID cursor received: ${cursor}`);
+                }
+            } catch (e) {
+                this.logger.error(`Error applying cursor filter: ${e.message}`);
+            }
         }
 
         const { data, error } = await query
@@ -46,7 +52,8 @@ export class DealsService {
 
         const hasNextPage = data.length > limit;
         const items = hasNextPage ? data.slice(0, limit) : data;
-        const nextCursor = hasNextPage ? items[items.length - 1].id : null;
+
+        const nextCursor = (items.length > 0) ? items[items.length - 1].id : null;
 
         return {
             items,
@@ -77,7 +84,6 @@ export class DealsService {
             .from('deals')
             .insert({
                 ...payload,
-                created_by: userId,
             })
             .select()
             .single();
@@ -128,7 +134,6 @@ export class DealsService {
 
         if (error) throw new Error(error.message);
 
-        // Group by status
         const grouped = data.reduce((acc: Record<string, any[]>, deal) => {
             if (!acc[deal.status]) acc[deal.status] = [];
             acc[deal.status].push(deal);

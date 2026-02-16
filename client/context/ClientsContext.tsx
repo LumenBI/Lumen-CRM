@@ -17,7 +17,7 @@ interface ClientsContextType {
     fetchNextPage: () => void
     hasNextPage: boolean
     isFetchingNextPage: boolean
-    createClient: (clientData: Partial<Client>) => Promise<Client>
+    createClient: (clientData: Partial<Client> & { dealMetadata?: any }) => Promise<Client>
     updateClient: (id: string, clientData: Partial<Client>) => Promise<Client>
 }
 
@@ -56,7 +56,7 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
     }, [data])
 
     const createClientMutation = useMutation({
-        mutationFn: (clientData: Partial<Client>) => clientsApi.create(clientData),
+        mutationFn: (clientData: Partial<Client> & { dealMetadata?: any }) => clientsApi.create(clientData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['clients'] })
         }

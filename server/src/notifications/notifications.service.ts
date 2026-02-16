@@ -226,7 +226,8 @@ export class NotificationsService {
     link: string = '#',
   ) {
     try {
-      const { data: managers } = await supabase
+      const adminSupabase = this.supabaseService.getAdminClient();
+      const { data: managers } = await adminSupabase
         .from('profiles')
         .select('id')
         .or('role.eq.ADMIN,role.eq.MANAGER');
@@ -234,7 +235,7 @@ export class NotificationsService {
       if (managers) {
         await Promise.all(
           managers.map((m) =>
-            this.createNotification(supabase, m.id, type, message, link),
+            this.createNotification(adminSupabase, m.id, type, message, link),
           ),
         );
       }
@@ -276,6 +277,7 @@ export class NotificationsService {
   async checkAndReleaseExpiredClients(
     supabase: SupabaseClient,
     userId: string,
+    adminSupabase: SupabaseClient,
   ) {
     const nowStr = new Date().toISOString();
     const { data: expiredClients } = await supabase
@@ -292,7 +294,7 @@ export class NotificationsService {
           .eq('id', client.id);
 
         await this.createNotification(
-          supabase,
+          adminSupabase,
           userId,
           'EXPIRATION_RELEASE',
           `Tu asignación con "${client.company_name}" ha expirado y el cliente ha sido liberado.`,
@@ -306,7 +308,9 @@ export class NotificationsService {
     const supabase = this.supabaseService.getClient(token);
     const notifications: string[] = [];
 
-    await this.checkAndReleaseExpiredClients(supabase, userId);
+    const adminSupabase = this.supabaseService.getAdminClient();
+
+    await this.checkAndReleaseExpiredClients(supabase, userId, adminSupabase);
 
     // 0. Get current time in America/Guatemala
     const getGTTime = () => {
@@ -393,7 +397,7 @@ export class NotificationsService {
 
         if (count === 0) {
           await this.createNotification(
-            supabase,
+            adminSupabase,
             userId,
             'AGENDA_REMINDER',
             msg,
@@ -440,7 +444,7 @@ export class NotificationsService {
 
           if (count === 0) {
             await this.createNotification(
-              supabase,
+              adminSupabase,
               userId,
               'AGENDA_REMINDER_SOON',
               msg,
@@ -479,7 +483,7 @@ export class NotificationsService {
 
         if (count === 0) {
           await this.createNotification(
-            supabase,
+            adminSupabase,
             userId,
             'INACTIVITY',
             `Alerta: Cliente "${client.company_name}" sin actividad por más de 3 días.`,
@@ -519,7 +523,7 @@ export class NotificationsService {
             (1000 * 3600 * 24),
           );
           await this.createNotification(
-            supabase,
+            adminSupabase,
             userId,
             'EXPIRATION',
             `Aviso: La asignación de "${client.company_name}" vence en ${daysLeft} días.`,

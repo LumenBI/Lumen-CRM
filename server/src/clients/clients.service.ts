@@ -82,7 +82,24 @@ export class ClientsService {
 
     const supabase = this.supabaseService.getClient(token);
 
-    const { data, error } = await supabase
+    // 1. Determine Agent assignment
+    let assignedAgentId = payload.assigned_agent_id || null;
+
+    if (!assignedAgentId && userId) {
+      // Check if current user is an agent (and not just an admin)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (profile && profile.role !== 'ADMIN' && profile.role !== 'MANAGER') {
+        assignedAgentId = userId;
+      }
+    }
+
+    // 2. Insert Client
+    const { data: client, error } = await supabase
       .from('clients')
       .insert({
         company_name: payload.company_name,
@@ -91,15 +108,43 @@ export class ClientsService {
         email: payload.email,
         origin: payload.origin || 'MANUAL',
         status: payload.status || 'PENDING',
-        assigned_agent_id: payload.assigned_agent_id || null, // Allow null
+        assigned_agent_id: assignedAgentId,
         assignment_expires_at: payload.assignment_expires_at || defaultExpires,
-        assigned_at: payload.assigned_agent_id ? new Date() : null,
+        assigned_at: assignedAgentId ? new Date() : null,
       })
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
-    return data;
+    if (error) {
+      console.error('[ClientsService.createClient] Error creating client:', error);
+      throw new Error(error.message);
+    }
+
+    // 3. Auto-create Deal if status is provided and not PENDING
+    // This ensures the client appears in the Kanban board immediately
+    if (payload.status && payload.status !== 'PENDING') {
+      const adminSupabase = this.supabaseService.getAdminClient();
+      const { error: dealError } = await adminSupabase.from('deals').insert({
+        client_id: client.id,
+        title: `${client.company_name}`,
+        value: payload.dealMetadata?.value || 0,
+        currency: payload.dealMetadata?.currency || 'USD',
+        status: payload.status,
+        assigned_agent_id: assignedAgentId,
+        type: payload.dealMetadata?.type || 'AEREO',
+        updated_at: new Date(),
+      });
+
+      if (dealError) {
+        console.warn(
+          '[ClientsService.createClient] Client created but failed to create auto-deal:',
+          dealError,
+        );
+        // We don't throw here to avoid failing the client creation
+      }
+    }
+
+    return client;
   }
 
   async updateClient(token: string, id: string, payload: any) {
@@ -272,11 +317,21 @@ export class ClientsService {
       .update({ last_interaction_at: new Date() })
       .eq('id', payload.clientId);
 
+    const CATEGORY_LABELS: Record<string, string> = {
+      CALL: 'Llamada',
+      EMAIL: 'Correo',
+      MEETING: payload.modality === 'IN_PERSON' ? 'Visita comercial' : 'Reunión',
+      WHATSAPP: 'WhatsApp',
+      QUOTE_DECISION: 'Venta cerrada',
+      SEGUIMIENTO: 'Seguimiento',
+    };
+    const translatedCategory = CATEGORY_LABELS[payload.category] || payload.category;
+
     // Notify managers
     await this.notificationsService.notifyManagers(
       supabase,
       'INTERACTION_CREATED',
-      `[${data.agent?.full_name || 'Agente'}] ha registrado una nueva interacción con "${data.client?.company_name || 'Cliente'}": ${payload.category}`,
+      `[${data.agent?.full_name || 'Agente'}] ha registrado una nueva interacción con "${data.client?.company_name || 'Cliente'}": ${translatedCategory}`,
       `/dashboard/clients?id=${payload.clientId}`,
     );
 

@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useInView } from 'react-intersection-observer'
 import { Droppable } from '@hello-pangea/dnd'
 import { Loader2 } from 'lucide-react'
 import KanbanCard from './KanbanCard'
 import { useApi } from '@/hooks/useApi'
-import { useServerSubscription } from '@/hooks/reactive/useServerSubscription'
 import { STAGE_MAP } from '@/constants/stages'
 
 interface SmartKanbanColumnProps {
@@ -30,7 +29,7 @@ export default function SmartKanbanColumn(props: SmartKanbanColumnProps) {
     const { deals: dealsApi } = useApi()
     const { ref, inView } = useInView()
 
-    useServerSubscription('deals', [['kanban-column', id]])
+
 
     const {
         data,
@@ -55,7 +54,15 @@ export default function SmartKanbanColumn(props: SmartKanbanColumnProps) {
         }
     }, [inView, hasNextPage, fetchNextPage])
 
-    const deals = data?.pages.flatMap((page: any) => page.items) || []
+    const deals = useMemo(() => {
+        const allDeals = data?.pages.flatMap((page: any) => page.items) || []
+        // Deduplicate using Map
+        const uniqueMap = new Map()
+        allDeals.forEach((deal: any) => {
+            uniqueMap.set(deal.id, deal)
+        })
+        return Array.from(uniqueMap.values())
+    }, [data])
     const stageConfig = STAGE_MAP[id]
     const StageIcon = stageConfig?.icon
 

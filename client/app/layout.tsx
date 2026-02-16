@@ -36,9 +36,14 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={`${mulish.variable} font-sans antialiased`}>
         <Providers>
-          <ThemeProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
             {children}
-            <Toaster />
+            <Toaster position="bottom-right" closeButton richColors />
             <SpeedInsights />
             <Analytics />
           </ThemeProvider>

@@ -26,7 +26,7 @@ export class DealsController {
     @Get('column')
     async getDealsByColumn(
         @Req() req,
-        @Query('stageId') stageId: string,
+        @Query('columnId') columnId: string,
         @Query('cursor') cursor?: string,
         @Query('limit') limit?: number,
         @Query('agentId') agentId?: string,
@@ -35,7 +35,7 @@ export class DealsController {
         return this.dealsService.getDealsByColumn(
             token,
             req.user.userId,
-            stageId,
+            columnId,
             cursor,
             limit ? Number(limit) : 20,
             agentId,

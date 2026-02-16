@@ -28,7 +28,7 @@ import SegmentedControl from '@/components/ui/SegmentedControl'
 import { useDeals, KANBAN_COLUMNS } from '@/context/DealsContext'
 import { useQuickActions } from '@/context/QuickActionsContext'
 import { useApi } from '@/hooks/useApi'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import type { Deal } from '@/types'
 import { toast } from 'sonner'
 import { TEXTS } from '@/constants/text'
@@ -105,7 +105,13 @@ export default function KanbanPage() {
     })
 
     const [filterType, setFilterType] = useState('ALL')
-    const [searchQuery, setSearchQuery] = useState('')
+
+    // Fetch all deals for list view
+    const { data: allDealsData, isLoading: isLoadingListView } = useQuery({
+        queryKey: ['deals', 'list', filterType],
+        queryFn: async () => await dealsApi.getAll(),
+        enabled: viewMode === 'list'
+    })
 
     const onDragEnd = async (result: DropResult) => {
         const { source, destination, draggableId } = result
@@ -115,7 +121,7 @@ export default function KanbanPage() {
         }
 
         // Get the deal object from the source column cache
-        const sourceData = queryClient.getQueryData<any>(['deals', 'column', source.droppableId])
+        const sourceData = queryClient.getQueryData<any>(['kanban-column', source.droppableId, 'ALL'])
         if (!sourceData) return
 
         let movedDeal: Deal | undefined
@@ -192,7 +198,7 @@ export default function KanbanPage() {
     const getContextDeal = () => {
         if (!contextMenu.dealId) return null
         for (const col of KANBAN_COLUMNS) {
-            const data = queryClient.getQueryData<any>(['deals', 'column', col.id])
+            const data = queryClient.getQueryData<any>(['kanban-column', col.id, 'ALL'])
             if (data) {
                 for (const page of data.pages) {
                     const deal = page.items.find((d: Deal) => d.id === contextMenu.dealId)
@@ -206,7 +212,7 @@ export default function KanbanPage() {
     const handleMoveFromContext = (deal: Deal) => {
         let currentStageId = ''
         for (const col of KANBAN_COLUMNS) {
-            const data = queryClient.getQueryData<any>(['deals', 'column', col.id])
+            const data = queryClient.getQueryData<any>(['kanban-column', col.id, 'ALL'])
             if (data?.pages.some((p: any) => p.items.some((d: Deal) => d.id === deal.id))) {
                 currentStageId = col.id
                 break
@@ -297,12 +303,18 @@ export default function KanbanPage() {
                 </div>
             ) : (
                 <div className="flex-1 overflow-hidden">
-                    <DealsListView
-                        deals={[]}
-                        onEdit={setEditingDeal}
-                        onMove={handleMoveFromContext}
-                        onDelete={(deal) => setDeleteModal({ isOpen: true, dealId: deal.id, isDeleting: false })}
-                    />
+                    {isLoadingListView ? (
+                        <div className="flex justify-center items-center h-64">
+                            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                        </div>
+                    ) : (
+                        <DealsListView
+                            deals={allDealsData || []}
+                            onEdit={setEditingDeal}
+                            onMove={handleMoveFromContext}
+                            onDelete={(deal) => setDeleteModal({ isOpen: true, dealId: deal.id, isDeleting: false })}
+                        />
+                    )}
                 </div>
             )}
 

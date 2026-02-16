@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import type { Deal } from '@/types'
 
 export const KANBAN_COLUMNS = [
+    { id: 'PENDING', title: 'No contactado' },
     { id: 'CONTACTADO', title: 'Contactado' },
     { id: 'CITA', title: 'Cita / Reunión' },
     { id: 'PROCESO_COTIZACION', title: 'Cotizando' },
@@ -25,8 +26,8 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
     const { deals: dealsApi, interactions: interactionsApi } = useApi()
     const queryClient = useQueryClient()
 
-    // Global realtime subscription
-    useServerSubscription('deals', [['deals']])
+    // Global realtime subscription for both list and kanban views
+    useServerSubscription('deals', [['deals'], ['kanban-column']])
 
     const moveDealMutation = useMutation({
         mutationFn: async ({ dealId, newStatus, interactionData }: {
@@ -37,10 +38,11 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
             const promises: Promise<any>[] = [dealsApi.move(dealId, newStatus)];
 
             if (interactionData?.clientId) {
+                const stageTitle = KANBAN_COLUMNS.find(c => c.id === newStatus)?.title || newStatus;
                 promises.push(interactionsApi.create({
                     clientId: interactionData.clientId,
                     category: interactionData.interactionType || 'SEGUIMIENTO',
-                    summary: `[CAMBIO DE ETAPA: ${newStatus}] ${interactionData.summary || ''}` +
+                    summary: `Actualización de etapa: ${stageTitle}. ${interactionData.summary || ''}` +
                         (interactionData.nextStep ? `\nPróximo paso: ${interactionData.nextStep}` : ''),
                     modality: 'VIRTUAL'
                 }));
@@ -50,6 +52,7 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['deals'] });
+            queryClient.invalidateQueries({ queryKey: ['kanban-column'] });
         }
     });
 
@@ -62,7 +65,10 @@ export function DealsProvider({ children }: { children: React.ReactNode }) {
     }, [moveDealMutation]);
 
     const value = useMemo(() => ({
-        refreshBoard: () => queryClient.invalidateQueries({ queryKey: ['deals'] }),
+        refreshBoard: () => {
+            queryClient.invalidateQueries({ queryKey: ['deals'] })
+            queryClient.invalidateQueries({ queryKey: ['kanban-column'] })
+        },
         moveDeal
     }), [moveDeal, queryClient]);
 

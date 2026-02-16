@@ -350,11 +350,15 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
                                 <div className="relative space-y-8 border-l-2 border-gray-100 dark:border-slate-800 pl-6 ml-2">
                                     {history.length === 0 && <p className="text-sm text-gray-400 dark:text-slate-500">Sin interacciones registradas aún.</p>}
                                     {history.map((item) => {
-                                        let displayCategory = item.category
-                                        if (item.category === 'MEETING') {
-                                            if (item.modality === 'IN_PERSON') displayCategory = 'VISITA COMERCIAL'
-                                            else displayCategory = 'REUNIÓN'
-                                        }
+                                        const CATEGORY_LABELS: Record<string, string> = {
+                                            'CALL': 'LLAMADA',
+                                            'EMAIL': 'CORREO',
+                                            'MEETING': item.modality === 'IN_PERSON' ? 'VISITA COMERCIAL' : 'REUNIÓN',
+                                            'WHATSAPP': 'WHATSAPP',
+                                            'QUOTE_DECISION': 'VENTA CERRADA',
+                                            'SEGUIMIENTO': 'SEGUIMIENTO'
+                                        };
+                                        const displayCategory = CATEGORY_LABELS[item.category] || item.category;
 
                                         return (
                                             <div key={item.id} className="relative group">
@@ -384,8 +388,8 @@ export default function ClientModal({ clientId, onClose, onSuccess }: { clientId
                                                         {item.summary}
                                                     </p>
                                                     {(item.amount_usd ?? 0) > 0 && (
-                                                        <div className="mt-3 pt-3 border-t border-gray-100">
-                                                            <span className="text-lg font-bold text-green-600">
+                                                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
+                                                            <span className="text-lg font-bold text-green-600 dark:text-emerald-400">
                                                                 ${(item.amount_usd ?? 0).toLocaleString()} USD
                                                             </span>
                                                         </div>

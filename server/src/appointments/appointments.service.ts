@@ -146,11 +146,13 @@ export class AppointmentsService {
 
   async createAppointment(token: string, userId: string, payload: any) {
     const supabase = this.supabaseService.getClient(token);
+    const clientId = payload.client_id || payload.clientId || payload.client?.id;
+
     const { data, error } = await supabase
       .from('appointments')
       .insert({
         agent_id: userId,
-        client_id: payload.client_id || payload.clientId,
+        client_id: clientId,
         title: payload.title,
         description: payload.description,
         appointment_date: payload.appointment_date || payload.date,
@@ -180,8 +182,6 @@ export class AppointmentsService {
       appointment_id: data.id,
       user_id: pid,
     }));
-
-    await supabase.from('appointment_participants').insert(participantRows);
 
     await supabase.from('appointment_participants').insert(participantRows);
 

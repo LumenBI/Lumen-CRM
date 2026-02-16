@@ -114,7 +114,8 @@ export default function MailPage() {
         } catch (error: any) {
             console.error('Error fetching inbox:', error)
             const errorMsg = error.message || ''
-            if (errorMsg.includes('Google Token') || errorMsg.includes('Unauthorized')) {
+            // Detect "Failed to fetch inbox" which usually wraps the 401, or look for specific keywords
+            if (errorMsg.includes('Google Token') || errorMsg.includes('Unauthorized') || errorMsg.includes('401')) {
                 setNeedsGoogleAuth(true)
             } else {
                 toast.error('Error al cargar la bandeja de entrada')
@@ -529,7 +530,7 @@ export default function MailPage() {
                             exit={{ scale: 0.9, opacity: 0, y: 60 }}
                             className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden border border-slate-100 dark:border-slate-800"
                         >
-                            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20">
+                            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900">
                                 <div>
                                     <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                                         {replyThreadId ? 'Responder' : 'Redactar'}
@@ -540,12 +541,12 @@ export default function MailPage() {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => setOpenCompose(false)}
-                                    className="rounded-xl hover:bg-slate-100 h-8 w-8"
+                                    className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 h-8 w-8"
                                 >
-                                    <X className="h-4 w-4 text-slate-400" />
+                                    <X className="h-4 w-4 text-slate-400 dark:text-slate-300" />
                                 </Button>
                             </div>
-                            <div className="p-6 space-y-4 overflow-y-auto max-h-[50vh] custom-scrollbar">
+                            <div className="p-6 space-y-4 overflow-y-auto max-h-[50vh] custom-scrollbar bg-white dark:bg-slate-900">
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Para</label>
                                     <Input
@@ -575,18 +576,18 @@ export default function MailPage() {
                                     />
                                 </div>
                             </div>
-                            <div className="p-6 bg-slate-50/50 flex gap-3">
+                            <div className="p-6 bg-slate-50/50 dark:bg-slate-900 border-t border-slate-50 dark:border-slate-800 flex gap-3">
                                 <Button
                                     onClick={() => setOpenCompose(false)}
                                     variant="ghost"
-                                    className="flex-1 h-10 rounded-lg font-bold text-slate-400 hover:text-slate-900 transition-all text-xs"
+                                    className="flex-1 h-10 rounded-lg font-bold text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all text-xs"
                                 >
                                     Descartar
                                 </Button>
                                 <Button
                                     onClick={handleSend}
                                     disabled={sending}
-                                    className="flex-[1.5] h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-md shadow-blue-100 font-bold text-xs transition-all"
+                                    className="flex-[1.5] h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-md shadow-blue-100 dark:shadow-none font-bold text-xs transition-all"
                                 >
                                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                                     Enviar

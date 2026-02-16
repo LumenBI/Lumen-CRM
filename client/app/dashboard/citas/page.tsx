@@ -261,17 +261,22 @@ export default function AppointmentsPage() {
                                                         <span className="font-semibold text-slate-700 dark:text-slate-200">{formatAppointmentDate(appointment.appointment_date)}</span>
                                                         <div className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 font-medium">
                                                             <LucideClock size={12} />
-                                                            <span>{appointment.appointment_time.slice(0, 5)}</span>
+                                                            <span>
+                                                                {new Date(`2000-01-01T${appointment.appointment_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600`}>
+                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${appointment.appointment_type === 'virtual'
+                                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                                        }`}>
                                                         {getTypeLabel(appointment.appointment_type)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className="text-sm text-slate-700 font-medium">{appointment.title}</span>
+                                                    <span className="text-sm text-slate-900 dark:text-white font-medium">{appointment.title}</span>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${badge.className}`}>
@@ -279,15 +284,36 @@ export default function AppointmentsPage() {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingAppointment(appointment)
-                                                            setIsModalOpen(true)
-                                                        }}
-                                                        className="text-slate-400 hover:text-[#0056fc] transition-colors"
-                                                    >
-                                                        <LucidePencil size={18} />
-                                                    </button>
+                                                    <div className="flex justify-end items-center gap-2">
+                                                        {appointment.appointment_type === 'virtual' && appointment.meeting_link && (
+                                                            <button
+                                                                onClick={() => window.open(appointment.meeting_link, '_blank')}
+                                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                title="Entrar a reunión"
+                                                            >
+                                                                <LucideExternalLink size={16} />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingAppointment(appointment)
+                                                                setIsModalOpen(true)
+                                                            }}
+                                                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                                            title="Editar"
+                                                        >
+                                                            <LucidePencil size={16} />
+                                                        </button>
+                                                        {appointment.status !== 'cancelada' && appointment.status !== 'completada' && (
+                                                            <button
+                                                                onClick={() => handleUpdateStatus(appointment.id, 'cancelada')}
+                                                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Cancelar"
+                                                            >
+                                                                <LucideXCircle size={16} />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         )

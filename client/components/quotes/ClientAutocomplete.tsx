@@ -38,9 +38,12 @@ export const ClientAutocomplete: React.FC<ClientAutocompleteProps> = ({ onSelect
         setLoading(true);
         try {
             const data = await api.clients.getAll(search);
-            setClients(data);
+            // Handle both flat array and paginated response { items: [] }
+            const clientsList = Array.isArray(data) ? data : (data?.items || []);
+            setClients(clientsList);
         } catch (err) {
             console.error("Failed to fetch clients", err);
+            setClients([]);
         } finally {
             setLoading(false);
         }
