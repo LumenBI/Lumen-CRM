@@ -190,6 +190,7 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
                             </div>
                         </div>
 
+                        {/* Hide Operation Type as requested - false && (
                         <div>
                             <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2 block">Tipo de Operación</label>
                             <div className="grid grid-cols-3 gap-2">
@@ -213,6 +214,7 @@ export default function NewDealModal({ onClose, onSuccess }: NewDealModalProps) 
                                 ))}
                             </div>
                         </div>
+                        ) */}
                     </div>
 
                     <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 dark:border-slate-800">
