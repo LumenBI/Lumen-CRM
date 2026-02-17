@@ -20,7 +20,6 @@ export function useAuthFetch() {
             throw new Error('No active session')
         }
 
-        // Get Google Provider Token if available
         const providerToken = session.provider_token
 
         if (!providerToken && url.includes('/mail')) {
