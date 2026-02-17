@@ -39,13 +39,13 @@ export function QuickActionsProvider({ children }: { children: React.ReactNode }
     }, [router])
 
     const requestNewQuote = useCallback(() => {
-        setRequestAction('newQuote')
-        router.push('/dashboard/quotes')
+        // setRequestAction('newQuote')
+        // router.push('/dashboard/quotes')
     }, [router])
 
     const requestNewEmail = useCallback(() => {
-        setRequestAction('newEmail')
-        router.push('/dashboard/mail')
+        // setRequestAction('newEmail')
+        // router.push('/dashboard/mail')
     }, [router])
 
     return (

@@ -111,18 +111,7 @@ export default function EditDealModal({ deal, onClose, onSuccess }: EditDealModa
                         </div>
                         */}
 
-                        <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                            <div className="flex items-center gap-2 px-2 text-blue-700 dark:text-blue-400 font-medium text-sm">
-                                <LucideFileText size={18} />
-                                Cotización Inteligente
-                            </div>
-                            <Link
-                                href={`/dashboard/quotes?dealId=${deal.id}&clientName=${encodeURIComponent(deal.client?.company_name || '')}`}
-                                className="bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-900/50 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors"
-                            >
-                                Crear Nueva
-                            </Link>
-                        </div>
+
 
                         <div className="flex gap-3 pt-4">
                             <button

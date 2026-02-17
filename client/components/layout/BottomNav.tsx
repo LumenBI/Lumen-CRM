@@ -29,8 +29,8 @@ const QUICK_ACTIONS = [
     { label: TEXTS.NEW_CLIENT, icon: LucideUsers, action: 'newClient' as const },
     { label: TEXTS.NEW_DEAL, icon: LucideBriefcase, action: 'newDeal' as const },
     { label: TEXTS.SCHEDULE_APPOINTMENT, icon: LucideCalendar, action: 'newAppointment' as const },
-    { label: TEXTS.ADD_QUOTE, icon: LucideFileText, action: 'newQuote' as const },
-    { label: TEXTS.WRITE_EMAIL, icon: LucideMail, action: 'newEmail' as const },
+    // { label: TEXTS.ADD_QUOTE, icon: LucideFileText, action: 'newQuote' as const },
+    // { label: TEXTS.WRITE_EMAIL, icon: LucideMail, action: 'newEmail' as const },
 ]
 
 export default function BottomNav() {

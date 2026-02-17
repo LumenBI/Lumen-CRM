@@ -182,13 +182,16 @@ export default function KanbanPage() {
             setStageModal(prev => ({ ...prev, isOpen: false }))
             toast.success('Seguimiento actualizado')
             if (shouldOpenQuotes) {
-                const params = new URLSearchParams({
-                    dealId: deal.id,
-                    clientName: (deal.client as { company_name?: string })?.company_name || deal.title || ''
-                })
-                const email = (deal.client as { email?: string })?.email
-                if (email) params.set('clientEmail', email)
-                router.push(`/dashboard/quotes?${params.toString()}`)
+                if (shouldOpenQuotes) {
+                    // const params = new URLSearchParams({
+                    //     dealId: deal.id,
+                    //     clientName: (deal.client as { company_name?: string })?.company_name || deal.title || ''
+                    // })
+                    // const email = (deal.client as { email?: string })?.email
+                    // if (email) params.set('clientEmail', email)
+                    // router.push(`/dashboard/quotes?${params.toString()}`)
+                    toast.info('Módulo de cotizaciones deshabilitado temporalmente')
+                }
             }
         } catch (error) {
             console.error(error)
