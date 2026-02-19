@@ -22,6 +22,7 @@ interface ContextMenuProps {
 
 export default function ContextMenu({ x, y, title, onClose, items }: ContextMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null)
+    const [position, setPosition] = useState({ top: y, left: x })
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -30,12 +31,43 @@ export default function ContextMenu({ x, y, title, onClose, items }: ContextMenu
             }
         }
         document.addEventListener('mousedown', handleClickOutside)
+
+        // Calculate position after render
+        if (menuRef.current) {
+            const menuRect = menuRef.current.getBoundingClientRect()
+            const viewportWidth = window.innerWidth
+            const viewportHeight = window.innerHeight
+
+            let newTop = y
+            let newLeft = x
+
+            // Vertical positioning: flip upwards if not enough space below
+            if (y + menuRect.height > viewportHeight) {
+                newTop = y - menuRect.height
+                // Ensure it doesn't go off the top of the screen
+                if (newTop < 0) {
+                    newTop = 0
+                }
+            }
+
+            // Horizontal positioning: clamp to the right edge if not enough space
+            if (x + menuRect.width > viewportWidth) {
+                newLeft = viewportWidth - menuRect.width - 10 // 10px padding from right edge
+                // Ensure it doesn't go off the left of the screen
+                if (newLeft < 0) {
+                    newLeft = 0
+                }
+            }
+
+            setPosition({ top: newTop, left: newLeft })
+        }
+
         return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [onClose])
+    }, [x, y, onClose])
 
     const style = {
-        top: y,
-        left: x,
+        top: position.top,
+        left: position.left,
     }
 
     return (
