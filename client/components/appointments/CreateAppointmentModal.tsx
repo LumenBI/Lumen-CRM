@@ -104,7 +104,7 @@ export default function CreateAppointmentModal({
         }
 
         try {
-            if (initialData) {
+            if (initialData?.id) {
                 await appointmentsApi.update(initialData.id, payload)
             } else {
                 if (recurrence === 'none') {
@@ -166,7 +166,7 @@ export default function CreateAppointmentModal({
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{initialData ? 'Editar cita' : 'Nueva cita'}</h2>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{initialData?.id ? 'Editar cita' : 'Nueva cita'}</h2>
                         <button
                             onClick={handleClose}
                             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
@@ -414,7 +414,7 @@ export default function CreateAppointmentModal({
                                 disabled={loading}
                                 className="flex-1 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
                             >
-                                {loading ? 'Guardando...' : (initialData ? 'Actualizar Cita' : 'Agendar Cita')}
+                                {loading ? 'Guardando...' : (initialData?.id ? 'Actualizar Cita' : 'Agendar Cita')}
                             </button>
                         </div>
                     </form>
