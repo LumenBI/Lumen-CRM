@@ -19,9 +19,20 @@ export class AppointmentsService {
   ) {
     const supabase = this.supabaseService.getClient(token);
 
-    // Eliminamos la consulta previa a participations y el orFilter.
-    // La seguridad de la base de datos (RLS) se encargará de devolver solo 
-    // las citas donde el usuario es creador o participante.
+    // Fetch appointments where user is creator OR a listed participant.
+    // RLS alone is too permissive (allows all auth users), so we filter manually.
+    const { data: participations } = await supabase
+      .from('appointment_participants')
+      .select('appointment_id')
+      .eq('user_id', userId);
+
+    const participantAppIds = (participations || []).map(
+      (p) => p.appointment_id,
+    );
+    const orFilter =
+      participantAppIds.length > 0
+        ? `agent_id.eq.${userId},id.in.(${participantAppIds.join(',')})`
+        : `agent_id.eq.${userId}`;
 
     let query = supabase
       .from('appointments')
@@ -47,6 +58,7 @@ export class AppointmentsService {
                 )
             `,
       )
+      .or(orFilter)
       .order('appointment_date', { ascending: true })
       .order('appointment_time', { ascending: true });
 
@@ -73,6 +85,20 @@ export class AppointmentsService {
   ) {
     try {
       const supabase = this.supabaseService.getClient(token);
+
+      // Same manual filter: RLS doesn't restrict by participant
+      const { data: participations } = await supabase
+        .from('appointment_participants')
+        .select('appointment_id')
+        .eq('user_id', userId);
+
+      const participantAppIds = (participations || []).map(
+        (p) => p.appointment_id,
+      );
+      const orFilter =
+        participantAppIds.length > 0
+          ? `agent_id.eq.${userId},id.in.(${participantAppIds.join(',')})`
+          : `agent_id.eq.${userId}`;
 
       const today = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'America/Guatemala',
@@ -105,6 +131,7 @@ export class AppointmentsService {
                     )
                 `,
         )
+        .or(orFilter)
         .in('status', ['pendiente', 'confirmada'])
         .gte('appointment_date', today)
         .order('appointment_date', { ascending: true })
