@@ -19,21 +19,9 @@ export class AppointmentsService {
   ) {
     const supabase = this.supabaseService.getClient(token);
 
-    // Fetch appointments where user is creator OR a listed participant.
-    // RLS alone is too permissive (allows all auth users), so we filter manually.
-    const { data: participations } = await supabase
-      .from('appointment_participants')
-      .select('appointment_id')
-      .eq('user_id', userId);
-
-    const participantAppIds = (participations || []).map(
-      (p) => p.appointment_id,
-    );
-    const orFilter =
-      participantAppIds.length > 0
-        ? `agent_id.eq.${userId},id.in.(${participantAppIds.join(',')})`
-        : `agent_id.eq.${userId}`;
-
+    // RLS policy 'appointments_select_by_agent_or_invited' ensures that only
+    // appointments where auth.uid() = agent_id OR auth.uid() is in
+    // appointment_participants are returned. No manual filter needed.
     let query = supabase
       .from('appointments')
       .select(
@@ -58,7 +46,6 @@ export class AppointmentsService {
                 )
             `,
       )
-      .or(orFilter)
       .order('appointment_date', { ascending: true })
       .order('appointment_time', { ascending: true });
 
@@ -86,20 +73,6 @@ export class AppointmentsService {
     try {
       const supabase = this.supabaseService.getClient(token);
 
-      // Same manual filter: RLS doesn't restrict by participant
-      const { data: participations } = await supabase
-        .from('appointment_participants')
-        .select('appointment_id')
-        .eq('user_id', userId);
-
-      const participantAppIds = (participations || []).map(
-        (p) => p.appointment_id,
-      );
-      const orFilter =
-        participantAppIds.length > 0
-          ? `agent_id.eq.${userId},id.in.(${participantAppIds.join(',')})`
-          : `agent_id.eq.${userId}`;
-
       const today = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'America/Guatemala',
         year: 'numeric',
@@ -107,7 +80,9 @@ export class AppointmentsService {
         day: '2-digit',
       }).format(new Date());
 
-      // Eliminamos también aquí la consulta previa y el orFilter
+      // RLS policy 'appointments_select_by_agent_or_invited' ensures that only
+      // appointments where auth.uid() = agent_id OR auth.uid() is in
+      // appointment_participants are returned. No manual filter needed.
       const { data, error } = await supabase
         .from('appointments')
         .select(
@@ -131,7 +106,6 @@ export class AppointmentsService {
                     )
                 `,
         )
-        .or(orFilter)
         .in('status', ['pendiente', 'confirmada'])
         .gte('appointment_date', today)
         .order('appointment_date', { ascending: true })
