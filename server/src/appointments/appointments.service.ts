@@ -12,16 +12,33 @@ export class AppointmentsService {
     private readonly eventEmitter: EventEmitter2,
   ) { }
 
+  /**
+   * Check if the user is an ADMIN or MANAGER using the service-role client.
+   * This bypasses RLS to reliably read the user's role from profiles.
+   */
+  private async isAdminOrManager(userId: string): Promise<boolean> {
+    const admin = this.supabaseService.getAdminClient();
+    const { data } = await admin
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+    return data?.role === 'ADMIN' || data?.role === 'MANAGER';
+  }
+
   async getAppointments(
     token: string,
     userId: string,
     filters?: { from?: string; to?: string; status?: string },
   ) {
-    const supabase = this.supabaseService.getClient(token);
+    // Admins/Managers see ALL appointments (bypass RLS via service-role client)
+    const isAdmin = await this.isAdminOrManager(userId);
+    const supabase = isAdmin
+      ? this.supabaseService.getAdminClient()
+      : this.supabaseService.getClient(token);
 
-    // RLS policy 'appointments_select_by_agent_or_invited' ensures that only
-    // appointments where auth.uid() = agent_id OR auth.uid() is in
-    // appointment_participants are returned. No manual filter needed.
+    // For non-admins, RLS filters to only their own + invited appointments.
+    // For admins, the service-role client bypasses RLS entirely.
     let query = supabase
       .from('appointments')
       .select(
@@ -71,7 +88,10 @@ export class AppointmentsService {
     limit: number = 5,
   ) {
     try {
-      const supabase = this.supabaseService.getClient(token);
+      const isAdmin = await this.isAdminOrManager(userId);
+      const supabase = isAdmin
+        ? this.supabaseService.getAdminClient()
+        : this.supabaseService.getClient(token);
 
       const today = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'America/Guatemala',
@@ -79,10 +99,6 @@ export class AppointmentsService {
         month: '2-digit',
         day: '2-digit',
       }).format(new Date());
-
-      // RLS policy 'appointments_select_by_agent_or_invited' ensures that only
-      // appointments where auth.uid() = agent_id OR auth.uid() is in
-      // appointment_participants are returned. No manual filter needed.
       const { data, error } = await supabase
         .from('appointments')
         .select(

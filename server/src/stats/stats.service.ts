@@ -169,7 +169,7 @@ export class StatsService {
         this.getUserStats(token, userId),
         this.clientsService.getClientsList(token, userId, '', undefined, 100, true),
         this.getKanban(token, userId),
-        this.appointmentsService.getUpcomingAppointments(token, userId, 20),
+        this.appointmentsService.getAppointments(token, userId),
         this.getHistory(token),
         this.clientsService.getRecentActivities(token),
         this.getAgents(token),

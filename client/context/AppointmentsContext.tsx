@@ -59,20 +59,21 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
         }
     }, [supabase])
 
-    // Bridge with DataContext
+
+    // Bridge with DataContext - Only seed if local state is empty
     useEffect(() => {
         if (!user) {
             setLoading(false)
             return
         }
 
-        if (bootstrapAppointments && bootstrapAppointments.length > 0) {
+        if (bootstrapAppointments && bootstrapAppointments.length > 0 && appointments.length === 0) {
             setAppointments(bootstrapAppointments)
             setLoading(false)
-        } else if (!dataLoading) {
+        } else if (!dataLoading && appointments.length === 0) {
             fetchAppointments()
         }
-    }, [bootstrapAppointments, dataLoading, fetchAppointments, user])
+    }, [bootstrapAppointments, dataLoading, fetchAppointments, user, appointments.length])
 
     const createAppointment = useCallback(async (appointment: Partial<Appointment>) => {
         try {
