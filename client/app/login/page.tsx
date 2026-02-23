@@ -33,8 +33,6 @@ function LoginForm() {
 
         setLoading(true)
 
-        // Definimos las opciones en una variable para evitar el "Excess Property Check" de TS
-        // y respetar la tipificación estricta sin usar 'any'.
         const authOptions = {
             captchaToken,
             redirectTo: `${window.location.origin}/auth/callback`,
