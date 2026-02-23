@@ -211,6 +211,8 @@ export default function KanbanPage() {
 
     const getContextDeal = () => {
         if (!contextMenu.dealId) return null
+
+        // Check in Kanban view data
         for (const col of KANBAN_COLUMNS) {
             const data = queryClient.getQueryData<any>(['kanban-column', col.id, 'ALL'])
             if (data) {
@@ -220,6 +222,13 @@ export default function KanbanPage() {
                 }
             }
         }
+
+        // Check in List view data
+        if (allDealsData) {
+            const deal = allDealsData.find((d: Deal) => d.id === contextMenu.dealId)
+            if (deal) return deal
+        }
+
         return null
     }
 
@@ -355,9 +364,12 @@ export default function KanbanPage() {
                                     id={column.id}
                                     title={column.title}
                                     onEditDeal={setEditingDeal}
-                                    onOpenContextMenu={handleContextMenu}
                                     onApprove={handleApprove}
                                     onReject={handleReject}
+                                    onDetail={(deal: Deal) => {
+                                        if (deal?.client?.id) setSelectedClientId(deal.client.id)
+                                    }}
+                                    onContextMenu={handleContextMenu}
                                 />
                             ))}
                         </div>
@@ -375,6 +387,10 @@ export default function KanbanPage() {
                             onEdit={setEditingDeal}
                             onMove={handleMoveFromContext}
                             onDelete={(deal) => setDeleteModal({ isOpen: true, dealId: deal.id, isDeleting: false })}
+                            onContextMenu={handleContextMenu}
+                            onDetail={(deal: Deal) => {
+                                if (deal?.client?.id) setSelectedClientId(deal.client.id)
+                            }}
                         />
                     )}
                 </div>

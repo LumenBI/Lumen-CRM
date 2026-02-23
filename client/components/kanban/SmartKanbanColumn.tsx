@@ -16,16 +16,16 @@ interface SmartKanbanColumnProps {
     filters?: { agentId: string | 'ALL' }
     onEditDeal?: (deal: any) => void
     onContextMenu?: (e: any, id: string) => void
-    onOpenContextMenu?: (e: any, id: string) => void
     onApprove: (dealId: string) => void
     onReject: (dealId: string) => void
+    onDetail?: (deal: any) => void
 }
 
 export default function SmartKanbanColumn(props: SmartKanbanColumnProps) {
     const id = props.id || props.stageId || ''
     const onEdit = props.onEditDeal || (() => { })
-    const onContextMenu = props.onContextMenu || props.onOpenContextMenu || (() => { })
-    const { onApprove, onReject } = props
+    const onContextMenu = props.onContextMenu || (() => { })
+    const { onApprove, onReject, onDetail } = props
     const filters = props.filters || { agentId: 'ALL' }
 
     const { deals: dealsApi } = useApi()
@@ -69,8 +69,8 @@ export default function SmartKanbanColumn(props: SmartKanbanColumnProps) {
     const StageIcon = stageConfig?.icon
 
     return (
-        <div className="w-80 flex-shrink-0 flex flex-col h-full max-h-[calc(100vh-12rem)]">
-            <div className={`p-4 rounded-t-xl mb-0 border-b-4 ${stageConfig ? `${stageConfig.headerBg} ${stageConfig.headerBorder} text-white` : 'bg-gray-500 border-gray-600 text-white'} shadow-sm`}>
+        <div className="w-80 flex-shrink-0 flex flex-col h-full bg-slate-50/40 dark:bg-slate-900/40 rounded-xl max-h-[calc(100vh-12rem)] shadow-sm">
+            <div className={`p-4 rounded-t-xl mb-0 border-b-4 ${stageConfig ? `${stageConfig.headerBg} ${stageConfig.headerBorder} text-white` : 'bg-gray-500 border-gray-600 text-white'}`}>
                 <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2 font-bold uppercase tracking-wide text-xs">
                         {StageIcon && <StageIcon size={14} />}
@@ -103,6 +103,7 @@ export default function SmartKanbanColumn(props: SmartKanbanColumnProps) {
                                         onContextMenu={onContextMenu}
                                         onApprove={onApprove}
                                         onReject={onReject}
+                                        onDetail={onDetail}
                                     />
                                 ))
                             )}

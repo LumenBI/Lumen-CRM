@@ -15,12 +15,30 @@ interface KanbanCardProps {
     onContextMenu: (e: React.MouseEvent, dealId: string) => void
     onApprove: (dealId: string) => void
     onReject: (dealId: string) => void
+    onDetail?: (deal: Deal) => void
 }
 
-const KanbanCard = React.memo(({ deal, index, onEdit, onContextMenu, onApprove, onReject }: KanbanCardProps) => {
+const KanbanCard = React.memo(({ deal, index, onEdit, onContextMenu, onApprove, onReject, onDetail }: KanbanCardProps) => {
     const { profile } = useUser()
     const isManagerOrAdmin = profile?.role === 'ADMIN' || profile?.role === 'MANAGER'
     const isProspect = deal.status === 'PROSPECT'
+    const mouseDownPos = useRef({ x: 0, y: 0 })
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        mouseDownPos.current = { x: e.clientX, y: e.clientY }
+    }
+
+    const handleMouseUp = (e: React.MouseEvent) => {
+        // Ensure it's a left click (button 0) to avoid conflict with right-click context menu
+        if (e.button !== 0) return
+
+        const dx = Math.abs(e.clientX - mouseDownPos.current.x)
+        const dy = Math.abs(e.clientY - mouseDownPos.current.y)
+        // If movement is less than 5 pixels, consider it a click
+        if (dx < 5 && dy < 5) {
+            onDetail?.(deal)
+        }
+    }
 
     return (
         <Draggable draggableId={deal.id} index={index}>
@@ -30,7 +48,9 @@ const KanbanCard = React.memo(({ deal, index, onEdit, onContextMenu, onApprove, 
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
                     onContextMenu={(e) => onContextMenu(e, deal.id)}
-                    className={`bg-white dark:bg-slate-800 p-4 rounded-xl border shadow-sm group hover:shadow-md transition-all relative ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl ring-2 ring-blue-500 z-50' : 'border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800'
+                    onMouseDown={handleMouseDown}
+                    onMouseUp={handleMouseUp}
+                    className={`bg-white dark:bg-slate-800 p-4 rounded-xl border shadow-sm group hover:shadow-md transition-all relative cursor-pointer ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl ring-2 ring-blue-500 z-50' : 'border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800'
                         }`}
                     style={provided.draggableProps.style}
                 >
