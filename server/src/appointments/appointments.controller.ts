@@ -65,25 +65,25 @@ export class AppointmentsController {
         @Body() payload: any,
     ) {
         const token = this.extractToken(req);
-        return this.appointmentsService.updateAppointment(token, id, payload);
+        return this.appointmentsService.updateAppointment(token, req.user.userId, id, payload);
     }
 
     @Delete(':id')
     async deleteAppointment(@Req() req, @Param('id') id: string) {
         const token = this.extractToken(req);
-        return this.appointmentsService.deleteAppointment(token, id);
+        return this.appointmentsService.deleteAppointment(token, req.user.userId, id);
     }
 
     @Post(':id/cancel')
     async cancelAppointment(@Req() req, @Param('id') id: string) {
         const token = this.extractToken(req);
-        return this.appointmentsService.cancelAppointment(token, id);
+        return this.appointmentsService.cancelAppointment(token, req.user.userId, id);
     }
 
     @Post(':id/finish')
     async finishAppointment(@Req() req, @Param('id') id: string) {
         const token = this.extractToken(req);
-        return this.appointmentsService.finishAppointment(token, id);
+        return this.appointmentsService.finishAppointment(token, req.user.userId, id);
     }
 
     @Post(':id/rate')
@@ -93,7 +93,7 @@ export class AppointmentsController {
         @Body() payload: any,
     ) {
         const token = this.extractToken(req);
-        return this.appointmentsService.rateAppointment(token, id, payload);
+        return this.appointmentsService.rateAppointment(token, req.user.userId, id, payload);
     }
 
     @Patch(':id/status')
@@ -103,6 +103,6 @@ export class AppointmentsController {
         @Body('status') status: string,
     ) {
         const token = this.extractToken(req);
-        return this.appointmentsService.updateAppointmentStatus(token, id, status);
+        return this.appointmentsService.updateAppointmentStatus(token, req.user.userId, id, status);
     }
 }

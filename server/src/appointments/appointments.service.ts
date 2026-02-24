@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase/supabase.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -14,7 +14,6 @@ export class AppointmentsService {
 
   /**
    * Check if the user is an ADMIN or MANAGER using the service-role client.
-   * This bypasses RLS to reliably read the user's role from profiles.
    */
   private async isAdminOrManager(userId: string): Promise<boolean> {
     const admin = this.supabaseService.getAdminClient();
@@ -24,6 +23,29 @@ export class AppointmentsService {
       .eq('id', userId)
       .single();
     return data?.role === 'ADMIN' || data?.role === 'MANAGER';
+  }
+
+  /**
+   * Check if the user is an ADMIN or MANAGER or the owner/agent of the appointment.
+   */
+  private async validateOrganizer(userId: string, appointmentId: string): Promise<void> {
+    const isAdmin = await this.isAdminOrManager(userId);
+    if (isAdmin) return;
+
+    const adminClient = this.supabaseService.getAdminClient();
+    const { data, error } = await adminClient
+      .from('appointments')
+      .select('agent_id, invited_user_id')
+      .eq('id', appointmentId)
+      .maybeSingle();
+
+    if (error) throw new BadRequestException(error.message);
+    if (!data) throw new NotFoundException('La cita no existe.');
+
+    const isOwner = data.agent_id === userId || data.invited_user_id === userId;
+    if (!isOwner) {
+      throw new ForbiddenException('Solo el organizador de la cita puede realizar esta acción.');
+    }
   }
 
   async getAppointments(
@@ -197,7 +219,8 @@ export class AppointmentsService {
     return data;
   }
 
-  async updateAppointment(token: string, id: string, payload: any) {
+  async updateAppointment(token: string, userId: string, id: string, payload: any) {
+    await this.validateOrganizer(userId, id);
     const updateData: any = {};
     const supabase = this.supabaseService.getClient(token);
 
@@ -233,9 +256,10 @@ export class AppointmentsService {
                 agent:profiles!agent_id(full_name)
             `,
       )
-      .single();
+      .maybeSingle();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
+    if (!data) throw new NotFoundException('La cita no existe o no tienes permisos para modificarla.');
 
     if (payload.participants !== undefined) {
       // Remove old ones
@@ -285,7 +309,8 @@ export class AppointmentsService {
     return data;
   }
 
-  async updateAppointmentStatus(token: string, id: string, status: string) {
+  async updateAppointmentStatus(token: string, userId: string, id: string, status: string) {
+    await this.validateOrganizer(userId, id);
     const updateData: any = { status };
     const supabase = this.supabaseService.getClient(token);
 
@@ -308,9 +333,10 @@ export class AppointmentsService {
                 agent:profiles!agent_id(id, full_name)
             `,
       )
-      .single();
+      .maybeSingle();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
+    if (!data) throw new NotFoundException('La cita no existe o no tienes permisos para modificarla.');
 
     // Notify all participants
     const msg = `Cita "${data.title}" actualizada a: ${status.toUpperCase()}`;
@@ -335,7 +361,8 @@ export class AppointmentsService {
     return data;
   }
 
-  async deleteAppointment(token: string, id: string) {
+  async deleteAppointment(token: string, userId: string, id: string) {
+    await this.validateOrganizer(userId, id);
     const supabase = this.supabaseService.getClient(token);
     const { error } = await supabase.from('appointments').delete().eq('id', id);
 
@@ -343,15 +370,16 @@ export class AppointmentsService {
     return { success: true };
   }
 
-  async cancelAppointment(token: string, id: string) {
-    return this.updateAppointmentStatus(token, id, 'cancelada');
+  async cancelAppointment(token: string, userId: string, id: string) {
+    return this.updateAppointmentStatus(token, userId, id, 'cancelada');
   }
 
-  async finishAppointment(token: string, id: string) {
-    return this.updateAppointmentStatus(token, id, 'completada');
+  async finishAppointment(token: string, userId: string, id: string) {
+    return this.updateAppointmentStatus(token, userId, id, 'completada');
   }
 
-  async rateAppointment(token: string, id: string, payload: { rating: number; notes?: string }) {
+  async rateAppointment(token: string, userId: string, id: string, payload: { rating: number; notes?: string }) {
+    await this.validateOrganizer(userId, id);
     const supabase = this.supabaseService.getClient(token);
     const { data, error } = await supabase
       .from('appointments')
@@ -361,9 +389,10 @@ export class AppointmentsService {
       })
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
+    if (!data) throw new NotFoundException('La cita no existe o no tienes permisos para calificarla.');
     return data;
   }
 }
