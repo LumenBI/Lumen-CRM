@@ -93,13 +93,13 @@ export default function UpcomingAppointmentsWidget() {
                                         <span className="block text-lg leading-none">{day}</span>
                                     </div>
                                     <div className="ml-4 flex-1">
-                                        <h4 className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-[#0056fc] dark:group-hover:text-blue-400 transition-colors">{appointment.client.company_name}</h4>
+                                        <h4 className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-[#0056fc] dark:group-hover:text-blue-400 transition-colors">{appointment.client?.company_name ?? appointment.title}</h4>
                                         <div className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 mb-0.5">
-                                            <span className="font-medium">con: {appointment.client.contact_name}</span>
+                                            <span className="font-medium">{appointment.client?.contact_name ? `con: ${appointment.client.contact_name}` : 'Sin cliente asignado'}</span>
                                         </div>
                                         <p className="text-xs text-slate-500 dark:text-slate-500 flex items-center gap-1">
                                             {getTypeIcon(appointment.appointment_type)}
-                                            <span>{appointment.appointment_time.slice(0, 5)}</span>
+                                            <span>{appointment.appointment_time?.slice(0, 5) ?? '--:--'}</span>
                                             <span className="mx-1">•</span>
                                             <span className="capitalize">{getTypeLabel(appointment.appointment_type)}</span>
                                         </p>

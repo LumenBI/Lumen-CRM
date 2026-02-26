@@ -252,8 +252,8 @@ export default function AppointmentsPage() {
                                             >
                                                 <td className="px-6 py-4">
                                                     <div>
-                                                        <p className="font-bold text-[#000d42] dark:text-white group-hover:text-[#0056fc] dark:group-hover:text-blue-400 transition-colors">{appointment.client.company_name}</p>
-                                                        <p className="text-sm text-slate-500 dark:text-slate-400">{appointment.client.contact_name}</p>
+                                                        <p className="font-bold text-[#000d42] dark:text-white group-hover:text-[#0056fc] dark:group-hover:text-blue-400 transition-colors">{appointment.client?.company_name ?? appointment.title}</p>
+                                                        <p className="text-sm text-slate-500 dark:text-slate-400">{appointment.client?.contact_name ?? 'Sin cliente'}</p>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -262,7 +262,7 @@ export default function AppointmentsPage() {
                                                         <div className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 font-medium">
                                                             <LucideClock size={12} />
                                                             <span>
-                                                                {new Date(`2000-01-01T${appointment.appointment_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                                                {appointment.appointment_time ? new Date(`2000-01-01T${appointment.appointment_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}
                                                             </span>
                                                         </div>
                                                     </div>

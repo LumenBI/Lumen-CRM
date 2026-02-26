@@ -5,10 +5,10 @@ import { STAGE_IDS } from '@/constants/stages'
 
 export const ClientSchema = z.object({
     id: z.string().optional(),
-    company_name: z.string().min(1, 'Compay name is required'),
-    contact_name: z.string().min(1, 'Contact name is required'),
-    email: z.string().min(1, 'Email is required').or(z.literal('')),
-    phone: z.string().optional(),
+    company_name: z.string().min(1, 'El nombre de empresa es requerido'),
+    contact_name: z.string().min(1, 'El nombre de contacto es requerido'),
+    email: z.string().email('Formato de email inválido').optional().or(z.literal('')),
+    phone: z.string().optional().or(z.literal('')),
     origin: z.string().optional(),
     status: z.string().optional(),
     created_at: z.string().optional(),
