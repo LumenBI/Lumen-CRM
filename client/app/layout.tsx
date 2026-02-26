@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Mulish } from "next/font/google";
+// import { Mulish } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -7,12 +7,13 @@ import { Analytics } from "@vercel/analytics/react"
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 
-const mulish = Mulish({
-  variable: "--font-mulish",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-  display: "swap",
-});
+
+// const mulish = Mulish({
+//   variable: "--font-mulish",
+//   subsets: ["latin"],
+//   weight: ["300", "400", "500", "600", "700", "800", "900"],
+//   display: "swap",
+// });
 
 export const metadata: Metadata = {
   title: "Star CRM | Star Cargo",
@@ -34,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${mulish.variable} font-sans antialiased`}>
+      <body className={`font-sans antialiased`}>
         <Providers>
           <ThemeProvider
             attribute="class"

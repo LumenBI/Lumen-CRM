@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { AppConfigModule } from './common/config/app-config.module';
 import { SupabaseModule } from './common/supabase/supabase.module';
 import { SecurityModule } from './security/security.module';
-import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -31,7 +30,6 @@ import { StatsModule } from './stats/stats.module';
         limit: 100,
       },
     ]),
-    ScheduleModule.forRoot(),
     AuthModule,
     DealsModule,
     ClientsModule,

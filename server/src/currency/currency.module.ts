@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CurrencyService } from './currency.service';
+import { CronController } from './cron.controller';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // We need to provide SupabaseClient.
@@ -8,6 +9,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 // For now, keeping it simple.
 
 @Module({
+  controllers: [CronController],
   providers: [
     CurrencyService,
     {
@@ -22,4 +24,4 @@ import { SupabaseClient } from '@supabase/supabase-js';
   ],
   exports: [CurrencyService],
 })
-export class CurrencyModule {}
+export class CurrencyModule { }

@@ -20,21 +20,22 @@ export class DealsService {
         let query = supabase
             .from('deals')
             .select('*, client:clients(id, company_name, email, phone)')
-            .eq('status', stageId);
+            .eq('status', stageId)
+            .eq('is_archived', false);
 
         if (agentId) {
             query = query.eq('assigned_agent_id', agentId);
         }
 
-        // this.logger.debug(`Fetching deals for stage: ${stageId}, cursor: ${cursor}, agentId: ${agentId}`);
-
+        // Cursor-based pagination using created_at timestamp (ISO string)
         if (cursor && cursor !== '0' && cursor !== 'undefined' && cursor !== 'null') {
             try {
-                // Only use gt if cursor is a valid UUID to avoid Postgres errors
-                if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cursor)) {
-                    query = query.gt('id', cursor);
+                // Validate that cursor looks like an ISO timestamp
+                const ts = new Date(cursor);
+                if (!isNaN(ts.getTime())) {
+                    query = query.lt('created_at', cursor);
                 } else {
-                    this.logger.warn(`Invalid UUID cursor received: ${cursor}`);
+                    this.logger.warn(`Invalid timestamp cursor received: ${cursor}`);
                 }
             } catch (e) {
                 this.logger.error(`Error applying cursor filter: ${e.message}`);
@@ -42,7 +43,7 @@ export class DealsService {
         }
 
         const { data, error } = await query
-            .order('id', { ascending: true })
+            .order('created_at', { ascending: false })
             .limit(limit + 1);
 
         if (error) {
@@ -53,7 +54,10 @@ export class DealsService {
         const hasNextPage = data.length > limit;
         const items = hasNextPage ? data.slice(0, limit) : data;
 
-        const nextCursor = (items.length > 0) ? items[items.length - 1].id : null;
+        // Next cursor is the created_at of the last item (for next page)
+        const nextCursor = hasNextPage && items.length > 0
+            ? items[items.length - 1].created_at
+            : null;
 
         return {
             items,
@@ -66,13 +70,16 @@ export class DealsService {
         const supabase = this.supabaseService.getClient(token);
         let query = supabase
             .from('deals')
-            .select('*, client:clients(id, company_name, email, phone)');
+            .select('*, client:clients(id, company_name, email, phone)')
+            .eq('is_archived', false);
 
         if (clientId) {
             query = query.eq('client_id', clientId);
         }
 
-        const { data, error } = await query.order('updated_at', { ascending: false });
+        const { data, error } = await query
+            .order('updated_at', { ascending: false })
+            .limit(200);
 
         if (error) throw new Error(error.message);
         return data;
@@ -130,7 +137,9 @@ export class DealsService {
         const supabase = this.supabaseService.getClient(token);
         const { data, error } = await supabase
             .from('deals')
-            .select('id, status');
+            .select('id, status')
+            .eq('is_archived', false)
+            .limit(500);
 
         if (error) throw new Error(error.message);
 
