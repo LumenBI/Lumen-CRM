@@ -7,7 +7,7 @@ export const ClientSchema = z.object({
     id: z.string().optional(),
     company_name: z.string().min(1, 'Compay name is required'),
     contact_name: z.string().min(1, 'Contact name is required'),
-    email: z.string().email('Invalid email address'),
+    email: z.string().min(1, 'Email is required').or(z.literal('')),
     phone: z.string().optional(),
     origin: z.string().optional(),
     status: z.string().optional(),

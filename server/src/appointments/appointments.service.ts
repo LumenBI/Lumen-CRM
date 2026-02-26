@@ -35,14 +35,14 @@ export class AppointmentsService {
     const adminClient = this.supabaseService.getAdminClient();
     const { data, error } = await adminClient
       .from('appointments')
-      .select('agent_id, invited_user_id')
+      .select('agent_id')
       .eq('id', appointmentId)
       .maybeSingle();
 
     if (error) throw new BadRequestException(error.message);
     if (!data) throw new NotFoundException('La cita no existe.');
 
-    const isOwner = data.agent_id === userId || data.invited_user_id === userId;
+    const isOwner = data.agent_id === userId;
     if (!isOwner) {
       throw new ForbiddenException('Solo el organizador de la cita puede realizar esta acción.');
     }
