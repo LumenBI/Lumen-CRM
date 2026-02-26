@@ -66,7 +66,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, appointment, 
                                 <span className="text-xs font-bold uppercase">Hora</span>
                             </div>
                             <p className="font-semibold text-slate-700 dark:text-slate-300">
-                                {appointment.appointment_time.slice(0, 5)}
+                                {appointment.appointment_time?.slice(0, 5) ?? '--:--'}
                             </p>
                         </div>
                     </div>
@@ -101,16 +101,26 @@ export default function AppointmentDetailsModal({ isOpen, onClose, appointment, 
                         )}
                     </div>
 
-                    <div className="flex gap-3 items-start border-t border-slate-50 dark:border-slate-800 pt-4">
-                        <div className="mt-1">
-                            <LucideUser className="h-5 w-5 text-slate-400" />
+                    {appointment.client ? (
+                        <div className="flex gap-3 items-start border-t border-slate-50 dark:border-slate-800 pt-4">
+                            <div className="mt-1">
+                                <LucideUser className="h-5 w-5 text-slate-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Cliente</p>
+                                <p className="font-bold text-gray-900 dark:text-white">{appointment.client.company_name}</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">{appointment.client.contact_name}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Cliente</p>
-                            <p className="font-bold text-gray-900 dark:text-white">{appointment.client.company_name}</p>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">{appointment.client.contact_name}</p>
+                    ) : appointment.title ? (
+                        <div className="flex gap-3 items-start border-t border-slate-50 dark:border-slate-800 pt-4">
+                            <div className="mt-1"><LucideUser className="h-5 w-5 text-slate-400" /></div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Cliente</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 italic">Sin cliente asignado</p>
+                            </div>
                         </div>
-                    </div>
+                    ) : null}
 
                     {(appointment.location || appointment.meeting_link) && (
                         <div className="flex gap-3 items-start">

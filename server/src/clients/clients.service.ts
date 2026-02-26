@@ -14,6 +14,11 @@ export class ClientsService {
     private readonly notificationsService: NotificationsService,
   ) { }
 
+  private isValidUuid(uuid: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  }
+
   async getClientsList(
     token: string,
     userId: string,
@@ -56,6 +61,9 @@ export class ClientsService {
 
     // Cursor Pagination
     if (cursor) {
+      if (!this.isValidUuid(cursor)) {
+        throw new BadRequestException('Cursor inválido.');
+      }
       q = q.gt('id', cursor);
     }
 
@@ -86,7 +94,6 @@ export class ClientsService {
     let assignedAgentId = payload.assigned_agent_id || null;
 
     if (!assignedAgentId && userId) {
-      // Check if current user is an agent (and not just an admin)
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -99,6 +106,10 @@ export class ClientsService {
     }
 
     // 2. Insert Client
+    if (!payload.company_name || !payload.contact_name) {
+      throw new BadRequestException('El nombre de empresa y contacto son obligatorios.');
+    }
+
     const { data: client, error } = await supabase
       .from('clients')
       .insert({
@@ -106,6 +117,7 @@ export class ClientsService {
         contact_name: payload.contact_name,
         phone: payload.phone,
         email: payload.email,
+        commodity: payload.commodity,
         origin: payload.origin || 'MANUAL',
         status: payload.status || 'PENDING',
         assigned_agent_id: assignedAgentId,
@@ -116,38 +128,47 @@ export class ClientsService {
       .single();
 
     if (error) {
-      console.error('[ClientsService.createClient] Error creating client:', error);
-      throw new Error(error.message);
+      console.error('[ClientsService.createClient] DATABASE ERROR:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        payload: { ...payload, email: '***', phone: '***' } // censor PII
+      });
+      throw new BadRequestException(`Error de base de datos: ${error.message}`);
     }
 
     // 3. Auto-create Deal if status is provided and not PENDING
-    // This ensures the client appears in the Kanban board immediately
     if (payload.status && payload.status !== 'PENDING') {
-      const adminSupabase = this.supabaseService.getAdminClient();
-      const { error: dealError } = await adminSupabase.from('deals').insert({
-        client_id: client.id,
-        title: `${client.company_name}`,
-        value: payload.dealMetadata?.value || 0,
-        currency: payload.dealMetadata?.currency || 'USD',
-        status: payload.status,
-        assigned_agent_id: assignedAgentId,
-        type: payload.dealMetadata?.type || 'AEREO',
-        updated_at: new Date(),
-      });
+      try {
+        const adminSupabase = this.supabaseService.getAdminClient();
+        const { error: dealError } = await adminSupabase.from('deals').insert({
+          client_id: client.id,
+          title: `${client.company_name}`,
+          value: payload.dealMetadata?.value || 0,
+          currency: payload.dealMetadata?.currency || 'USD',
+          status: payload.status,
+          assigned_agent_id: assignedAgentId,
+          type: payload.dealMetadata?.type || 'AEREO',
+          updated_at: new Date(),
+        });
 
-      if (dealError) {
-        console.warn(
-          '[ClientsService.createClient] Client created but failed to create auto-deal:',
-          dealError,
-        );
-        // We don't throw here to avoid failing the client creation
+        if (dealError) {
+          console.warn('[ClientsService.createClient] Auto-deal failure:', dealError);
+        }
+      } catch (e) {
+        console.warn('[ClientsService.createClient] Auto-deal exception:', e);
       }
     }
 
     return client;
   }
 
+
   async updateClient(token: string, id: string, payload: any) {
+    if (!this.isValidUuid(id)) {
+      throw new BadRequestException('ID de cliente inválido.');
+    }
     const supabase = this.supabaseService.getClient(token);
 
     const updateData: any = {};
@@ -188,9 +209,13 @@ export class ClientsService {
       .update(updateData)
       .eq('id', id)
       .select('*, agent:profiles!assigned_agent_id(full_name)')
-      .single();
+      .maybeSingle();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('[ClientsService.updateClient] DB Error:', error);
+      throw new BadRequestException('Error al actualizar el cliente.');
+    }
+    if (!data) throw new NotFoundException('Cliente no encontrado.');
 
     // Notify managers of significant changes (e.g., status or assignment)
     if (payload.status || payload.assigned_agent_id) {
@@ -207,6 +232,9 @@ export class ClientsService {
   }
 
   async deleteClient(token: string, id: string) {
+    if (!this.isValidUuid(id)) {
+      throw new BadRequestException('ID de cliente inválido.');
+    }
     const supabase = this.supabaseService.getClient(token);
     const { error } = await supabase.from('clients').delete().eq('id', id);
 
@@ -222,6 +250,9 @@ export class ClientsService {
   }
 
   async getClientDetails(token: string, clientId: string) {
+    if (!this.isValidUuid(clientId)) {
+      throw new BadRequestException('ID de cliente inválido.');
+    }
     const supabase = this.supabaseService.getClient(token);
     const { data: client, error: clientError } = await supabase
       .from('clients')
@@ -266,13 +297,13 @@ export class ClientsService {
   async addInteraction(token: string, userId: string, payload: any) {
     const supabase = this.supabaseService.getClient(token);
 
-    if (!payload.clientId) {
+    if (!payload.clientId || !this.isValidUuid(payload.clientId)) {
       console.error(
-        '[ClientsService.addInteraction] Missing clientId in payload:',
+        '[ClientsService.addInteraction] Missing or invalid clientId in payload:',
         payload,
       );
       throw new BadRequestException(
-        'El ID del cliente es obligatorio para registrar una interacción',
+        'El ID del cliente es obligatorio y debe ser válido para registrar una interacción',
       );
     }
 
@@ -339,10 +370,16 @@ export class ClientsService {
   }
 
   async deleteInteraction(token: string, id: string) {
+    if (!this.isValidUuid(id)) {
+      throw new BadRequestException('ID de interacción inválido.');
+    }
     const supabase = this.supabaseService.getClient(token);
     const { error } = await supabase.from('interactions').delete().eq('id', id);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('[ClientsService.deleteInteraction] DB Error:', error);
+      throw new BadRequestException('Error al eliminar la interacción.');
+    }
     return { success: true };
   }
 
@@ -354,7 +391,10 @@ export class ClientsService {
       .order('created_at', { ascending: false })
       .limit(10);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('[ClientsService.getRecentActivities] DB Error:', error);
+      throw new BadRequestException('Error al recuperar actividades recientes.');
+    }
     return data;
   }
 }

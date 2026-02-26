@@ -278,10 +278,11 @@ export default function NewTrackingModal({ onClose, onSuccess, initialMode = 'se
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 block">Contacto</label>
+                                            <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 block">Contacto *</label>
                                             <input
+                                                required
                                                 className="w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-sm text-gray-900 dark:text-white outline-none focus:border-blue-500"
-                                                placeholder="Nombre del encargado (Opcional)"
+                                                placeholder="Nombre del encargado"
                                                 value={clientForm.contact_name}
                                                 onChange={e => setClientForm({ ...clientForm, contact_name: e.target.value })}
                                             />

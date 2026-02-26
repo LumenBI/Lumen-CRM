@@ -161,10 +161,10 @@ export default function CalendarView({ appointments, onAppointmentClick, onAppoi
                                     >
                                         <div className="flex items-center gap-1 mb-0.5 line-clamp-1 font-bold pointer-events-none">
                                             {getTypeIcon(app.appointment_type)}
-                                            {app.appointment_time.slice(0, 5)}
+                                            {app.appointment_time?.slice(0, 5) ?? '--:--'}
                                         </div>
                                         <div className="line-clamp-1 opacity-90 pointer-events-none">
-                                            {app.client.company_name}
+                                            {app.client?.company_name ?? app.title ?? 'Sin cliente'}
                                         </div>
                                     </div>
                                 ))}
