@@ -39,7 +39,7 @@ export class ClientsService {
     let q = supabase
       .from('clients')
       .select(
-        'id, company_name, contact_name, email, phone, origin, assigned_agent_id, assignment_expires_at, agent:profiles!assigned_agent_id(full_name)',
+        'id, company_name, contact_name, email, phone, origin, commodity, assigned_agent_id, assignment_expires_at, agent:profiles!assigned_agent_id(full_name)',
       );
 
     // Force mine filter for agents
@@ -55,7 +55,7 @@ export class ClientsService {
       // Sanitize query to prevent breaking the .or() filter (commas are used as separators)
       const sanitizedQuery = query.replace(/,/g, ' ').trim();
       q = q.or(
-        `company_name.ilike.%${sanitizedQuery}%,contact_name.ilike.%${sanitizedQuery}%,email.ilike.%${sanitizedQuery}%`,
+        `company_name.ilike.%${sanitizedQuery}%,contact_name.ilike.%${sanitizedQuery}%,email.ilike.%${sanitizedQuery}%,commodity.ilike.%${sanitizedQuery}%`,
       );
     }
 
@@ -119,7 +119,7 @@ export class ClientsService {
         email: payload.email,
         commodity: payload.commodity,
         origin: payload.origin || 'MANUAL',
-        status: payload.status || 'PENDING',
+        status: 'PENDING', // Use safe default enum value for client
         assigned_agent_id: assignedAgentId,
         assignment_expires_at: payload.assignment_expires_at || defaultExpires,
         assigned_at: assignedAgentId ? new Date() : null,
@@ -135,8 +135,8 @@ export class ClientsService {
         hint: error.hint,
         payload: { ...payload, email: '***', phone: '***' } // censor PII
       });
-      throw new BadRequestException(`Error de base de datos: ${error.message}`);
-      throw new Error(`Database error ${error.code}: ${error.message}`);
+      // Return details to help debugging in the frontend
+      throw new BadRequestException(`Error de base de datos (${error.code}): ${error.message}${error.hint ? ' - ' + error.hint : ''}`);
     }
 
     // 3. Auto-create Deal if status is provided and not PENDING
@@ -181,6 +181,8 @@ export class ClientsService {
     if (payload.email !== undefined) updateData.email = payload.email;
     if (payload.status !== undefined) updateData.status = payload.status;
     if (payload.origin !== undefined) updateData.origin = payload.origin;
+    if (payload.commodity !== undefined)
+      updateData.commodity = payload.commodity;
 
     // STRICT SECURITY: Only ADMIN/MANAGER can reassign
     if (payload.assigned_agent_id !== undefined) {
