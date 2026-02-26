@@ -233,7 +233,7 @@ export const useApi = () => {
 
         appointments: {
             getAll: async () => {
-                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/appointments`)
+                const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/appointments`, { cache: 'no-store' })
                 if (!res.ok) {
                     toast.error('Error al obtener citas')
                     throw new Error('Failed to fetch appointments')
