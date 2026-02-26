@@ -3,6 +3,16 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText } from 'ai';
 import { SmartDraftDto } from './dto/ai.dto';
 
+const AI_TIMEOUT_MS = 12_000;
+
+/** Wraps a promise in a race with a timeout. Throws if the timeout wins. */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(`AI timeout after ${ms}ms [${label}]`)), ms),
+  );
+  return Promise.race([promise, timeout]);
+}
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -40,13 +50,14 @@ export class AiService {
         `;
 
     try {
-      const { text } = await generateText({
-        model: this.google('gemini-pro'),
-        prompt: prompt,
-      });
+      const { text } = await withTimeout(
+        generateText({ model: this.google('gemini-pro'), prompt }),
+        AI_TIMEOUT_MS,
+        'generateQuoteEmail',
+      );
       return text.trim();
     } catch (error) {
-      this.logger.error('Error generating email draft', error);
+      this.logger.error('Error generating email draft', error.message);
       return `Estimado cliente de ${data.company_name},\n\nEs un gusto saludarle. Adjunto encontrará la cotización formal #${data.quote_number || ''} solicitada para sus servicios logísticos.\n\nQuedamos a su entera disposición para cualquier duda o para proceder con la reserva.\n\nSaludos cordiales,\nStar Cargo Service.`;
     }
   }
@@ -67,13 +78,15 @@ export class AiService {
         `;
 
     try {
-      const { text } = await generateText({
-        model: this.google('gemini-pro'),
-        prompt: prompt,
-      });
+      const { text } = await withTimeout(
+        generateText({ model: this.google('gemini-pro'), prompt }),
+        AI_TIMEOUT_MS,
+        'checkPriceAnomalies',
+      );
       const result = text.trim();
       return result === 'OK' ? null : result;
     } catch (error) {
+      this.logger.warn('AI price check timed out or failed', error.message);
       return null;
     }
   }
@@ -94,17 +107,18 @@ export class AiService {
         `;
 
     try {
-      const { text } = await generateText({
-        model: this.google('gemini-pro'),
-        prompt: prompt,
-      });
+      const { text } = await withTimeout(
+        generateText({ model: this.google('gemini-pro'), prompt }),
+        AI_TIMEOUT_MS,
+        'explainQuoteTerms',
+      );
       const cleanedText = text
         .replace(/```json/g, '')
         .replace(/```/g, '')
         .trim();
       return JSON.parse(cleanedText);
     } catch (error) {
-      this.logger.error('Error generating glossary', error);
+      this.logger.error('Error generating glossary', error.message);
       return [];
     }
   }
