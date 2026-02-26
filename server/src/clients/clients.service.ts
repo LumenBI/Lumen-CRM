@@ -135,8 +135,8 @@ export class ClientsService {
         hint: error.hint,
         payload: { ...payload, email: '***', phone: '***' } // censor PII
       });
-      throw new BadRequestException(`Error de base de datos: ${error.message}`);
-      throw new Error(`Database error ${error.code}: ${error.message}`);
+      // Return details to help debugging in the frontend
+      throw new BadRequestException(`Error de base de datos (${error.code}): ${error.message}${error.hint ? ' - ' + error.hint : ''}`);
     }
 
     // 3. Auto-create Deal if status is provided and not PENDING
@@ -181,6 +181,8 @@ export class ClientsService {
     if (payload.email !== undefined) updateData.email = payload.email;
     if (payload.status !== undefined) updateData.status = payload.status;
     if (payload.origin !== undefined) updateData.origin = payload.origin;
+    if (payload.commodity !== undefined)
+      updateData.commodity = payload.commodity;
 
     // STRICT SECURITY: Only ADMIN/MANAGER can reassign
     if (payload.assigned_agent_id !== undefined) {
