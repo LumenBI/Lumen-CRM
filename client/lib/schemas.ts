@@ -9,6 +9,7 @@ export const ClientSchema = z.object({
     contact_name: z.string().min(1, 'El nombre de contacto es requerido'),
     email: z.string().email('Formato de email inválido').optional().or(z.literal('')),
     phone: z.string().optional().or(z.literal('')),
+    commodity: z.string().optional().or(z.literal('')),
     origin: z.string().optional(),
     status: z.string().optional(),
     created_at: z.string().optional(),
