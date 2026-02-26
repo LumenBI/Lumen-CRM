@@ -119,7 +119,7 @@ export class ClientsService {
         email: payload.email,
         commodity: payload.commodity,
         origin: payload.origin || 'MANUAL',
-        status: payload.status || 'PENDING',
+        status: 'PENDING', // Use safe default enum value for client
         assigned_agent_id: assignedAgentId,
         assignment_expires_at: payload.assignment_expires_at || defaultExpires,
         assigned_at: assignedAgentId ? new Date() : null,
