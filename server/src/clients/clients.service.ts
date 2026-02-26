@@ -77,16 +77,12 @@ export class ClientsService {
   }
 
   async createClient(token: string, userId: string, payload: any) {
-    const defaultExpires = new Date();
-    defaultExpires.setDate(defaultExpires.getDate() + 90); // Default 3 months
-
     const supabase = this.supabaseService.getClient(token);
 
     // 1. Determine Agent assignment
     let assignedAgentId = payload.assigned_agent_id || null;
 
     if (!assignedAgentId && userId) {
-      // Check if current user is an agent (and not just an admin)
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -98,54 +94,96 @@ export class ClientsService {
       }
     }
 
-    // 2. Insert Client
-    const { data: client, error } = await supabase
-      .from('clients')
-      .insert({
-        company_name: payload.company_name,
-        contact_name: payload.contact_name,
-        phone: payload.phone,
-        email: payload.email,
-        origin: payload.origin || 'MANUAL',
+    // 2. Insert client with only the core columns guaranteed to exist
+    const insertPayload: any = {
+      company_name: payload.company_name,
+      contact_name: payload.contact_name,
+      origin: payload.origin || 'MANUAL',
+      assigned_agent_id: assignedAgentId,
+    };
+
+    // Include optional columns only if they have a value (avoids error if column doesn't exist)
+    if (payload.phone) insertPayload.phone = payload.phone;
+    if (payload.email) insertPayload.email = payload.email;
+
+    // Try to include extended columns — if any don't exist the error will surface
+    try {
+      const defaultExpires = new Date();
+      defaultExpires.setDate(defaultExpires.getDate() + 90);
+
+      const extendedPayload = {
+        ...insertPayload,
         status: payload.status || 'PENDING',
-        assigned_agent_id: assignedAgentId,
         assignment_expires_at: payload.assignment_expires_at || defaultExpires,
         assigned_at: assignedAgentId ? new Date() : null,
-      })
-      .select()
-      .single();
+      };
 
-    if (error) {
-      console.error('[ClientsService.createClient] Error creating client:', error);
-      throw new Error(error.message);
+      const { data: client, error } = await supabase
+        .from('clients')
+        .insert(extendedPayload)
+        .select()
+        .single();
+
+      if (error) {
+        // If error mentions a non-existent column, retry with core payload
+        if (error.code === '42703' || error.message?.includes('column')) {
+          console.warn('[ClientsService] Extended columns missing, retrying with core payload:', error.message);
+          throw error; // fallthrough to catch
+        }
+        console.error('[ClientsService.createClient] Error creating client:', error);
+        throw new Error(error.message);
+      }
+
+      await this.createAutoDeal(client, payload, assignedAgentId);
+      return client;
+
+    } catch (extendedError: any) {
+      // Retry with minimal core payload if extended columns were the issue
+      if (extendedError?.code === '42703' || extendedError?.message?.includes('column')) {
+        const { data: client, error } = await supabase
+          .from('clients')
+          .insert(insertPayload)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('[ClientsService.createClient] Core insert failed:', error);
+          throw new Error(error.message);
+        }
+        await this.createAutoDeal(client, payload, assignedAgentId);
+        return client;
+      }
+
+      throw extendedError;
     }
+  }
 
-    // 3. Auto-create Deal if status is provided and not PENDING
-    // This ensures the client appears in the Kanban board immediately
-    if (payload.status && payload.status !== 'PENDING') {
+  private async createAutoDeal(client: any, payload: any, assignedAgentId: string | null) {
+    if (!payload.status || payload.status === 'PENDING') return;
+
+    try {
       const adminSupabase = this.supabaseService.getAdminClient();
-      const { error: dealError } = await adminSupabase.from('deals').insert({
+      const dealPayload: any = {
         client_id: client.id,
         title: `${client.company_name}`,
         value: payload.dealMetadata?.value || 0,
         currency: payload.dealMetadata?.currency || 'USD',
         status: payload.status,
         assigned_agent_id: assignedAgentId,
-        type: payload.dealMetadata?.type || 'AEREO',
         updated_at: new Date(),
-      });
+      };
+      // type column — only include if metadata explicitly set (avoids column-not-found error)
+      if (payload.dealMetadata?.type) dealPayload.type = payload.dealMetadata.type;
 
+      const { error: dealError } = await adminSupabase.from('deals').insert(dealPayload);
       if (dealError) {
-        console.warn(
-          '[ClientsService.createClient] Client created but failed to create auto-deal:',
-          dealError,
-        );
-        // We don't throw here to avoid failing the client creation
+        console.warn('[ClientsService] Client created but auto-deal failed:', dealError.message);
       }
+    } catch (e) {
+      console.warn('[ClientsService] Auto-deal creation threw:', e);
     }
-
-    return client;
   }
+
 
   async updateClient(token: string, id: string, payload: any) {
     const supabase = this.supabaseService.getClient(token);
