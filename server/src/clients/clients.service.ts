@@ -136,6 +136,7 @@ export class ClientsService {
         payload: { ...payload, email: '***', phone: '***' } // censor PII
       });
       throw new BadRequestException(`Error de base de datos: ${error.message}`);
+      throw new Error(`Database error ${error.code}: ${error.message}`);
     }
 
     // 3. Auto-create Deal if status is provided and not PENDING
