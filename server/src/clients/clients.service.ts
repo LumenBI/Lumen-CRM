@@ -14,6 +14,11 @@ export class ClientsService {
     private readonly notificationsService: NotificationsService,
   ) { }
 
+  private isValidUuid(uuid: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  }
+
   async getClientsList(
     token: string,
     userId: string,
@@ -56,6 +61,9 @@ export class ClientsService {
 
     // Cursor Pagination
     if (cursor) {
+      if (!this.isValidUuid(cursor)) {
+        throw new BadRequestException('Cursor inválido.');
+      }
       q = q.gt('id', cursor);
     }
 
@@ -98,6 +106,10 @@ export class ClientsService {
     }
 
     // 2. Insert Client
+    if (!payload.company_name || !payload.contact_name) {
+      throw new BadRequestException('El nombre de empresa y contacto son obligatorios.');
+    }
+
     const { data: client, error } = await supabase
       .from('clients')
       .insert({
@@ -123,6 +135,7 @@ export class ClientsService {
         hint: error.hint,
         payload: { ...payload, email: '***', phone: '***' } // censor PII
       });
+      throw new BadRequestException(`Error de base de datos: ${error.message}`);
       throw new Error(`Database error ${error.code}: ${error.message}`);
     }
 
@@ -154,6 +167,9 @@ export class ClientsService {
 
 
   async updateClient(token: string, id: string, payload: any) {
+    if (!this.isValidUuid(id)) {
+      throw new BadRequestException('ID de cliente inválido.');
+    }
     const supabase = this.supabaseService.getClient(token);
 
     const updateData: any = {};
@@ -194,9 +210,13 @@ export class ClientsService {
       .update(updateData)
       .eq('id', id)
       .select('*, agent:profiles!assigned_agent_id(full_name)')
-      .single();
+      .maybeSingle();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('[ClientsService.updateClient] DB Error:', error);
+      throw new BadRequestException('Error al actualizar el cliente.');
+    }
+    if (!data) throw new NotFoundException('Cliente no encontrado.');
 
     // Notify managers of significant changes (e.g., status or assignment)
     if (payload.status || payload.assigned_agent_id) {
@@ -213,6 +233,9 @@ export class ClientsService {
   }
 
   async deleteClient(token: string, id: string) {
+    if (!this.isValidUuid(id)) {
+      throw new BadRequestException('ID de cliente inválido.');
+    }
     const supabase = this.supabaseService.getClient(token);
     const { error } = await supabase.from('clients').delete().eq('id', id);
 
@@ -228,6 +251,9 @@ export class ClientsService {
   }
 
   async getClientDetails(token: string, clientId: string) {
+    if (!this.isValidUuid(clientId)) {
+      throw new BadRequestException('ID de cliente inválido.');
+    }
     const supabase = this.supabaseService.getClient(token);
     const { data: client, error: clientError } = await supabase
       .from('clients')
@@ -272,13 +298,13 @@ export class ClientsService {
   async addInteraction(token: string, userId: string, payload: any) {
     const supabase = this.supabaseService.getClient(token);
 
-    if (!payload.clientId) {
+    if (!payload.clientId || !this.isValidUuid(payload.clientId)) {
       console.error(
-        '[ClientsService.addInteraction] Missing clientId in payload:',
+        '[ClientsService.addInteraction] Missing or invalid clientId in payload:',
         payload,
       );
       throw new BadRequestException(
-        'El ID del cliente es obligatorio para registrar una interacción',
+        'El ID del cliente es obligatorio y debe ser válido para registrar una interacción',
       );
     }
 
@@ -345,10 +371,16 @@ export class ClientsService {
   }
 
   async deleteInteraction(token: string, id: string) {
+    if (!this.isValidUuid(id)) {
+      throw new BadRequestException('ID de interacción inválido.');
+    }
     const supabase = this.supabaseService.getClient(token);
     const { error } = await supabase.from('interactions').delete().eq('id', id);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('[ClientsService.deleteInteraction] DB Error:', error);
+      throw new BadRequestException('Error al eliminar la interacción.');
+    }
     return { success: true };
   }
 
@@ -360,7 +392,10 @@ export class ClientsService {
       .order('created_at', { ascending: false })
       .limit(10);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('[ClientsService.getRecentActivities] DB Error:', error);
+      throw new BadRequestException('Error al recuperar actividades recientes.');
+    }
     return data;
   }
 }

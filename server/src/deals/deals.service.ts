@@ -1,9 +1,14 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase/supabase.service';
 
 @Injectable()
 export class DealsService {
     private readonly logger = new Logger(DealsService.name);
+
+    private isValidUuid(uuid: string): boolean {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(uuid);
+    }
 
     constructor(private readonly supabaseService: SupabaseService) { }
 
@@ -48,7 +53,7 @@ export class DealsService {
 
         if (error) {
             this.logger.error(`Error fetching deals for stage ${stageId}`, error);
-            throw new Error(error.message);
+            throw new BadRequestException('Error al recuperar los tratos por columna.');
         }
 
         const hasNextPage = data.length > limit;
@@ -73,19 +78,29 @@ export class DealsService {
             .select('*, client:clients(id, company_name, email, phone)');
         // .eq('is_archived', false) — add after running the migration to add this column
 
-        if (clientId) {
-            query = query.eq('client_id', clientId);
+        if (clientId && !this.isValidUuid(clientId)) {
+            throw new BadRequestException('ID de cliente inválido.');
         }
 
         const { data, error } = await query
             .order('updated_at', { ascending: false })
             .limit(200);
 
-        if (error) throw new Error(error.message);
+        if (error) {
+            this.logger.error(`Error fetching deals`, error);
+            throw new BadRequestException('Error al recuperar los tratos.');
+        }
         return data;
     }
 
     async createDeal(token: string, userId: string, payload: any) {
+        if (!payload.client_id || !this.isValidUuid(payload.client_id)) {
+            throw new BadRequestException('El ID del cliente es obligatorio y debe ser un UUID válido.');
+        }
+        if (!payload.title) {
+            throw new BadRequestException('El título del trato es obligatorio.');
+        }
+
         const supabase = this.supabaseService.getClient(token);
         const { data, error } = await supabase
             .from('deals')
@@ -95,41 +110,64 @@ export class DealsService {
             .select()
             .single();
 
-        if (error) throw new Error(error.message);
+        if (error) {
+            this.logger.error(`Error creating deal`, error);
+            throw new BadRequestException(`Error al crear el trato: ${error.message}`);
+        }
         return data;
     }
 
     async updateDeal(token: string, id: string, payload: any) {
+        if (!this.isValidUuid(id)) {
+            throw new BadRequestException('ID de trato inválido.');
+        }
         const supabase = this.supabaseService.getClient(token);
         const { data, error } = await supabase
             .from('deals')
             .update(payload)
             .eq('id', id)
             .select()
-            .single();
+            .maybeSingle();
 
-        if (error) throw new Error(error.message);
+        if (error) {
+            this.logger.error(`Error updating deal ${id}`, error);
+            throw new BadRequestException('Error al actualizar el trato.');
+        }
+        if (!data) throw new NotFoundException('Trato no encontrado.');
         return data;
     }
 
     async moveCard(token: string, userId: string, dealId: string, newStatus: string) {
+        if (!this.isValidUuid(dealId)) {
+            throw new BadRequestException('ID de trato inválido.');
+        }
         const supabase = this.supabaseService.getClient(token);
         const { data, error } = await supabase
             .from('deals')
             .update({ status: newStatus, updated_at: new Date() })
             .eq('id', dealId)
             .select()
-            .single();
+            .maybeSingle();
 
-        if (error) throw new Error(error.message);
+        if (error) {
+            this.logger.error(`Error moving deal ${dealId}`, error);
+            throw new BadRequestException('Error al mover el trato.');
+        }
+        if (!data) throw new NotFoundException('Trato no encontrado.');
         return data;
     }
 
     async deleteDeal(token: string, id: string) {
+        if (!this.isValidUuid(id)) {
+            throw new BadRequestException('ID de trato inválido.');
+        }
         const supabase = this.supabaseService.getClient(token);
         const { error } = await supabase.from('deals').delete().eq('id', id);
 
-        if (error) throw new Error(error.message);
+        if (error) {
+            this.logger.error(`Error deleting deal ${id}`, error);
+            throw new BadRequestException('Error al eliminar el trato.');
+        }
         return { success: true };
     }
 
@@ -141,7 +179,10 @@ export class DealsService {
             // .eq('is_archived', false) — add after running the migration to add this column
             .limit(500);
 
-        if (error) throw new Error(error.message);
+        if (error) {
+            this.logger.error(`Error fetching full kanban`, error);
+            throw new BadRequestException('Error al recuperar el tablero Kanban.');
+        }
 
         const grouped = data.reduce((acc: Record<string, any[]>, deal) => {
             if (!acc[deal.status]) acc[deal.status] = [];

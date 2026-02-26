@@ -14,6 +14,12 @@ export class SupabaseService {
     }
 
     getAdminClient(): SupabaseClient {
-        return createClient(this.config.supabaseUrl, this.config.supabaseServiceRoleKey);
+        const key = this.config.supabaseServiceRoleKey;
+        if (!key) {
+            console.warn('[SupabaseService] WARNING: SUPABASE_SERVICE_ROLE_KEY is missing!');
+        } else {
+            // console.log(`[SupabaseService] Admin key starts with: ${key.substring(0, 10)}...`);
+        }
+        return createClient(this.config.supabaseUrl, key || '');
     }
 }
