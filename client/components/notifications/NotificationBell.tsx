@@ -26,12 +26,7 @@ export default function NotificationBell() {
         let channel: any;
 
         const subscribeToNotifications = (userId: string) => {
-            if (channel) {
-                console.log('Removing existing channel before resubscribing...');
-                supabase.removeChannel(channel);
-            }
-
-            console.log(`[REALTIME] Setting up subscription for user: ${userId}`);
+            if (channel) supabase.removeChannel(channel);
 
             channel = supabase
                 .channel(`notifications-${userId}`)
@@ -44,18 +39,12 @@ export default function NotificationBell() {
                         filter: `user_id=eq.${userId}`
                     },
                     (payload: any) => {
-                        console.log('[REALTIME] Payload received:', payload);
                         const newNotif = payload.new as Notification;
 
                         setNotifications(prev => {
                             const exists = prev.some(n => n.id === newNotif.id);
-                            if (exists) {
-                                console.log('[REALTIME] Duplicate notification ignored:', newNotif.id);
-                                return prev;
-                            }
-                            console.log('[REALTIME] Adding new notification to state:', newNotif.id);
+                            if (exists) return prev;
 
-                            // Show toast for new notification
                             toast.info(newNotif.message, {
                                 description: 'Nueva notificación recibida',
                                 duration: 8000,
@@ -71,10 +60,8 @@ export default function NotificationBell() {
                     }
                 )
                 .subscribe((status: string, err?: any) => {
-                    console.log(`[REALTIME] Subscription status for ${userId}:`, status);
                     if (err) console.error('[REALTIME] Subscription error:', err);
-
-                    // If Realtime is not joined, trigger a manual fetch once as a warm-up
+                    // Warm-up fetch if connection not established
                     if (status !== 'SUBSCRIBED') {
                         setTimeout(() => fetchInitialNotifications(userId), 2000);
                     }
@@ -82,7 +69,6 @@ export default function NotificationBell() {
         };
 
         const fetchInitialNotifications = async (userId: string) => {
-            console.log('[NOTIF] Fetching initial notifications for:', userId);
             const { data, error } = await supabase
                 .from('notifications')
                 .select('*')
@@ -91,13 +77,7 @@ export default function NotificationBell() {
                 .order('created_at', { ascending: false })
                 .limit(10);
 
-            if (error) {
-                console.error('[NOTIF] Fetch error:', error);
-                return;
-            }
-
-            if (data) {
-                console.log('[NOTIF] Notifications fetched:', data.length);
+            if (!error && data) {
                 setNotifications(data);
                 setUnreadCount(data.length);
             }
@@ -137,7 +117,7 @@ export default function NotificationBell() {
             }
         });
 
-        // 3. Fallback Polling (Every 10 seconds for robustness)
+        // 3. Fallback Polling — only fires every 5 min as a safety net for missed realtime events
         const pollingInterval = setInterval(async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
@@ -153,7 +133,6 @@ export default function NotificationBell() {
                     setNotifications(prev => {
                         const newOnes = data.filter(d => !prev.some(p => p.id === d.id));
                         if (newOnes.length > 0) {
-                            console.log(`[BACKUP] Found ${newOnes.length} new notifications via polling`);
                             setUnreadCount(prevUnread => prevUnread + newOnes.length);
                             return [...newOnes, ...prev].slice(0, 10);
                         }
@@ -161,7 +140,7 @@ export default function NotificationBell() {
                     });
                 }
             }
-        }, 10000);
+        }, 5 * 60 * 1000); // 5 minutes — Realtime handles instant delivery
 
         // 4. Server Check Interval (Reminders/Expiration)
         const serverInterval = setInterval(async () => {

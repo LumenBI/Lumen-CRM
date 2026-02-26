@@ -62,7 +62,17 @@ export class StatsService {
       .eq('agent_id', userId)
       .gte('report_date', startOfPrevMonthStr);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      // view_daily_kpis may not exist yet — return zeroed stats
+      console.warn('view_daily_kpis query failed:', error.message);
+      return {
+        new_prospects: 0, new_prospects_change: '+0.0%', new_prospects_trend: 'up',
+        total_interactions: 0, total_interactions_change: '+0.0%', total_interactions_trend: 'up',
+        appointments_count: 0, appointments_count_change: '+0.0%', appointments_count_trend: 'up',
+        won_count: 0, won_count_change: '+0.0%', won_count_trend: 'up',
+        virtual_meetings: 0, quotes_sent: 0, total_sales_usd: 0, total_volume_m3: 0,
+      };
+    }
 
     const currentMonthStats = {
       new_prospects: 0,
@@ -151,43 +161,29 @@ export class StatsService {
       .order('report_date', { ascending: false })
       .limit(30);
 
-    if (error) throw new Error(error.message);
-    return data;
+    if (error) {
+      console.warn('view_daily_kpis history query failed:', error.message);
+      return [];
+    }
+    return data ?? [];
   }
 
   async getBootstrapData(token: string, userId: string) {
-    try {
-      const [
-        stats,
-        clients,
-        kanban,
-        appointments,
-        history,
-        activities,
-        agents,
-      ] = await Promise.all([
-        this.getUserStats(token, userId),
-        this.clientsService.getClientsList(token, userId, '', undefined, 100, true),
-        this.getKanban(token, userId),
-        this.appointmentsService.getAppointments(token, userId),
-        this.getHistory(token),
-        this.clientsService.getRecentActivities(token),
-        this.getAgents(token),
-      ]);
+    const safeCall = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+      try { return await fn(); } catch (e) { console.error('Bootstrap partial failure:', e.message); return fallback; }
+    };
 
-      return {
-        stats,
-        clients: clients.items,
-        kanban,
-        appointments,
-        history,
-        activities,
-        agents,
-      };
-    } catch (error) {
-      console.error('Error in getBootstrapData:', error);
-      throw error;
-    }
+    const [stats, clients, kanban, appointments, history, activities, agents] = await Promise.all([
+      safeCall(() => this.getUserStats(token, userId), {} as any),
+      safeCall(() => this.clientsService.getClientsList(token, userId, '', undefined, 100, true), { items: [], nextCursor: null, hasNextPage: false } as any),
+      safeCall(() => this.getKanban(token, userId), {}),
+      safeCall(() => this.appointmentsService.getAppointments(token, userId), []),
+      safeCall(() => this.getHistory(token), []),
+      safeCall(() => this.clientsService.getRecentActivities(token), []),
+      safeCall(() => this.getAgents(token), []),
+    ]);
+
+    return { stats, clients: (clients as any).items ?? clients, kanban, appointments, history, activities, agents };
   }
 
   async getKanban(token: string, userId: string) {

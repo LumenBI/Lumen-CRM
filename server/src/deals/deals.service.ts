@@ -20,8 +20,8 @@ export class DealsService {
         let query = supabase
             .from('deals')
             .select('*, client:clients(id, company_name, email, phone)')
-            .eq('status', stageId)
-            .eq('is_archived', false);
+            .eq('status', stageId);
+        // .eq('is_archived', false) — add after running the migration to add this column
 
         if (agentId) {
             query = query.eq('assigned_agent_id', agentId);
@@ -70,8 +70,8 @@ export class DealsService {
         const supabase = this.supabaseService.getClient(token);
         let query = supabase
             .from('deals')
-            .select('*, client:clients(id, company_name, email, phone)')
-            .eq('is_archived', false);
+            .select('*, client:clients(id, company_name, email, phone)');
+        // .eq('is_archived', false) — add after running the migration to add this column
 
         if (clientId) {
             query = query.eq('client_id', clientId);
@@ -138,7 +138,7 @@ export class DealsService {
         const { data, error } = await supabase
             .from('deals')
             .select('id, status')
-            .eq('is_archived', false)
+            // .eq('is_archived', false) — add after running the migration to add this column
             .limit(500);
 
         if (error) throw new Error(error.message);
