@@ -39,7 +39,7 @@ export class ClientsService {
     let q = supabase
       .from('clients')
       .select(
-        'id, company_name, contact_name, email, phone, origin, assigned_agent_id, assignment_expires_at, agent:profiles!assigned_agent_id(full_name)',
+        'id, company_name, contact_name, email, phone, origin, commodity, assigned_agent_id, assignment_expires_at, agent:profiles!assigned_agent_id(full_name)',
       );
 
     // Force mine filter for agents
@@ -55,7 +55,7 @@ export class ClientsService {
       // Sanitize query to prevent breaking the .or() filter (commas are used as separators)
       const sanitizedQuery = query.replace(/,/g, ' ').trim();
       q = q.or(
-        `company_name.ilike.%${sanitizedQuery}%,contact_name.ilike.%${sanitizedQuery}%,email.ilike.%${sanitizedQuery}%`,
+        `company_name.ilike.%${sanitizedQuery}%,contact_name.ilike.%${sanitizedQuery}%,email.ilike.%${sanitizedQuery}%,commodity.ilike.%${sanitizedQuery}%`,
       );
     }
 
