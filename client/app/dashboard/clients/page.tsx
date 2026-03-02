@@ -14,7 +14,6 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
     const showMine = mine === 'true'
     const userId = session.user.id
 
-    // Server-side fetch for the first page of clients (Server-First)
     let q = supabase
         .from('clients')
         .select(`
