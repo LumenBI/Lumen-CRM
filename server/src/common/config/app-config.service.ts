@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createClient } from '@supabase/supabase-js';
 
 @Injectable()
 export class AppConfigService {
@@ -60,4 +61,58 @@ export class AppConfigService {
     get googleApiKey(): string {
         return this.configService.get<string>('GOOGLE_API_KEY');
     }
+
+    private async getOrganizationSetting(tenantId: string, key: string, defaultValue: string): Promise<string> {
+        if (!tenantId) return defaultValue;
+
+        try {
+            // We create a local client to avoid circular dependency with SupabaseModule
+            const url = this.supabaseUrl;
+            const serviceKey = this.supabaseServiceRoleKey;
+
+            if (!url || !serviceKey) return defaultValue;
+
+            const supabase = createClient(url, serviceKey);
+            const { data, error } = await supabase
+                .from('organizations')
+                .select('name, settings')
+                .eq('id', tenantId)
+                .single();
+
+            if (error || !data) return defaultValue;
+
+            if (key === 'name' && data.name) return data.name;
+
+            const settings = data.settings as Record<string, any>;
+            return settings?.[key] || defaultValue;
+        } catch (e) {
+            return defaultValue;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Configuración de negocio — MULTI-TENANT (Fase 2)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    async getCompanyName(tenantId?: string): Promise<string> {
+        const fallback = this.configService.get<string>('APP_COMPANY_NAME') || 'Tu Empresa';
+        return this.getOrganizationSetting(tenantId, 'name', fallback);
+    }
+
+    async getSystemPrompt(tenantId?: string): Promise<string> {
+        const fallback = this.configService.get<string>('AI_SYSTEM_PROMPT') ||
+            'Eres un asistente de CRM profesional. Redacta mensajes claros, concisos y formales.';
+        return this.getOrganizationSetting(tenantId, 'ai_system_prompt', fallback);
+    }
+
+    async getPdfHeaderTitle(tenantId?: string): Promise<string> {
+        const fallback = this.configService.get<string>('PDF_HEADER_TITLE') || 'Cotización';
+        return this.getOrganizationSetting(tenantId, 'pdf_header_title', fallback);
+    }
+
+    async getTermsAndConditions(tenantId?: string): Promise<string> {
+        const fallback = this.configService.get<string>('PDF_TERMS') || '';
+        return this.getOrganizationSetting(tenantId, 'pdf_terms', fallback);
+    }
 }
+

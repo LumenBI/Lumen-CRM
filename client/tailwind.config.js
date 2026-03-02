@@ -13,11 +13,20 @@ module.exports = {
                 sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
             },
             colors: {
+                // Design tokens: referencian las variables CSS HSL definidas en globals.css.
+                // <alpha-value> permite utilidades como bg-primary/50 (Tailwind opacity modifier).
+                primary: {
+                    DEFAULT: 'hsl(var(--primary) / <alpha-value>)',
+                    dark: 'hsl(var(--primary-dark) / <alpha-value>)',
+                    light: 'hsl(var(--primary-light) / <alpha-value>)',
+                    muted: 'hsl(var(--primary-muted) / <alpha-value>)',
+                },
                 base: {
-                    900: '#000D42',
-                    800: '#0A1D58',
+                    900: 'hsl(var(--base-900) / <alpha-value>)',
+                    800: 'hsl(var(--base-800) / <alpha-value>)',
                     100: '#D4D9EC',
                 },
+                // Alias de compatibilidad para el código existente que usa blue-xxx
                 blue: {
                     600: '#004DF0',
                     500: '#0056FC',

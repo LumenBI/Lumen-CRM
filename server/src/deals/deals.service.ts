@@ -1,5 +1,5 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase/supabase.service';
+import { LumenDeal } from '@lumen/shared-types';
 
 @Injectable()
 export class DealsService {

@@ -1,14 +1,13 @@
-'use client'
-
 import { LucideMessageSquare, LucidePhone, LucideCalendar, LucideUser } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale/es'
 import { TEXTS } from '@/constants/text'
-import { useData } from '@/context/DataContext'
 
-export default function RecentActivityWidget() {
-    const { activities, loading } = useData()
+interface RecentActivityWidgetProps {
+    activities: any[] | null
+}
 
+export default function RecentActivityWidget({ activities }: RecentActivityWidgetProps) {
     const getIcon = (category: string) => {
         switch (category?.toUpperCase()) {
             case 'CALL': return <LucidePhone size={14} className="text-blue-500" />
@@ -18,7 +17,7 @@ export default function RecentActivityWidget() {
         }
     }
 
-    if (loading) {
+    if (!activities) {
         return (
             <div className="rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm h-full">
                 <h3 className="mb-4 font-bold text-[#000D42] dark:text-white">{TEXTS.RECENT_ACTIVITY}</h3>
@@ -37,7 +36,7 @@ export default function RecentActivityWidget() {
         )
     }
 
-    const activitiesToShow = activities?.slice(0, 5) || []
+    const activitiesToShow = activities.slice(0, 5);
 
     return (
         <div className="rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm h-full">
@@ -69,3 +68,4 @@ export default function RecentActivityWidget() {
         </div>
     )
 }
+

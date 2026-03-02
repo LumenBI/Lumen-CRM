@@ -1,15 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseService } from '../common/supabase/supabase.service';
 
 @Injectable()
 export class UsersService {
-  constructor() {}
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   private getClient(token: string) {
-    if (!token) throw new Error('Authorization token is required');
-    return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
+    return this.supabaseService.getClient(token);
   }
 
   async findAll(token: string) {
@@ -66,11 +63,18 @@ export class UsersService {
       throw new Error('User is already registered.');
     }
 
+    const { data: inviter } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', (await supabase.auth.getUser()).data.user?.id)
+      .single();
+
     const { data, error } = await supabase
       .from('user_invites')
       .insert({
         email: payload.email,
         role: payload.role || 'SALES_REP',
+        organization_id: inviter?.organization_id
       })
       .select()
       .single();

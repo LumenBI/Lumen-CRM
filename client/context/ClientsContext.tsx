@@ -1,3 +1,4 @@
+import { useSearchParams } from 'next/navigation'
 import { createContext, useContext, useMemo, useState, useCallback } from 'react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/useApi'
@@ -28,8 +29,9 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
     const { profile } = useUser()
     const queryClient = useQueryClient()
 
-    const [searchTerm, setSearchTerm] = useState('')
-    const [showMine, setShowMine] = useState(false)
+    const searchParams = useSearchParams()
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '')
+    const [showMine, setShowMine] = useState(searchParams.get('mine') === 'true')
 
     // Realtime invalidation
     useServerSubscription('clients', [['clients', 'list']])

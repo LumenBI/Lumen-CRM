@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase/supabase.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { LumenClient } from '@lumen/shared-types';
 
 @Injectable()
 export class ClientsService {

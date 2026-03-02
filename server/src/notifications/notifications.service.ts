@@ -173,10 +173,12 @@ export class NotificationsService {
     type: string,
     message: string,
     link: string = '#',
+    organizationId?: string,
   ) {
     try {
       const { error } = await supabase.from('notifications').insert({
         user_id: userId,
+        organization_id: organizationId,
         type,
         message,
         link,
@@ -192,30 +194,33 @@ export class NotificationsService {
     }
   }
 
-  async notifyAllUsers(
+  /**
+   * Notifies all users WITHIN a specific organization.
+   */
+  async notifyOrganizationUsers(
+    organizationId: string,
     type: string,
     message: string,
     link: string = '#',
   ) {
-    try {
-      const { data: users, error: fetchError } = await this.supabaseService
-        .getAdminClient()
-        .from('profiles')
-        .select('id');
+    if (!organizationId) return;
 
-      if (fetchError) throw fetchError;
+    try {
+      const adminClient = this.supabaseService.getAdminClient();
+      const { data: users } = await adminClient
+        .from('profiles')
+        .select('id')
+        .eq('organization_id', organizationId);
 
       if (users) {
-        // We use a separate supabase client for insertions to avoid token issues
-        const adminClient = this.supabaseService.getAdminClient();
         await Promise.all(
           users.map((u) =>
-            this.createNotification(adminClient, u.id, type, message, link),
+            this.createNotification(adminClient, u.id, type, message, link, organizationId),
           ),
         );
       }
     } catch (error) {
-      console.error('Error notifying all users:', error);
+      console.error('Error notifying organization users:', error);
     }
   }
 
@@ -226,16 +231,29 @@ export class NotificationsService {
     link: string = '#',
   ) {
     try {
+      // Get the organization context from the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.organization_id) return;
+
       const adminSupabase = this.supabaseService.getAdminClient();
       const { data: managers } = await adminSupabase
         .from('profiles')
         .select('id')
+        .eq('organization_id', profile.organization_id)
         .or('role.eq.ADMIN,role.eq.MANAGER');
 
       if (managers) {
         await Promise.all(
           managers.map((m) =>
-            this.createNotification(adminSupabase, m.id, type, message, link),
+            this.createNotification(adminSupabase, m.id, type, message, link, profile.organization_id),
           ),
         );
       }

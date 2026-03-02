@@ -1,23 +1,14 @@
-'use client'
-
-import { useMemo } from 'react'
 import Link from 'next/link'
 import { LucideCalendar } from 'lucide-react'
-import { useData } from '@/context/DataContext'
 import { getTypeIcon, getStatusBadge } from '@/utils/appointmentUtils'
 import { getTypeLabel } from '@/constants/appointments'
 
-export default function UpcomingAppointmentsWidget() {
-    const { appointments, loading } = useData()
+interface UpcomingAppointmentsWidgetProps {
+    appointments: any[] | null
+}
 
-    const upcomingAppointments = useMemo(() => {
-        if (!appointments) return []
-        const now = new Date()
-        return appointments
-            .filter(app => new Date(app.appointment_date + 'T' + app.appointment_time) >= now)
-            .sort((a, b) => new Date(a.appointment_date + 'T' + a.appointment_time).getTime() - new Date(b.appointment_date + 'T' + b.appointment_time).getTime())
-            .slice(0, 3)
-    }, [appointments])
+export default function UpcomingAppointmentsWidget({ appointments }: UpcomingAppointmentsWidgetProps) {
+    const upcomingAppointments = appointments || [];
 
     const formatDate = (dateStr: string) => {
         const [year, month, day] = dateStr.split('-').map(Number)
@@ -26,7 +17,7 @@ export default function UpcomingAppointmentsWidget() {
         return { day, month: monthName }
     }
 
-    if (loading) {
+    if (!appointments) {
         return (
             <div className="rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
@@ -121,3 +112,4 @@ export default function UpcomingAppointmentsWidget() {
         </div>
     )
 }
+

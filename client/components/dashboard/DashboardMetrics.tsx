@@ -1,14 +1,26 @@
-'use client'
-
 import KpiCard from '@/components/ui/KpiCard'
 import { LucidePhone, LucideCalendarCheck, LucideDollarSign, LucideUserPlus } from 'lucide-react'
 import { TEXTS } from '@/constants/text'
-import { useData } from '@/context/DataContext'
 
-export default function DashboardMetrics() {
-    const { stats, loading } = useData()
+interface DashboardMetricsProps {
+    stats: {
+        new_prospects: number
+        new_prospects_change: string
+        new_prospects_trend: string
+        total_interactions: number
+        total_interactions_change: string
+        total_interactions_trend: string
+        appointments_count: number
+        appointments_count_change: string
+        appointments_count_trend: string
+        won_count: number
+        won_count_change: string
+        won_count_trend: string
+    } | null
+}
 
-    if (loading || !stats) {
+export default function DashboardMetrics({ stats }: DashboardMetricsProps) {
+    if (!stats) {
         return (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 {[1, 2, 3, 4].map((i) => (
@@ -55,3 +67,4 @@ export default function DashboardMetrics() {
         </div>
     )
 }
+

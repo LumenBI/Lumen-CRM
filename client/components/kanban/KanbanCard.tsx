@@ -5,7 +5,6 @@ import { useRef } from 'react'
 import { Draggable } from '@hello-pangea/dnd'
 import { CalendarClock, Pencil, Check, X } from 'lucide-react'
 import type { Deal } from '@/types'
-import { SHIPPING_TYPE_MAP } from '@/constants/shipping'
 import { useUser } from '@/context/UserContext'
 
 interface KanbanCardProps {
@@ -16,9 +15,11 @@ interface KanbanCardProps {
     onApprove: (dealId: string) => void
     onReject: (dealId: string) => void
     onDetail?: (deal: Deal) => void
+    /** Render metadata extra específico de la industria debajo del título. */
+    renderCustomMetadata?: (deal: Deal) => React.ReactNode
 }
 
-const KanbanCard = React.memo(({ deal, index, onEdit, onContextMenu, onApprove, onReject, onDetail }: KanbanCardProps) => {
+const KanbanCard = React.memo(({ deal, index, onEdit, onContextMenu, onApprove, onReject, onDetail, renderCustomMetadata }: KanbanCardProps) => {
     const { profile } = useUser()
     const isManagerOrAdmin = profile?.role === 'ADMIN' || profile?.role === 'MANAGER'
     const isProspect = deal.status === 'PROSPECT'
@@ -66,22 +67,12 @@ const KanbanCard = React.memo(({ deal, index, onEdit, onContextMenu, onApprove, 
                         </button>
                     </div>
 
-                    <div className="mb-3">
-                        {/* Hide shipping badge as requested - 
-                        (() => {
-                            const shipConfig = SHIPPING_TYPE_MAP[deal.type]
-                            const ShipIcon = shipConfig?.icon
-                            return (
-                                <div className="flex justify-between items-start">
-                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${shipConfig?.badgeColor || 'bg-gray-50 dark:bg-slate-700 text-gray-700 dark:text-slate-300'}`}>
-                                        {ShipIcon && <ShipIcon size={10} />}
-                                        {shipConfig?.label || deal.type}
-                                    </span>
-                                </div>
-                            )
-                        })()
-                        */}
-                    </div>
+                    {/* Metadata personalizada inyectada por la capa superior (agnóstica de industria) */}
+                    {renderCustomMetadata && (
+                        <div className="mb-3">
+                            {renderCustomMetadata(deal)}
+                        </div>
+                    )}
 
                     <h4 className="font-bold text-gray-800 dark:text-slate-100 text-sm mb-1 line-clamp-2 leading-relaxed">
                         {deal.title}

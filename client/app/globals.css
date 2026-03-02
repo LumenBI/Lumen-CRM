@@ -15,7 +15,13 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-    /* ... other variables if needed ... */
+    /* Design tokens — sobreescribibles por tenant en Fase 2 */
+    --primary:       220 100% 49%;  /* #0056FC */
+    --primary-dark:  222 100% 47%;  /* #004DF0 */
+    --primary-light: 226 100% 64%;  /* #4A71FF */
+    --primary-muted: 234 100% 95%;  /* #E9EBFF */
+    --base-900:      228 100% 13%;  /* #000D42 */
+    --base-800:      225  74% 19%;  /* #0A1D58 */
   }
 
   .dark {
@@ -43,7 +49,7 @@
 
 @layer utilities {
 
-  /* EL CORTE DIAGONAL ORIGINAL DE STAR CARGO */
+  /* Utilidad de corte diagonal para encabezados */
   .clip-diagonal {
     clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
   }
