@@ -2,11 +2,11 @@
 
 import { useState, Suspense, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react'
+import { Mail, Lock, Loader2, ArrowLeft, AlertCircle } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Turnstile } from '@marsidev/react-turnstile'
 import ParticleBackground from '@/components/ui/ParticleBackground'
 
@@ -14,8 +14,12 @@ function LoginForm() {
     const [loading, setLoading] = useState(false)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+
     const supabase = createClient()
     const searchParams = useSearchParams()
+    const router = useRouter()
 
     useEffect(() => {
         const error = searchParams.get('error')
@@ -24,6 +28,33 @@ function LoginForm() {
             setErrorMessage(error_description || 'Ha ocurrido un error durante el inicio de sesión.')
         }
     }, [searchParams])
+
+    const handleEmailLogin = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!captchaToken) {
+            setErrorMessage('Por favor completa la verificación de seguridad')
+            return
+        }
+
+        setLoading(true)
+        setErrorMessage(null)
+
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+            options: {
+                captchaToken,
+            },
+        })
+
+        if (error) {
+            setLoading(false)
+            setErrorMessage(error.message)
+        } else {
+            router.push('/dashboard')
+            router.refresh()
+        }
+    }
 
     const handleGoogleLogin = async () => {
         if (!captchaToken) {
@@ -95,35 +126,83 @@ function LoginForm() {
                 )}
             </AnimatePresence>
 
-            <div className="flex justify-center mb-6 min-h-[65px]">
-                <Turnstile
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
-                    onSuccess={(token) => {
-                        setCaptchaToken(token)
-                        setErrorMessage(null)
-                    }}
-                    onError={() => setErrorMessage('Error verificando seguridad')}
-                    options={{
-                        theme: 'light',
-                        size: 'normal',
-                    }}
-                />
+            <form onSubmit={handleEmailLogin} className="space-y-4 mb-6 text-left">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Correo Electrónico</label>
+                    <div className="relative group">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                        <input
+                            type="email"
+                            placeholder="nombre@empresa.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full bg-gray-50/50 border-2 border-gray-100 focus:border-blue-600 focus:bg-white rounded-xl py-3.5 pl-12 pr-4 text-sm font-medium transition-all outline-none"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-1.5">
+                    <div className="flex justify-between items-center ml-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Contraseña</label>
+                        <button type="button" className="text-xs font-bold text-blue-600 hover:text-blue-700">¿Olvidó su contraseña?</button>
+                    </div>
+                    <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                        <input
+                            type="password"
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full bg-gray-50/50 border-2 border-gray-100 focus:border-blue-600 focus:bg-white rounded-xl py-3.5 pl-12 pr-4 text-sm font-medium transition-all outline-none"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <div className="flex justify-center py-2 min-h-[65px]">
+                    <Turnstile
+                        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
+                        onSuccess={(token) => {
+                            setCaptchaToken(token)
+                            setErrorMessage(null)
+                        }}
+                        onError={() => setErrorMessage('Error verificando seguridad')}
+                        options={{
+                            theme: 'light',
+                            size: 'normal',
+                        }}
+                    />
+                </div>
+
+                <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    type="submit"
+                    disabled={loading || !captchaToken}
+                    className="w-full bg-base-900 hover:bg-black text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-base-900/10 disabled:opacity-50 flex items-center justify-center"
+                >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Iniciar Sesión'}
+                </motion.button>
+            </form>
+
+            <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-100"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-4 text-gray-400 font-bold">o continuar con</span>
+                </div>
             </div>
 
             <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
                 onClick={handleGoogleLogin}
+                type="button"
                 disabled={loading || !captchaToken}
-                className="w-full relative group flex items-center justify-center gap-3 bg-white border-2 border-gray-100 hover:border-blue-100 hover:bg-blue-50/50 text-base-900 font-bold py-4 px-4 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-100 hover:border-blue-100 hover:bg-blue-50/50 text-base-900 font-bold py-3.5 rounded-xl transition-all duration-300 disabled:opacity-50"
             >
-                <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                    initial={{ x: '-100%' }}
-                    whileHover={{ x: '200%' }}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                />
-
                 {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
                 ) : (
@@ -134,7 +213,7 @@ function LoginForm() {
                             height={20}
                             alt="Google"
                         />
-                        <span className="relative z-10">Continuar con Google</span>
+                        <span>Google</span>
                     </>
                 )}
             </motion.button>
