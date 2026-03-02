@@ -32,7 +32,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.3.6",
-    "@lumen/shared-types": "*"
+    "@lumen/shared-types": "file:../packages/shared-types"
   },
   "devDependencies": {
     "@types/classnames": "^2.3.0",
